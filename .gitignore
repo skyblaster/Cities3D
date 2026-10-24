@@ -1,0 +1,5 @@
+# Build trees
+trunk/build/
+build/
+out/
+cmake-build-*/
