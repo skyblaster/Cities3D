@@ -3,3 +3,17 @@ trunk/build/
 build/
 out/
 cmake-build-*/
+
+# CMake/vcpkg dump binaries into the committed game-data tree (maps, skins,
+# locale, tex, sounds). Ignore generated outputs only — not the whole folder.
+trunk/Cities3D/distribute/*.exe
+trunk/Cities3D/distribute/*.dll
+trunk/Cities3D/distribute/*.pdb
+trunk/Cities3D/distribute/*.ilk
+trunk/Cities3D/distribute/*.exp
+trunk/Cities3D/distribute/*.lib
+trunk/Cities3D/distribute/*.iobj
+trunk/Cities3D/distribute/*.ipdb
+trunk/Cities3D/distribute/plugins/
+trunk/Cities3D/distribute/pluginsD/
+trunk/Cities3D/distribute/cities3d-last-rule.txt

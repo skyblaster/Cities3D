@@ -1,5 +1,20 @@
 {
   "name": "cities3d",
-  "version-string": "0.1.0",
-  "dependencies": []
+  "version-string": "0.10.0",
+  "dependencies": [
+    "boost-any",
+    "boost-bind",
+    "boost-config",
+    "boost-function",
+    "boost-lexical-cast",
+    "boost-random",
+    "boost-smart-ptr",
+    "boost-spirit",
+    "boost-tuple",
+    "boost-type-traits",
+    "boost-utility",
+    "glew",
+    "opengl",
+    "wxwidgets"
+  ]
 }

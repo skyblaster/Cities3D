@@ -73,6 +73,8 @@ public:
 	//
     virtual bool OnInit();
 
+	virtual void OnFatalException();
+
 	//-----------------------------------------------------------------------//
 	// Function: OnExit
 	//

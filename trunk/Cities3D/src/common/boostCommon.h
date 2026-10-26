@@ -17,6 +17,9 @@
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
 // Useful boost headers
+#ifndef BOOST_BIND_GLOBAL_PLACEHOLDERS
+#define BOOST_BIND_GLOBAL_PLACEHOLDERS
+#endif
 #include <boost/any.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -28,6 +31,21 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/tuple/tuple.hpp>
 #include <boost/weak_ptr.hpp>
+
+namespace boost
+{
+	template< class T, class U >
+	inline shared_ptr< T > shared_static_cast(const shared_ptr< U >& p)
+	{
+		return static_pointer_cast< T >(p);
+	}
+
+	template< class T, class U >
+	inline shared_ptr< T > shared_dynamic_cast(const shared_ptr< U >& p)
+	{
+		return dynamic_pointer_cast< T >(p);
+	}
+}
 
 //---------------------------- USER INCLUDES    -----------------------------//
 

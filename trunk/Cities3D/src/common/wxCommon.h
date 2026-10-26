@@ -54,6 +54,12 @@
 #include <wx/wfstream.h>
 #include <wx/xml/xml.h>
 
+// wxWidgets 2.8 used GetPropVal; 2.9+ renamed it to GetAttribute.
+#if wxCHECK_VERSION(2, 9, 0)
+#define GetPropVal GetAttribute
+#define AddProperty AddAttribute
+#endif
+
 #ifdef _WIN32
 	#pragma warning(default:4996)
 #endif

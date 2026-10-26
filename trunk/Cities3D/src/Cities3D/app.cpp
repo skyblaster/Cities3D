@@ -29,6 +29,8 @@
 #include "FilePath.h"
 #include "OfficialMapDatabase.h"
 #include "IKeyMapEngine.h"
+#include <wx/ffile.h>
+#include <wx/msgdlg.h>
 
 #ifndef __WIN32__
 #include "cities3d.xpm"
@@ -106,12 +108,11 @@ bool wxCities3DApp::OnInit()
 	SetTopWindow(mFrame);
 
 #ifdef __WIN32__
-	// Create an icon bundle.
-	wxIconBundle icons;
-	icons.AddIcon(wxIcon(swACities3D, wxBITMAP_TYPE_ICO_RESOURCE, 16, 16));
-	icons.AddIcon(wxIcon(swACities3D, wxBITMAP_TYPE_ICO_RESOURCE, 32, 32));
-	icons.AddIcon(wxIcon(swACities3D, wxBITMAP_TYPE_ICO_RESOURCE, 48, 48));
-	mFrame->SetIcons(icons);
+	wxIcon appIcon(swACities3D, wxBITMAP_TYPE_ICO_RESOURCE);
+	if(true == appIcon.IsOk())
+	{
+		mFrame->SetIcon(appIcon);
+	}
 #else
 	mFrame->SetIcon(wxICON(a_cities3d));
 #endif
@@ -129,6 +130,23 @@ bool wxCities3DApp::OnInit()
 
     return true;
 
+}
+
+void wxCities3DApp::OnFatalException()
+{
+	wxString last = wxT("(unknown)");
+	wxFFile breadcrumb(wxT("cities3d-last-rule.txt"), wxT("r"));
+	if(true == breadcrumb.IsOpened())
+	{
+		breadcrumb.ReadAll(&last);
+	}
+
+	wxMessageBox(
+		wxString::Format(
+			wxT("Cities3D hit a fatal exception.\nLast rule: %s"),
+			last),
+		wxT("Cities3D"),
+		wxOK | wxICON_ERROR);
 }
 
 int wxCities3DApp::OnExit()
