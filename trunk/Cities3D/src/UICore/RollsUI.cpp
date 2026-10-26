@@ -68,95 +68,66 @@ namespace
 wxRollsUI::wxRollsUI(wxWindow *parent, const GamePtr &game, bool threeDice)
 : wxBaseUI<wxPanel>(parent, sMinSize)
 , mThreeDice(threeDice)
+, mInResize(false)
 {
 	wxASSERT(game);
 
 	SetBackgroundColour(SKIN.Element(shBackground));
 	SetMinSize(sMinSize);
 
-	// Use two vertical sizers to organize everything.
+	const wxSize dieWindowSize(30, 30);
+	const wxSize dieBitmapSize(28, 28);
+
 	wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
-	wxBoxSizer* horz = new wxBoxSizer(wxHORIZONTAL);
 
-	wxBoxSizer* color = new wxBoxSizer(wxVERTICAL);
-	wxBoxSizer* display = new wxBoxSizer(wxVERTICAL);
-	
 	wxInt32 players = game->numPlayers();
-
-	// Calculate player spacing.
-	wxInt32 spacerY = 140;
-	spacerY -= (players * 20);
-	spacerY /= (players + 1);
-
-	float ratio = static_cast<float>(players) / 6.0f;
-
-	spacerY *= static_cast<wxInt32>(ratio);
-
-	// Color column.
-	color->AddStretchSpacer(30);
-	color->AddStretchSpacer(spacerY);
-
 	sBitmaps.resize(players);
 	sImageStrips.resize(players);
 
-	// Add the player colors.
-	for(wxInt32 i = 0; i < players; ++i)
-	{
-		sBitmaps[i] = new wxPlayerCenteredBitmap(this,
-			sDefaultPlayerSize, sDefaultPlayerSize, 
-			game->playerGame(i).color());
-		color->Add(sBitmaps[i], 20, wxEXPAND);
-		color->AddStretchSpacer(spacerY);
-	}
+	wxBoxSizer* diceRow = new wxBoxSizer(wxHORIZONTAL);
+	diceRow->AddStretchSpacer(1);
 
-	wxSizer* innerHorz = new wxBoxSizer(wxHORIZONTAL);
-
-	wxInt32 xStretch = threeDice ? 10 : 25;
-
-	// Add the dice bitmap / text displays.
-	innerHorz->AddStretchSpacer(xStretch);
-	spDie1 = new wxImageCenteredBitmap(this, wxSize(30, 30), wxSize(28, 28), 
+	spDie1 = new wxImageCenteredBitmap(this, dieWindowSize, dieBitmapSize,
 		shDice, sh1);
-	spDie1->SetMinSize(wxSize(30, 30));
-	innerHorz->Add(spDie1, 0, wxALIGN_CENTER);
+	diceRow->Add(spDie1, 0, wxALIGN_CENTER_VERTICAL);
 
-	// Second die might be red in a three dice game.
-	spDie2 = new wxImageCenteredBitmap(this, wxSize(30, 30), wxSize(28, 28), 
+	spDie2 = new wxImageCenteredBitmap(this, dieWindowSize, dieBitmapSize,
 		threeDice ? shDiceRed : shDice, threeDice ? shRed1 : sh1);
-	spDie2->SetMinSize(wxSize(30, 30));
-	innerHorz->Add(spDie2, 0, wxALIGN_CENTER);
+	diceRow->Add(spDie2, 0, wxALIGN_CENTER_VERTICAL);
 
 	if(true == threeDice)
 	{
-		spDie3 = new wxImageCenteredBitmap(this, wxSize(30, 30), wxSize(28, 28), 
+		spDie3 = new wxImageCenteredBitmap(this, dieWindowSize, dieBitmapSize,
 			shDiceCK, shBarbarians);
-		spDie3->SetMinSize(wxSize(30, 30));
-		innerHorz->Add(spDie3, 0, wxALIGN_CENTER);
+		diceRow->Add(spDie3, 0, wxALIGN_CENTER_VERTICAL);
 	}
-	innerHorz->AddStretchSpacer(xStretch);
 
-	display->Add(innerHorz, 30, wxEXPAND);
-	display->AddStretchSpacer(spacerY);
-	
+	diceRow->AddStretchSpacer(1);
+	sizer->Add(diceRow, 0, wxEXPAND | wxTOP, 2);
+
 	wxSizeEvent event;
-
-	// Finally, add each of the roll image columns.
 	for(wxInt32 i = 0; i < players; ++i)
 	{
+		wxBoxSizer* row = new wxBoxSizer(wxHORIZONTAL);
+
+		sBitmaps[i] = new wxPlayerCenteredBitmap(this,
+			sDefaultPlayerSize, sDefaultPlayerSize,
+			game->playerGame(i).color());
+		row->Add(sBitmaps[i], 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 4);
+
 		wxRollImageStrip* strip = new wxRollImageStrip(this, -1, 10);
 		strip->ProcessWindowEvent(event);
-		display->Add(strip, 20, wxEXPAND | wxLEFT, 10);
-		display->AddStretchSpacer(spacerY);
+		row->Add(strip, 1, wxEXPAND | wxLEFT | wxRIGHT, 8);
 
+		sizer->Add(row, 0, wxEXPAND | wxTOP, 2);
 		sImageStrips[i] = strip;
 	}
 
-	horz->Add(color, 40, wxEXPAND);
-	horz->Add(display, 110, wxEXPAND);
-
-	sizer->Add(horz, 1, wxEXPAND);
+	sizer->AddStretchSpacer(1);
 
 	SetSizer(sizer);
+	Bind(wxEVT_SIZE, &wxRollsUI::OnPanelSize, this);
+	CallAfter(&wxRollsUI::ResizeControls);
 
 	Controller::get().AddReceiver(shEventDiceRoll, 
 		&wxRollsUI::OnDiceRoll, this);
@@ -187,6 +158,60 @@ wxRollsUI::~wxRollsUI()
 
 	sImageStrips.clear();
 	spDie3 = NULL;
+}
+
+void wxRollsUI::OnPanelSize(wxSizeEvent& event)
+{
+	ResizeControls();
+	event.Skip();
+}
+
+void wxRollsUI::ResizeControls()
+{
+	if(true == mInResize)
+	{
+		return;
+	}
+
+	mInResize = true;
+
+	const wxInt32 width = GetClientSize().GetWidth();
+	const float scale = 1.1f * static_cast<float>(std::max(width, 1)) /
+		static_cast<float>(sMinSize.x);
+
+	const wxSize dieSize(
+		std::max(1, static_cast<wxInt32>(30.0f * scale + 0.5f)),
+		std::max(1, static_cast<wxInt32>(30.0f * scale + 0.5f)));
+	const wxSize playerSize(
+		std::max(1, static_cast<wxInt32>(20.0f * scale + 0.5f)),
+		std::max(1, static_cast<wxInt32>(20.0f * scale + 0.5f)));
+
+	auto pinSquare = [](wxWindow* window, const wxSize& size)
+	{
+		if(NULL == window)
+		{
+			return;
+		}
+
+		window->SetMinSize(size);
+		window->SetMaxSize(size);
+	};
+
+	pinSquare(spDie1, dieSize);
+	pinSquare(spDie2, dieSize);
+	pinSquare(spDie3, dieSize);
+
+	for(size_t i = 0; i < sBitmaps.size(); ++i)
+	{
+		pinSquare(sBitmaps[i], playerSize);
+	}
+
+	if(NULL != GetSizer())
+	{
+		GetSizer()->Layout();
+	}
+
+	mInResize = false;
 }
 
 //---------------------------- PROTECTED        -----------------------------//
@@ -230,6 +255,11 @@ void wxRollsUI::OnDiceRoll(const DataObject &data)
 		(NULL == spDie2))
 	{
 		return;
+	}
+
+	if(NULL != GetSizer())
+	{
+		GetSizer()->Layout();
 	}
 
 	wxInt32 die1 = data.read<wxInt32>();

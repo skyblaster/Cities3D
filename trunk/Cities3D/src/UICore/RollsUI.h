@@ -143,6 +143,20 @@ private:
 	void OnPlayerReorder(const GamePtr& game);
 
 	//-----------------------------------------------------------------------//
+	// Function: OnPanelSize
+	//
+	// Scales dice, player colors, and resource icons with the pane width.
+	//
+	void OnPanelSize(wxSizeEvent& event);
+
+	//-----------------------------------------------------------------------//
+	// Function: ResizeControls
+	//
+	// Applies the current width-based scale to child controls.
+	//
+	void ResizeControls();
+
+	//-----------------------------------------------------------------------//
 	// Group: Variables
 	//
 	
@@ -152,6 +166,13 @@ private:
 	// A flag that is true if there are three dice in the UI and false if not.
 	//
 	bool mThreeDice;
+
+	//-----------------------------------------------------------------------//
+	// Bool: mInResize
+	//
+	// Prevents recursive size handling while child min sizes are updated.
+	//
+	bool mInResize;
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//
