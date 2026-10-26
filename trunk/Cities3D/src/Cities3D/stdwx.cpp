@@ -34,7 +34,8 @@
 // (<http://www.boost.org>), all real-world solutions that have been used in 
 // production code.  The architecture was built with a lot of thought, and a 
 // lot of Design Patterns, in an attempt to make a truly exceptional object-
-// oriented system.  The sound library is fmod (<http://www.fmod.org>), and the
+// oriented system.  The sound library is miniaudio
+// (<https://miniaud.io>), and the
 // unit testing is done with cppunit
 // (<http://cppunit.sourceforge.net/cgi-bin/moin.cgi>).  The documentation you
 // are reading was created using NaturalDocs (<http://www.naturaldocs.org>).

@@ -12,7 +12,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type" FORCE)
 endif()
 
-option(CITIES3D_USE_FMOD "Build with the vendored FMOD sound engine" OFF)
+option(CITIES3D_USE_MINIAUDIO "Play sounds with miniaudio" ON)
 
 set(CITIES3D_SRC_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Cities3D/src")
 set(CITIES3D_DIST_DIR "${CMAKE_CURRENT_SOURCE_DIR}/Cities3D/distribute")

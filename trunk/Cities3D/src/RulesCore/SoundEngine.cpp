@@ -21,13 +21,12 @@
 #include "FilePath.h"
 #include "ConfigDatabase.h"
 
-#ifdef CITIES3D_USE_FMOD
-#ifdef FMOD4
-#include "fmod.hpp"
-#else
-#include "fmod.h"
+#ifdef CITIES3D_USE_MINIAUDIO
+#ifdef new
+#undef new
 #endif
-#include "fmod_errors.h"
+#define MINIAUDIO_IMPLEMENTATION
+#include "miniaudio.h"
 #endif
 
 //---------------------------- TYPEDEFS         -----------------------------//
@@ -37,84 +36,43 @@
 
 //---------------------------- STATICS          -----------------------------//
 
-//---------------------------- PUBLIC           -----------------------------//
-#ifndef CITIES3D_USE_FMOD
-SoundEngine::SoundEngine()
+struct SoundEngine::Impl
 {
-}
-
-void SoundEngine::PlaySound(const wxString &) const
-{
-}
-#else
-SoundEngine::SoundEngine()
-#ifdef FMOD4
-: mSystem(NULL)
+#ifdef CITIES3D_USE_MINIAUDIO
+	ma_engine engine;
+	bool ready;
 #endif
+};
+
+//---------------------------- PUBLIC           -----------------------------//
+SoundEngine::SoundEngine()
+: mpImpl(new Impl)
 {
-#	ifdef FMOD4
-	FMOD_RESULT result;
+#ifdef CITIES3D_USE_MINIAUDIO
+	mpImpl->ready = false;
 
-	if(FMOD_OK != (result = FMOD::System_Create(&mSystem)))
+	ma_result result = ma_engine_init(NULL, &mpImpl->engine);
+	if(MA_SUCCESS != result)
 	{
-		wxLogError(wxT("Can't create sound system: %s"),
-			FMOD_ErrorString(result));
-
-		mSystem = NULL;
+		wxLogError(wxT("Can't initialize sound engine: %s"),
+			wxString::FromUTF8(ma_result_description(result)).c_str());
 		return;
 	}
 
-#	ifdef __linux__
-	// set output to alsa
-	if(FMOD_OK != (result = mSystem->setOutput(FMOD_OUTPUTTYPE_ALSA)))
-	{
-		wxLogError(wxT("Can't set output to alsa: %s"),
-			FMOD_ErrorString(result));
-	}
-#	endif // __linux__
-
-	result = mSystem->init(32, FMOD_INIT_NORMAL, 0);
-	if(FMOD_OK != result)
-	{
-		mSystem->close();
-		mSystem->release();
-		mSystem = NULL;
-		return;
-	}
-#	else
-	if(FALSE == FSOUND_Init(44100, 32, 0))
-	{
-		wxLogError(wxT("Sound Initialization Error: %s"), 
-			HashString(FMOD_ErrorString(FSOUND_GetError())).cwx_str());
-	}
-#	endif
+	mpImpl->ready = true;
+#endif
 }
 
-#ifdef FMOD4
 SoundEngine::~SoundEngine()
 {
-	if(NULL != mSystem)
+#ifdef CITIES3D_USE_MINIAUDIO
+	if((NULL != mpImpl) && (true == mpImpl->ready))
 	{
-		// release all sounds loaded
-		FMOD::Sound *sound;
-		FMOD::SoundGroup *soundGroup;
-		int soundc;
-
-		mSystem->getMasterSoundGroup(&soundGroup);
-		soundGroup->getNumSounds(&soundc);
-
-		for(int i = 0; i < soundc; ++i)
-		{
-			soundGroup->getSound(i, &sound);
-			sound->release();
-		}
-
-		// release the sound system
-		mSystem->close();
-		mSystem->release();
+		ma_engine_uninit(&mpImpl->engine);
 	}
-}
 #endif
+	delete mpImpl;
+}
 
 void SoundEngine::PlaySound(const wxString &sound) const
 {
@@ -124,97 +82,34 @@ void SoundEngine::PlaySound(const wxString &sound) const
 		return;
 	}
 
-#	ifdef FMOD4
-	if(NULL == mSystem)
+#ifdef CITIES3D_USE_MINIAUDIO
+	if((NULL == mpImpl) || (false == mpImpl->ready))
 	{
 		return;
 	}
-#	endif
 
 	wxASSERT(false == sound.IsEmpty());
 
-	wxString path;
-	path = FilePath::Sound(sound);
-
-	//load the sound
-#	ifdef FMOD4
-	FMOD::Sound *fsound;
-	FMOD::ChannelGroup *fgroup;
-	FMOD_RESULT fresult;
-	int numChannels;
-
-	// housekeeping
-	// release sounds if none are currently playing
-	mSystem->getMasterChannelGroup(&fgroup);
-	fgroup->getNumChannels(&numChannels);
-
-	if(0 < numChannels)
+	const wxString path = FilePath::Sound(sound);
+	if(true == path.IsEmpty())
 	{
-		FMOD::Channel *channel;
-		bool isPlaying;
-
-		for(int i = 0; i < numChannels; ++i)
-		{
-			fgroup->getChannel(i, &channel);
-			channel->isPlaying(&isPlaying);
-
-			if(true == isPlaying)
-			{
-				continue;
-			}
-
-			channel->getCurrentSound(&fsound);
-			if(0 != fsound)
-			{
-				fsound->release();
-			}
-		}
-	}
-
-	// load the sound
-	fresult = mSystem->createSound(path.ToAscii(), FMOD_SOFTWARE, 0, &fsound);
-	if(FMOD_OK != fresult)
-	{
-		wxLogError(wxT("Can't create sound: %s, %s"), path.c_str(),
-			FMOD_ErrorString(fresult));
+		wxLogError(wxT("Sound Error: %s, file not found"), sound.c_str());
 		return;
 	}
-#	else
-	FSOUND_SAMPLE *fsound = FSOUND_Sample_Load(FSOUND_FREE, path.ToAscii(), 
-		FSOUND_NORMAL, 0, 0);
 
-	if(NULL == fsound)
+	const wxScopedCharBuffer utf8 = path.ToUTF8();
+	const ma_result result = ma_engine_play_sound(&mpImpl->engine, utf8.data(),
+		NULL);
+	if(MA_SUCCESS != result)
 	{
-		wxLogError(wxT("Sound Error: %s, %s"), path.c_str(), 
-			FMOD_ErrorString(FSOUND_GetError()));
-		return;
+		wxLogError(wxT("Sound Error: %s, %s"), path.c_str(),
+			wxString::FromUTF8(ma_result_description(result)).c_str());
 	}
-#	endif
-
-	//play the sound
-#	ifdef FMOD4
-	fresult = mSystem->playSound(FMOD_CHANNEL_FREE, fsound, 0, NULL);
-	if(FMOD_OK != fresult)
-	{
-		wxLogError(wxT("Can't play sound: %s, %s"), path.c_str(),
-			FMOD_ErrorString(fresult));
-		return;
-	}
-#	else
-	wxInt32 ret = FSOUND_PlaySound(FSOUND_FREE, fsound);
-
-	if(-1 == ret)
-	{
-		wxLogError(wxT("Sound Error: %s, %s"), path.c_str(), 
-			FMOD_ErrorString(FSOUND_GetError()));
-		return;
-	}
-#	endif
+#else
+	wxUnusedVar(sound);
+#endif
 }
-#endif // CITIES3D_USE_FMOD
 
 //---------------------------- PROTECTED        -----------------------------//
 
 //---------------------------- PRIVATE          -----------------------------//
-
-
