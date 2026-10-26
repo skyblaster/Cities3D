@@ -108,6 +108,12 @@ const GLMaterial &DrawObject::material(Material type)
 		once = false;
 	}
 
+	if( (0 > type) ||
+		(MaterialSize <= type))
+	{
+		return sMaterials[White];
+	}
+
 	//check for special colors
 	if( (UserBegin < type) && 
 		(UserEnd > type))
@@ -145,7 +151,10 @@ const GLMaterial &DrawObject::material(Material type)
 
 const GLMaterial &DrawObject::material(IGameObject *object)
 {
-	wxASSERT(NULL != object);
+	if(NULL == object)
+	{
+		return material(White);
+	}
 	
 	// Set the color properties.
 	material(object->color());

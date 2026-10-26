@@ -33,7 +33,15 @@
 void wxHtmlWindowEx::AddText(const wxString& text)
 {
 	Freeze();
-	AppendToPage(text);
+	const wxString* existing = GetParser() ? GetParser()->GetSource() : NULL;
+	if( (NULL == existing) || (true == existing->IsEmpty()) )
+	{
+		SetPage(text);
+	}
+	else
+	{
+		AppendToPage(text);
+	}
 
 	ScrollNice();
 
@@ -83,7 +91,7 @@ void wxHtmlWindowEx::ScrollNice()
 
 void wxHtmlWindowEx::OnMouseWheel(wxMouseEvent &event)
 {
-	wxHtmlWindow::HandleOnMouseWheel(event);
+	event.Skip();
 }
 
 void wxHtmlWindowEx::OnKeyDown(wxKeyEvent &event)

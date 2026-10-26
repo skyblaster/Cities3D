@@ -91,7 +91,7 @@ bool wxSettlersView::TestPopup(const wxPoint& pos, wxInt32& delay) const
 
 	DrawObjectPtr object = PopupSelect(point.x, point.y);
 
-	bool ret = object;
+	bool ret = static_cast<bool>(object);
 
 	delay = DELAY_TICKS;
 
@@ -129,7 +129,7 @@ void wxSettlersView::CreatePopup(wxWindow* window, wxSizer* sizer) const
 	}
 
 	// Add a bitmap if we need to.
-	if(true == image.Ok())
+	if(true == image.IsOk())
 	{
 		wxBoxSizer* vert = new wxBoxSizer(wxVERTICAL);
 		wxSize size(image.GetWidth(), image.GetHeight());

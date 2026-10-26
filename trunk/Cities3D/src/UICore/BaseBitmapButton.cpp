@@ -37,9 +37,11 @@ wxBaseBitmapButton::wxBaseBitmapButton(wxWindow* parent, wxWindowID id,
 	const wxPoint& pos, const wxSize& size)
 : wxOwnerDrawWindow(parent, id, pos, wxSize(size) + wxSize(1, 1))
 , mMode(ModeNone)
+, mFillColour()
 {
 	// Set up the colors
 	OnSkin();
+	mFillColour = sBackground_BaseBitmapButton;
 
 	SetCursor(wxCursor(wxCURSOR_HAND));
 
@@ -71,6 +73,12 @@ void wxBaseBitmapButton::SetBitmaps(const wxBitmap& enabled,
 	Refresh();
 }
 
+void wxBaseBitmapButton::SetFillColour(const wxColour& colour)
+{
+	mFillColour = colour.IsOk() ? colour : sBackground_BaseBitmapButton;
+	Refresh();
+}
+
 //---------------------------- PROTECTED        -----------------------------//
 
 //---------------------------- PRIVATE          -----------------------------//
@@ -96,7 +104,8 @@ void wxBaseBitmapButton::Paint(wxMemoryDC &dc)
 	}
 
 	const wxSize &size = GetSize();
-	dc.SetBrush(wxBrush(sBackground_BaseBitmapButton));
+	dc.SetBrush(wxBrush(mFillColour.IsOk() ? mFillColour :
+		sBackground_BaseBitmapButton));
 	dc.DrawRectangle(0, 0, size.x, size.y);
 
 	dc.DrawBitmap(mDrawBitmap, origin, origin, true);
@@ -136,7 +145,7 @@ void wxBaseBitmapButton::OnLeftUp(wxMouseEvent &)
 	if(ModeDown == currentMode)
 	{
 		wxCommandEvent command(wxEVT_COMMAND_BUTTON_CLICKED, GetId());
-		ProcessEvent(command);
+		ProcessWindowEvent(command);
 	}
 }
 

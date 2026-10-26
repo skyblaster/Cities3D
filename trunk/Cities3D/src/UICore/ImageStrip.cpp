@@ -45,7 +45,7 @@ namespace
 		event.m_x = pos.x;
 		event.m_y = pos.y;
 
-		parent->ProcessEvent(event);
+		parent->ProcessWindowEvent(event);
 	}
 }
 
@@ -75,10 +75,18 @@ wxImageStrip::wxImageStrip(wxWindow* parent, wxWindowID id,
 	// Calculate the minimum image size.
 	wxImage image = IMAGE.GetImage(mKey, sizeImage);
 
+	wxInt32 imageW = image.IsOk() ? image.GetWidth() : 0;
+	wxInt32 imageH = image.IsOk() ? image.GetHeight() : 0;
+	if( (0 >= imageW) || (0 >= imageH) )
+	{
+		imageW = 32;
+		imageH = 32;
+	}
+
 	mMinImageSize = wxSize(
-		static_cast<wxInt32>(image.GetWidth() * ratio), 
-		static_cast<wxInt32>(image.GetHeight() * ratio));
-	mCurrentImageSize = wxSize(image.GetWidth(), image.GetHeight());
+		std::max(1, static_cast<wxInt32>(imageW * ratio)), 
+		std::max(1, static_cast<wxInt32>(imageH * ratio)));
+	mCurrentImageSize = wxSize(imageW, imageH);
 
 	mImageEntryArray.resize(mMaxImages);
 
@@ -98,17 +106,22 @@ void wxImageStrip::Clear()
 	mImageEntryArray.resize(mMaxImages);
 
 	mCurImages = 0;
-
-	Refresh();
 }
 
 void wxImageStrip::Add(const HashString &resource, const wxInt32 count)
 {
+	if(mCurImages >= mMaxImages)
+	{
+		return;
+	}
+
 	wxImage imageBitmap = IMAGE.GetImage(mKey, resource);
+	if(false == imageBitmap.IsOk())
+	{
+		return;
+	}
 	imageBitmap = Image::Resize(imageBitmap, mCurrentImageSize);
 	
-	wxASSERT(mCurImages < mMaxImages);
-
 	size_t i = 0;
 
 	// Find out where the image should go.
@@ -119,7 +132,10 @@ void wxImageStrip::Add(const HashString &resource, const wxInt32 count)
 			break;			
 		}
 	}
-	wxASSERT(i != mMaxImages);
+	if(i == mMaxImages)
+	{
+		return;
+	}
 
 	++mCurImages;
 
@@ -308,6 +324,10 @@ void wxImageStrip::Size(wxSizeEvent &event)
 	// guaranteed to be called at least once.
 	wxSize minSize;
 	CalcluateMinSize(minSize);
+	if( (0 >= minSize.x) || (0 >= minSize.y) )
+	{
+		return;
+	}
 	SetMinSize(minSize);
 
 	if(wxSize(0, 0) == currentSize)
@@ -408,7 +428,10 @@ void wxImageStrip::DrawImages(wxDC &dc, size_t x, size_t y) const
 			{		
 				// Bitmap
 				const wxBitmap &bitmap = mImageEntryArray[i].bitmap;
-				dc.DrawBitmap(bitmap, drawX, y);
+				if(true == bitmap.IsOk())
+				{
+					dc.DrawBitmap(bitmap, drawX, y);
+				}
 				
 				// If this is the alternate draw method, draw more bitmaps.
 				if( (1  < count) &&
@@ -418,7 +441,10 @@ void wxImageStrip::DrawImages(wxDC &dc, size_t x, size_t y) const
 					{
 						drawX += (mCurrentImageSize.x / 4);
 
-						dc.DrawBitmap(bitmap, drawX, y);
+						if(true == bitmap.IsOk())
+						{
+							dc.DrawBitmap(bitmap, drawX, y);
+						}
 					}
 				}
 

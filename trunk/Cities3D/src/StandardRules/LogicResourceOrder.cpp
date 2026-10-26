@@ -79,10 +79,20 @@ public:
 			bool found = DecideHash(res, input, output);
 			if(false == found)
 			{
-				wxASSERT(false);
+				wxLogDebug(wxT("LogicResourceOrder: no mixin for %s"),
+					res.cwx_str());
+				continue;
 			}
 
-			wxInt32 place = output.read<wxInt32>();
+			wxInt32 place = 0;
+			try
+			{
+				place = output.read<wxInt32>();
+			}
+			catch(const boost::bad_any_cast &)
+			{
+				continue;
+			}
 
 			if(-1 != place)
 			{

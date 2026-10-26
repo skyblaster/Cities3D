@@ -75,7 +75,7 @@ namespace
 			handle->Add(spNameText, 0, wxRIGHT, 3);
 
 			//add it
-			pSizer->Add(handle, 1, wxALIGN_TOP | wxEXPAND | wxALL, 3);
+			pSizer->Add(handle, 1, wxEXPAND | wxALL, 3);
 		};
 	};
 }

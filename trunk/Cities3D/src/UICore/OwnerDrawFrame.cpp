@@ -46,7 +46,13 @@ END_EVENT_TABLE()
 void wxOwnerDrawFrame::OnPaint(wxPaintEvent& event)
 {
 	wxPaintDC dc(this);
-	wxASSERT(TRUE == dc.Ok());
+	wxASSERT(TRUE == dc.IsOk());
+
+	if(false == mMemBitmap.IsOk())
+	{
+		event.Skip();
+		return;
+	}
 
 	//avoid flicker
 	wxMemoryDC memDC;
@@ -69,7 +75,12 @@ void wxOwnerDrawFrame::OnBackground(wxEraseEvent&)
 
 void wxOwnerDrawFrame::OnSize(wxSizeEvent &event)
 {
-	mMemBitmap.Create(event.GetSize().GetWidth(), event.GetSize().GetHeight());
+	if( (0 < event.GetSize().GetWidth()) &&
+		(0 < event.GetSize().GetHeight()) )
+	{
+		mMemBitmap.Create(event.GetSize().GetWidth(),
+			event.GetSize().GetHeight());
+	}
 
 	event.Skip();
 

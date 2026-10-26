@@ -19,6 +19,8 @@
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "Rule.h"
 #include "RuleSetDatabase.h"
+#include "HTML.h"
+#include "IRuleEngine.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -32,7 +34,7 @@
 //---------------------------------------------------------------------------//
 // Class: RuleUpdateNetworkUIHotseat
 // 
-// Does nothing, as their is no NetworkUI in a hotseat game.
+// Logs gameplay text to the Events pane in a hotseat game.
 //
 // Derived From:
 //     <Rule>
@@ -41,7 +43,7 @@
 //     <CoreRules>
 //
 // RuleSet:
-//     <Core>
+//     <Hotseat>
 //
 // Mixin To:
 //     <RuleUpdateNetworkUI>
@@ -49,8 +51,22 @@
 class RuleUpdateNetworkUIHotseat : public Rule
 {
 public:
-	virtual void Execute(const DataObject &)
+	virtual void Execute(const DataObject &object)
 	{
+		wxInt32 index = -1;
+		if(2 <= object.numItems())
+		{
+			index = object.read<wxInt32>(1);
+		}
+
+		const wxString& message = object.read<wxString>();
+		const wxString& name = playerGame(index).player().Name();
+
+		wxString str = wxString::Format(message.c_str(), name.c_str());
+
+		HTML::Color(str, playerGame(index).color());
+
+		RULE.Execute(shRuleGenerateSystemMessage, DataObject(str));
 	}
 };
 

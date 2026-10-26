@@ -47,17 +47,12 @@ wxBaseGLCanvas::wxBaseGLCanvas(wxWindow *parent, wxWindowID id,
 	const wxPoint& pos, const wxSize& size, long style, const wxString& name, 
 	wxInt32 *attrib)
 : wxCoreGLCanvas(parent, id, pos, size, style, name, attrib)
-, mpVendor(glGetString(GL_VENDOR))
+, mpVendor(NULL)
 {
 #ifdef __WIN32__
 	LARGE_INTEGER counts;	
 	QueryPerformanceFrequency(&counts);
 	sMillisecondCounts = static_cast<float>(counts.QuadPart) / 1000.0f;
-
-	if(WGLEW_EXT_swap_control)
-	{
-		wglSwapIntervalEXT(0);
-	}
 #endif
 }
 
@@ -85,11 +80,21 @@ void wxBaseGLCanvas::Paint()
 		if (GetContext()) 
 		{
 			SetCurrent();
+			if(NULL == mpVendor)
+			{
+				mpVendor = glGetString(GL_VENDOR);
+			}
 		    
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			glLoadIdentity();
 
-			DrawScene();
+			try
+			{
+				DrawScene();
+			}
+			catch(...)
+			{
+			}
 			glFinish();
 		}
 

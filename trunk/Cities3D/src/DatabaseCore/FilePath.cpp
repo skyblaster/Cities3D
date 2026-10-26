@@ -223,7 +223,14 @@ wxArrayString FilePath::EnumPlugins()
 			while(true == next)
 			{
 				wxASSERT(!file.IsEmpty());
-				if(list.Index(file) == wxNOT_FOUND)
+				const wxString moduleName = wxFileName(file).GetName();
+				const bool isRulesPlugin = moduleName.EndsWith(wxT("Rules"));
+				if(false == isRulesPlugin)
+				{
+					wxLogDebug(wxT("ignored non-plugin %s in %s"), file.c_str(),
+						dir.GetName().c_str());
+				}
+				else if(list.Index(file) == wxNOT_FOUND)
 				{
 					wxLogDebug(wxT("found %s in %s"), file.c_str(), 
 						dir.GetName().c_str());

@@ -127,7 +127,7 @@ void wxCardListCtrl::PopulateList()
     else
     {
         wxListEvent event(wxEVT_COMMAND_LIST_ITEM_DESELECTED, GetId());
-	    ProcessEvent(event);
+	    ProcessWindowEvent(event);
     }
  
     Thaw();

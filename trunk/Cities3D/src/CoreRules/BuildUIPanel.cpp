@@ -99,7 +99,7 @@ wxBuildUIPanel::wxBuildUIPanel(wxWindow* parent, wxSettlersGLCanvas* canvas)
 				calcY = false;
 			}
 
-			sizer->Add(ui, 1, wxEXPAND | wxALL | wxSHAPED, 2);
+			sizer->Add(ui, 0, wxEXPAND | wxALL | wxSHAPED, 2);
 		}
 
 		calcX = false;

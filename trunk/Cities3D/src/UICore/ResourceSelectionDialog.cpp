@@ -114,8 +114,8 @@ namespace
 			}
 
 			wxSizeEvent event(wxSize(initial, initial));
-			mpSelection->ProcessEvent(event);
-			pool->ProcessEvent(event);
+			mpSelection->ProcessWindowEvent(event);
+			pool->ProcessWindowEvent(event);
 
 			// Calculate the ratio needed to keep all cards the same size in
 			// the window.

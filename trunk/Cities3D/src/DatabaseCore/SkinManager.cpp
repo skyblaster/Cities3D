@@ -48,7 +48,7 @@ void SkinManager::LoadXML()
 	wxFileInputStream x(path);
 	
 	// Parse it.
-	if(true == x.Ok())
+	if(true == x.IsOk())
 	{
 		wxXmlDocument xmlDoc(x);
 

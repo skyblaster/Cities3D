@@ -25,6 +25,16 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+namespace
+{
+	void CreateOffscreenBitmap(wxBitmap& bitmap, int width, int height)
+	{
+		if( (0 < width) && (0 < height) )
+		{
+			bitmap.Create(width, height);
+		}
+	}
+}
 
 //---------------------------- PUBLIC           -----------------------------//
 
@@ -35,7 +45,8 @@ wxOwnerDrawWindow::wxOwnerDrawWindow(wxWindow* parent, wxWindowID id,
 {
 	//flicker-free drawing (has to change on size events for resizable UI 
 	//elements)
-	mMemBitmap.Create(GetRect().GetWidth(), GetRect().GetHeight());
+	CreateOffscreenBitmap(mMemBitmap, GetRect().GetWidth(),
+		GetRect().GetHeight());
 }
 
 //---------------------------- PRIVATE          -----------------------------//
@@ -52,7 +63,7 @@ void wxOwnerDrawWindow::OnBackground(wxEraseEvent&)
 
 void wxOwnerDrawWindow::OnSize(wxSizeEvent &event)
 {
-	mMemBitmap.Create(event.GetSize().x, event.GetSize().y);
+	CreateOffscreenBitmap(mMemBitmap, event.GetSize().x, event.GetSize().y);
 
 	Size(event);
 
@@ -62,7 +73,11 @@ void wxOwnerDrawWindow::OnSize(wxSizeEvent &event)
 void wxOwnerDrawWindow::OnPaint(wxPaintEvent &)
 {
 	wxPaintDC dc(this);
-	wxASSERT(TRUE == dc.Ok());
+	if( (false == dc.IsOk()) ||
+		(false == mMemBitmap.IsOk()))
+	{
+		return;
+	}
 
 	//avoid flicker
 	wxMemoryDC memDC;

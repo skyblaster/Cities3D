@@ -31,36 +31,67 @@
 //standard flags
 bool BaseTiledObject::isset(const ObjectFlag flag) const
 {
-	return (mDisplayFlags & (1 << flag)) || false;
+	const unsigned value = static_cast<unsigned>(flag);
+	if(16U <= value)
+	{
+		return false;
+	}
+
+	return (mDisplayFlags & (1 << value)) || false;
 }
 
 void BaseTiledObject::set(const ObjectFlag flag)
 {
-	mDisplayFlags |= (1 << flag);
+	const unsigned value = static_cast<unsigned>(flag);
+	if(16U <= value)
+	{
+		return;
+	}
+
+	mDisplayFlags |= (1 << value);
 }
 
 //custom flags
 bool BaseTiledObject::isset(const wxInt32 flag) const
 {
-	wxASSERT(16 > (wxUint32) flag);
+	if( (0 > flag) ||
+		(16 <= flag))
+	{
+		return false;
+	}
 
 	return (mDisplayFlags & (1 << (16 + flag))) || false;
 }
 
 void BaseTiledObject::set(const wxInt32 flag)
 {
-	wxASSERT(16 > (wxUint32) flag);
+	if( (0 > flag) ||
+		(16 <= flag))
+	{
+		return;
+	}
 
 	mDisplayFlags |= (1 << (16 + flag));
 }
 
 wxInt32 BaseTiledObject::id() const
 {
+	if(NULL == mpTile)
+	{
+		return -1;
+	}
+
 	return mpTile->id();
 }
 
 const Vector &BaseTiledObject::coords() const
 {
+	static const Vector empty;
+	if(NULL == mpTile)
+	{
+		return empty;
+	}
+
 	return mpTile->coords();
 }
 

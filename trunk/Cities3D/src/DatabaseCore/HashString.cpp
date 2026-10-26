@@ -15,6 +15,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <cstdio>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "HashString.h"
@@ -91,7 +92,7 @@ HashString HashString::Format(const char* format, ...)
 		// wxVsnprintf() may modify the original arg pointer, so pass it only a copy
 		va_list argptrcopy;
 		wxVaCopy(argptrcopy, argptr);
-		int len = _vsprintf_p(buf, size, format, argptrcopy);
+		int len = vsnprintf(buf, static_cast<size_t>(size), format, argptrcopy);
 		va_end(argptrcopy);
 
 		// some implementations of vsnprintf() don't NUL terminate
@@ -104,9 +105,11 @@ HashString HashString::Format(const char* format, ...)
 		// buffer were large enough (newer standards such as Unix98)
 		if ( len < 0 )
 		{
-			// still not enough, as we don't know how much we need, double the
-			// current size of the buffer
 			size *= 2;
+			if(1048576 < size)
+			{
+				break;
+			}
 		}
 		else if ( len >= size )
 		{
@@ -121,6 +124,7 @@ HashString HashString::Format(const char* format, ...)
 		}
 	}
 
+	va_end(argptr);
 	return s;
 }
 
@@ -144,9 +148,14 @@ HashString::HashString(const char* str, size_t count)
 }
 	
 HashString::HashString(const wxString& str)
-: std::string(str.mb_str(), str.Length())
+: std::string()
 {
-    mHash = CalculateHash(c_str(), length());
+	const wxCharBuffer buf(str.ToUTF8());
+	if(buf.data())
+	{
+		assign(buf.data(), strlen(buf.data()));
+	}
+	mHash = CalculateHash(c_str(), length());
 }
 
 wxString HashString::wx_str() const

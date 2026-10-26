@@ -75,7 +75,7 @@ public:
 		const size_t resolution)
 	{
 		wxLogDebug(wxT("TimerManager: Adding periodic function with "
-					wxT("resolution %d.")), resolution);
+					wxT("resolution %d.")), static_cast<int>(resolution));
 
 		// See if we have a timer already created for this resolution.
 		TimerMap::const_iterator it = mTimerMap.find(resolution);
@@ -109,7 +109,7 @@ public:
 		const size_t resolution)
 	{
 		wxLogDebug(wxT("TimerManager: Removing periodic function with "
-					wxT("resolution %d.")), resolution);
+					wxT("resolution %d.")), static_cast<int>(resolution));
 
 		Event0 event(boost::bind(func, object), object);
 
@@ -160,7 +160,7 @@ public:
 		}
 
 		wxLogDebug(wxT("TimerManager: Adding one-shot function with "
-					wxT("resolution %d.")), resolution);
+					wxT("resolution %d.")), static_cast<int>(resolution));
 
 		// Create the one-shot timer and fire it up.
 		OneShotTimerPtr timer(new wxOneShotTimer(event));
@@ -256,8 +256,9 @@ private:
 			wxLogDebug(wxT("TimerManager: Firing one-shot function with "
 				wxT("resolution %d.")), GetInterval());
 
-			mEvent();
-			TIME.RemoveOneShotFunction(mEvent, GetInterval());
+			Stop();
+			const Event0 event = mEvent;
+			event();
 		}
 
 	private:
@@ -302,7 +303,7 @@ private:
 			if(true == (*it)->Match(event, resolution))
 			{
 				wxLogDebug(wxT("TimerManager: Removing one-shot function with "
-					wxT("resolution %d.")), resolution);
+					wxT("resolution %d.")), static_cast<int>(resolution));
 
 				mOneShotList.erase(it);
 				break;

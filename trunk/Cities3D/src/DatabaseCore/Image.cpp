@@ -196,6 +196,12 @@ wxImage &Image::Taberize(const wxImage &image, const wxInt32 width)
 
 wxImage &Image::Resize(const wxImage &image, const wxSize &size)
 {
+	if( (false == image.IsOk()) || (0 >= size.x) || (0 >= size.y) )
+	{
+		sImage = image.IsOk() ? image.Copy() : wxImage();
+		return sImage;
+	}
+
 	// If the source image has a mask, just use the default implementation.
 	if( (true == image.HasMask()) ||
 		(true == image.HasAlpha()))

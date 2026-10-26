@@ -68,7 +68,7 @@ void wxCenteredBitmap::Size(wxSizeEvent &event)
 	wxSize bitmapSize = wxSize(static_cast<wxInt32>(mOriginalBitmapSize.x * ratio),
 		static_cast<wxInt32>(mOriginalBitmapSize.y * ratio));
 
-	if(wxSize(0, 0) != bitmapSize)
+	if( (0 < bitmapSize.x) && (0 < bitmapSize.y) )
 	{
 		mDrawBitmap = GetBitmap(bitmapSize);
 		Refresh();

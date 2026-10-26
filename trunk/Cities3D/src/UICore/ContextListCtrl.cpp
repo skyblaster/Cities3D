@@ -63,6 +63,6 @@ void wxContextListCtrl::LeftDown(wxMouseEvent &)
 		Controller::get().Transmit(shEventContextMenuClick, id);
 		
 		wxCommandEvent command(wxEVT_COMMAND_BUTTON_CLICKED, id);
-		ProcessEvent(command);
+		ProcessWindowEvent(command);
 	}
 }

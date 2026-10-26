@@ -281,7 +281,13 @@ void DrawSettlementObject::RenderSelection() const
 
 void DrawSettlementObject::RenderModel(const wxInt32) const
 {
-	DrawObject::material(GetObject()).UseMaterial();
+	IGameObject *object = GetObject();
+	if(NULL == object)
+	{
+		return;
+	}
+
+	DrawObject::material(object).UseMaterial();
 	drawSettlement();
 	DrawObject::material(White).UseMaterial();
 }

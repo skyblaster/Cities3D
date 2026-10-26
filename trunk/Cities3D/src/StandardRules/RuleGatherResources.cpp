@@ -71,14 +71,16 @@ public:
 
 		// Determine which tile the robber is on.
 		const HexObjectPtr &robber = GetGame()->getHexObject(shRobber);
-		wxASSERT(robber);
-
-		wxInt32 robberTile = robber->tile();
-
-		// If the robber is hidden, he does not affect resources.
-		if(true == robber->isset(IGameObject::Hidden))
+		wxInt32 robberTile = -1;
+		if(robber)
 		{
-			robberTile = -1;
+			robberTile = robber->tile();
+
+			// If the robber is hidden, he does not affect resources.
+			if(true == robber->isset(IGameObject::Hidden))
+			{
+				robberTile = -1;
+			}
 		}
 
 		IntArray tiles;
@@ -169,7 +171,7 @@ public:
 			{
 				// Put out a system message describing what happened.
 				RULE.Execute(shRuleGenerateSystemMessage, DataObject(
-					wxString::Format(stThereIsNotEnough.c_str(), resource.c_str())));
+					wxString::Format(stThereIsNotEnough, resource.wx_str())));
 
 				// Clear out this resource for everyone.
 				for(wxInt32 i = 0; i < numPlayers(); ++i)
@@ -221,7 +223,15 @@ public:
 		Controller::get().Transmit(shEventPlayerUI, DataObject(GetGame(), -1));
 		Controller::get().Transmit(shEventShowResources, 
 			DataObject(true, roll));
-		Controller::get().Transmit(shEventPlayerResources, playerResources);
+		try
+		{
+			Controller::get().Transmit(shEventPlayerResources, playerResources);
+		}
+		catch(...)
+		{
+			wxLogDebug(wxT("eventPlayerResources failed for roll %d"),
+				static_cast<int>(roll));
+		}
 
 		// Continue on post roll.
 		RULE.Execute(shRuleMarkerPostDiceRoll, DataObject());
@@ -234,6 +244,11 @@ private:
 		const HashString &logic, const wxInt32 tileNum, ResourceMap &total, 
 		ResourceMap &player, ResourceMap& blocked, wxInt32 index, wxInt32 robber)
 	{
+		if(false == object)
+		{
+			return;
+		}
+
 		if( (object->tile1().first == tileNum) ||
 			(object->tile2().first == tileNum) ||
 			(object->tile3().first == tileNum))

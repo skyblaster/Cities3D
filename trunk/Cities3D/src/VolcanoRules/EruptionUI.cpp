@@ -95,7 +95,7 @@ wxEruptionUI::wxEruptionUI(wxWindow *parent, const GamePtr &game)
 	spDie1 = new wxImageCenteredBitmap(this, wxSize(30, 30), wxSize(28, 28), 
 		shDice, sh1);
 	spDie1->SetMinSize(wxSize(30, 30));
-	innerHorz->Add(spDie1, 30, wxEXPAND | wxSHAPED);
+	innerHorz->Add(spDie1, 0, wxEXPAND | wxSHAPED);
 	
 	innerHorz->AddStretchSpacer(xStretch);
 
@@ -110,10 +110,10 @@ wxEruptionUI::wxEruptionUI(wxWindow *parent, const GamePtr &game)
 		display->AddStretchSpacer(spacerY);
 	}
 
-	horz->Add(color, 40, wxEXPAND | wxSHAPED);
-	horz->Add(display, 110, wxEXPAND | wxSHAPED);
+	horz->Add(color, 40, wxEXPAND);
+	horz->Add(display, 110, wxEXPAND);
 
-	sizer->Add(horz, 1, wxEXPAND | wxSHAPED);
+	sizer->Add(horz, 1, wxEXPAND);
 
 	SetSizer(sizer);
 

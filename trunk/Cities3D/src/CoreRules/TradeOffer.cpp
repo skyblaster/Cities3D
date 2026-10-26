@@ -84,8 +84,8 @@ TradeOffer::TradeOffer(wxInt32 index, bool trader, wxWindow* window,
 
 	wxSizeEvent event(wxSize(initial, initial));
 
-	mLeft->ProcessEvent(event);
-	mRight->ProcessEvent(event);
+	mLeft->ProcessWindowEvent(event);
+	mRight->ProcessWindowEvent(event);
 
 	mSizer->Add(mLeft, 1, wxEXPAND | wxLEFT | wxTOP, 2);
 	mSizer->Add(mText, 0, wxALIGN_CENTER_VERTICAL | wxALL, 2);

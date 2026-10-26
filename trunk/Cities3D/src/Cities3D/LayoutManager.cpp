@@ -35,19 +35,21 @@ namespace
 {
 	void CreateLayoutPath(wxString& path)
 	{
-		// Smash together the names of all loaded rulesets that contain UI.
-		// We'll use that as the file name since it is guaranteed to be
-		// unique.
-		// Populate the html window.
 		IPluginEngine::StringPairArray plugins;
 		PLUGIN.GetLoadedRuleSets(plugins);
 
-		// We only care about plugins that have UI elements.
 		IPluginEngine::StringPairArray::const_iterator it, itEnd = plugins.end();
 		for(it = plugins.begin(); it != itEnd; ++it)
 		{
 			const wxString& plugin = it->first;
 			const wxString& ruleset = it->second;
+
+			// Hotseat now creates an Events pane, but it must not change
+			// the layout key (CoreDevCards, etc.) or restore has no default.
+			if(wxT("Hotseat") == ruleset)
+			{
+				continue;
+			}
 
 			if(true == GUI.ProvidesUI(plugin, ruleset))
 			{
@@ -56,74 +58,119 @@ namespace
 		}
 	}
 
-    // The default layout strings.
-    WX_DECLARE_STRING_HASH_MAP(wxString, LayoutMap);
-    LayoutMap sDefaultLayouts;
+	WX_DECLARE_STRING_HASH_MAP(wxString, LayoutMap);
+	LayoutMap sDefaultLayouts;
+
+	void EnsureDefaultLayouts()
+	{
+		if(false == sDefaultLayouts.empty())
+		{
+			return;
+		}
+
+		sDefaultLayouts[swCoreCities] = swCoreCitiesLayout;
+		sDefaultLayouts[swCoreCitiesVolcano] = swCoreCitiesVolcanoLayout;
+		sDefaultLayouts[swCoreDevCards] = swCoreDevCardsLayout;
+		sDefaultLayouts[swCoreDevCardsVolcano] = swCoreDevCardsVolcanoLayout;
+		sDefaultLayouts[swCoreNetworkCities] = swCoreNetworkCitiesLayout;
+		sDefaultLayouts[swCoreNetworkCitiesVolcano] = swCoreNetworkCitiesVolcanoLayout;
+		sDefaultLayouts[swCoreNetworkDevCards] = swCoreNetworkDevCardsLayout;
+		sDefaultLayouts[swCoreNetworkDevCardsVolcano] = swCoreNetworkDevCardsVolcanoLayout;
+
+		sDefaultLayouts[swCoreCitiesOnlineCities] = swCoreCitiesOnlineCitiesLayout;
+		sDefaultLayouts[swCoreCitiesOnlineCitiesVolcano] = swCoreCitiesOnlineCitiesVolcanoLayout;
+		sDefaultLayouts[swCoreCitiesOnlineDevCards] = swCoreCitiesOnlineDevCardsLayout;
+		sDefaultLayouts[swCoreCitiesOnlineDevCardsVolcano] = swCoreCitiesOnlineDevCardsVolcanoLayout;
+		sDefaultLayouts[swCoreCitiesOnlineNetworkCities] = swCoreCitiesOnlineNetworkCitiesLayout;
+		sDefaultLayouts[swCoreCitiesOnlineNetworkCitiesVolcano] = swCoreCitiesOnlineNetworkCitiesVolcanoLayout;
+		sDefaultLayouts[swCoreCitiesOnlineNetworkDevCards] = swCoreCitiesOnlineNetworkDevCardsLayout;
+		sDefaultLayouts[swCoreCitiesOnlineNetworkDevCardsVolcano] = swCoreCitiesOnlineNetworkDevCardsVolcanoLayout;
+	}
+
+	wxString FindDefaultLayout(const wxString& layoutPath)
+	{
+		EnsureDefaultLayouts();
+
+		LayoutMap::const_iterator it = sDefaultLayouts.find(layoutPath);
+		if(sDefaultLayouts.end() != it)
+		{
+			return it->second;
+		}
+
+		wxString stripped = layoutPath;
+		stripped.Replace(wxT("Hotseat"), wxEmptyString);
+		it = sDefaultLayouts.find(stripped);
+		if(sDefaultLayouts.end() != it)
+		{
+			return it->second;
+		}
+
+		return wxEmptyString;
+	}
+
+	void InjectEventsPane(wxString& layout)
+	{
+		if( (true == layout.IsEmpty()) ||
+			(wxNOT_FOUND != layout.Find(wxT("name=Events"))))
+		{
+			return;
+		}
+
+		static const wxString eventsPane =
+			wxT("|name=Events;caption=Events;state=2044;dir=2;layer=1;row=0;")
+			wxT("pos=2;prop=118077;bestw=165;besth=150;minw=165;minh=150;")
+			wxT("maxw=-1;maxh=-1;floatx=-1;floaty=-1;floatw=-1;floath=-1");
+
+		const int dock = layout.Find(wxT("|dock_size"));
+		if(wxNOT_FOUND == dock)
+		{
+			layout += eventsPane;
+		}
+		else
+		{
+			layout.insert(static_cast<size_t>(dock), eventsPane);
+		}
+	}
 }
 
 //---------------------------- PUBLIC           -----------------------------//
 void LayoutManager::LoadLayout(wxString& layout)
 {
-    // If our string set is empty, add all of the defaults.
-    if(true == sDefaultLayouts.empty())
-    {
-        sDefaultLayouts[swCoreCities] = swCoreCitiesLayout;
-        sDefaultLayouts[swCoreCitiesVolcano] = swCoreCitiesVolcanoLayout;
-        sDefaultLayouts[swCoreDevCards] = swCoreDevCardsLayout;
-        sDefaultLayouts[swCoreDevCardsVolcano] = swCoreDevCardsVolcanoLayout;
-        sDefaultLayouts[swCoreNetworkCities] = swCoreNetworkCitiesLayout;
-        sDefaultLayouts[swCoreNetworkCitiesVolcano] = swCoreNetworkCitiesVolcanoLayout;
-        sDefaultLayouts[swCoreNetworkDevCards] = swCoreNetworkDevCardsLayout;
-        sDefaultLayouts[swCoreNetworkDevCardsVolcano] = swCoreNetworkDevCardsVolcanoLayout;
+	wxString layoutPath;
+	CreateLayoutPath(layoutPath);
 
-        // Cities Online versions.
-        sDefaultLayouts[swCoreCitiesOnlineCities] = swCoreCitiesOnlineCitiesLayout;
-        sDefaultLayouts[swCoreCitiesOnlineCitiesVolcano] = swCoreCitiesOnlineCitiesVolcanoLayout;
-        sDefaultLayouts[swCoreCitiesOnlineDevCards] = swCoreCitiesOnlineDevCardsLayout; 
-        sDefaultLayouts[swCoreCitiesOnlineDevCardsVolcano] = swCoreCitiesOnlineDevCardsVolcanoLayout;
-        sDefaultLayouts[swCoreCitiesOnlineNetworkCities] = swCoreCitiesOnlineNetworkCitiesLayout;
-        sDefaultLayouts[swCoreCitiesOnlineNetworkCitiesVolcano] = swCoreCitiesOnlineNetworkCitiesVolcanoLayout;
-        sDefaultLayouts[swCoreCitiesOnlineNetworkDevCards] = swCoreCitiesOnlineNetworkDevCardsLayout;
-        sDefaultLayouts[swCoreCitiesOnlineNetworkDevCardsVolcano] = swCoreCitiesOnlineNetworkDevCardsVolcanoLayout;
-    }
+	const wxString defaultLayout = FindDefaultLayout(layoutPath);
+	wxString path = swLayouts + swForwardSlash + layoutPath;
 
-    wxString layoutPath;
-    CreateLayoutPath(layoutPath);
+	layout = CONFIG.read<wxString>(swConfigSectionUI, path, defaultLayout);
+	if(true == layout.IsEmpty())
+	{
+		layout = defaultLayout;
+	}
 
-    wxString defaultLayout;
-    if(sDefaultLayouts.end() != sDefaultLayouts.find(layoutPath))
-    {
-        defaultLayout = sDefaultLayouts[layoutPath];
-    }
-
-    wxString path = swLayouts + swForwardSlash + layoutPath;
-
-    layout = CONFIG.read<wxString>(swConfigSectionUI, path, defaultLayout);
+	InjectEventsPane(layout);
 }
 
 void LayoutManager::SaveLayout(const wxString& layout)
 {
-    wxString layoutPath;
-    CreateLayoutPath(layoutPath);
+	wxString layoutPath;
+	CreateLayoutPath(layoutPath);
 
-    wxString path = swLayouts + swForwardSlash + layoutPath;
+	wxString path = swLayouts + swForwardSlash + layoutPath;
 
-    CONFIG.write<wxString>(swConfigSectionUI, path, layout);
+	CONFIG.write<wxString>(swConfigSectionUI, path, layout);
 }
 
 void LayoutManager::RestoreLayout(wxString& layout)
 {
-    wxString layoutPath;
-    CreateLayoutPath(layoutPath);
+	wxString layoutPath;
+	CreateLayoutPath(layoutPath);
 
-    if(sDefaultLayouts.end() != sDefaultLayouts.find(layoutPath))
-    {
-        layout = sDefaultLayouts[layoutPath];
-    }
+	layout = FindDefaultLayout(layoutPath);
+	InjectEventsPane(layout);
 
-    wxString path = swLayouts + swForwardSlash + layoutPath;
-
-    CONFIG.write<wxString>(swConfigSectionUI, path, layout);
+	wxString path = swLayouts + swForwardSlash + layoutPath;
+	CONFIG.write<wxString>(swConfigSectionUI, path, layout);
 }
 
 //---------------------------- PROTECTED        -----------------------------//

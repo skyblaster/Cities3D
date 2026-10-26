@@ -21,12 +21,14 @@
 #include "FilePath.h"
 #include "ConfigDatabase.h"
 
+#ifdef CITIES3D_USE_FMOD
 #ifdef FMOD4
 #include "fmod.hpp"
 #else
 #include "fmod.h"
 #endif
 #include "fmod_errors.h"
+#endif
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -36,6 +38,15 @@
 //---------------------------- STATICS          -----------------------------//
 
 //---------------------------- PUBLIC           -----------------------------//
+#ifndef CITIES3D_USE_FMOD
+SoundEngine::SoundEngine()
+{
+}
+
+void SoundEngine::PlaySound(const wxString &) const
+{
+}
+#else
 SoundEngine::SoundEngine()
 #ifdef FMOD4
 : mSystem(NULL)
@@ -200,6 +211,7 @@ void SoundEngine::PlaySound(const wxString &sound) const
 	}
 #	endif
 }
+#endif // CITIES3D_USE_FMOD
 
 //---------------------------- PROTECTED        -----------------------------//
 

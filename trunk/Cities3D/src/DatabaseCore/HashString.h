@@ -16,6 +16,8 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <cstring>
+#include <string>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "DatabaseExport.h"
@@ -72,25 +74,22 @@ public:
     // Operators.
     inline bool operator<(const HashString& rhs) const
 	{
-		int compare = strncmp(c_str(), rhs.c_str(), length());
-		return (0 > compare);
+		return static_cast<const std::string&>(*this) <
+			static_cast<const std::string&>(rhs);
 	}
 
     inline bool operator==(const HashString& rhs) const
     {
-        // First compare hashes.  If they differ, it's a quick out.
-        bool ret = true;
-
         if(mHash != rhs.mHash)
         {
-            ret = false;
+            return false;
         }
-        else
+        if(length() != rhs.length())
         {
-            ret = (0 == strncmp(c_str(), rhs.c_str(), length()));
+            return false;
         }
 
-        return ret;
+        return (0 == memcmp(c_str(), rhs.c_str(), length()));
     }
 
     inline void operator +=(const HashString& rhs)

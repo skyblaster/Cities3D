@@ -124,7 +124,7 @@ namespace
 		{
 			wxImage image = Image::Borderize(
 				IMAGE.GetImage(mImageKey, mImageName));
-			wxASSERT(image.Ok());
+			wxASSERT(image.IsOk());
 
 			//create the texture id
 			mCard[0] = GLTextures::BuildTexture(image);
@@ -622,7 +622,7 @@ void wxBankUI::OnRenderBitmaps(wxBOOL skipLayout)
 		{
 			wxWindow* window = mStaticBitmapArray[i];
 			window->Show();
-			sizer->Add(window, 1, wxEXPAND | wxSHAPED);
+			sizer->Add(window, 0, wxEXPAND | wxSHAPED);
 		}
 	}
 	else
@@ -631,7 +631,7 @@ void wxBankUI::OnRenderBitmaps(wxBOOL skipLayout)
 		{
 			wxWindow* window = mBankTextPanelArray[i];
 			window->Show();
-			sizer->Add(window, 1, wxEXPAND | wxSHAPED);
+			sizer->Add(window, 0, wxEXPAND | wxSHAPED);
 		}
 	}
 

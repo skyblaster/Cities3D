@@ -157,6 +157,7 @@ wxSettlersGLCanvas::wxSettlersGLCanvas(wxWindow *parent, const wxWindowID id,
 									   const wxString& name, wxInt32 *attrib) :
 wxFrameworkGLCanvas(parent, id, pos, size, style, name, attrib)
 , mRenderToBitmapMode(Backbuffer)
+, mGLResourcesReady(false)
 {
 	SetFocus();
 
@@ -175,12 +176,6 @@ wxFrameworkGLCanvas(parent, id, pos, size, style, name, attrib)
 		this);
 	Controller::get().AddReceiver(shEventRenderBitmaps, 
 		&wxSettlersGLCanvas::OnRenderBitmaps, this);
-	
-	//obtain all needed resources
-	DRAWOBJECT.ObtainAll();
-
-	// Set up bitmap rendering.
-	OnRenderBitmaps();
 
 	// Add the animation object.
 	DrawObjectPtr draw = DrawObjectPtr(new AnimationDrawObject);
@@ -204,8 +199,11 @@ wxSettlersGLCanvas::~wxSettlersGLCanvas()
 	Controller::get().RemoveReceiver(shEventRenderBitmaps, 
 		&wxSettlersGLCanvas::OnRenderBitmaps, this);
 	
-	//release all resources used
-	DRAWOBJECT.ReleaseAll();
+	if( (true == mGLResourcesReady) && (NULL != GetContext()) )
+	{
+		SetCurrent();
+		DRAWOBJECT.ReleaseAll();
+	}
 }
 
 wxBitmap wxSettlersGLCanvas::ConvertGLtoWX(const DrawObjectPtr &object, 
@@ -222,11 +220,20 @@ wxBitmap wxSettlersGLCanvas::ConvertGLtoWX(const DrawObjectPtr &object,
 		(0 < height))
 	{
 		SetCurrent();
+		EnsureGLResources();
 
 		//try to use a 4x size image for creating the initial image, which will 
 		//be scaled down to required size and then cropped if needed
 		size_t dim = std::max(width, height);
+		if(64 < dim)
+		{
+			dim = 64;
+		}
 		size_t size = (dim << 2);
+		if(256 < size)
+		{
+			size = 256;
+		}
 
 		// If we're using pixel buffers, we have to stay within the render
 		// buffer boundary size.
@@ -243,6 +250,19 @@ wxBitmap wxSettlersGLCanvas::ConvertGLtoWX(const DrawObjectPtr &object,
 			}
 		}
 
+		GLint viewport[4] = {0, 0, 0, 0};
+		GLint drawBuf = GL_BACK;
+		GLint readBuf = GL_BACK;
+		glGetIntegerv(GL_VIEWPORT, viewport);
+		glGetIntegerv(GL_DRAW_BUFFER, &drawBuf);
+		glGetIntegerv(GL_READ_BUFFER, &readBuf);
+		glPixelStorei(GL_PACK_ALIGNMENT, 1);
+
+		glMatrixMode(GL_PROJECTION);
+		glPushMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+
 		// Get everything ready depending on the mode we're in.
 		BeginGLtoWX(size);
 
@@ -251,11 +271,31 @@ wxBitmap wxSettlersGLCanvas::ConvertGLtoWX(const DrawObjectPtr &object,
 
 		// Clean up.
 		EndGLtoWX();
+		SetCurrent();
 
-		// And finally, conver the image into a usable form.
-		image = ProcessGLtoWX(image, width, height);
+#ifdef GL_FRAMEBUFFER_EXT
+		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+#endif
+		glDrawBuffer(static_cast<GLenum>(drawBuf));
+		glReadBuffer(static_cast<GLenum>(readBuf));
+		glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
+		glMatrixMode(GL_PROJECTION);
+		glPopMatrix();
+		glMatrixMode(GL_MODELVIEW);
+		glPopMatrix();
+		SetDirty();
+
+		if(true == image.IsOk())
+		{
+			image = ProcessGLtoWX(image, width, height);
+		}
 	}
 	
+	if(false == image.IsOk())
+	{
+		return wxBitmap();
+	}
+
 	return wxBitmap(image);
 }
 
@@ -295,8 +335,28 @@ DrawObjectPtr wxSettlersGLCanvas::PopupSelect(wxInt32 x, wxInt32 y) const
 }
 
 //---------------------------- PRIVATE          -----------------------------//
+void wxSettlersGLCanvas::EnsureGLResources()
+{
+	if(true == mGLResourcesReady)
+	{
+		return;
+	}
+
+	if(NULL == GetContext())
+	{
+		return;
+	}
+
+	SetCurrent();
+	DRAWOBJECT.ObtainAll();
+	OnRenderBitmaps();
+	mGLResourcesReady = true;
+}
+
 void wxSettlersGLCanvas::DrawScene()
 {
+	EnsureGLResources();
+
 	const Vector &camera = GetCameraPos();
 	const Vector &lookat = GetCameraLookAt();
 
@@ -312,7 +372,11 @@ void wxSettlersGLCanvas::DrawScene()
 	{
 		PriorityMap::iterator itNow(it++);
 
-		if(true == itNow->second->CanDelete())
+		if(false == itNow->second)
+		{
+			mPriorityMap.erase(itNow);
+		}
+		else if(true == itNow->second->CanDelete())
 		{
 			mPriorityMap.erase(itNow);
 		}
@@ -537,10 +601,28 @@ wxImage wxSettlersGLCanvas::RenderGLtoWX(const DrawObjectPtr &object,
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+	glEnable(GL_NORMALIZE);
+	glShadeModel(GL_SMOOTH);
+	glDisable(GL_COLOR_MATERIAL);
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+	GLfloat modelAmb[] = {0.45f, 0.45f, 0.45f, 1.0f};
+	GLfloat lightAmb[] = {0.35f, 0.35f, 0.35f, 1.0f};
+	GLfloat lightDif[] = {1.0f, 1.0f, 1.0f, 1.0f};
+	GLfloat lightPos[] = {0.0f, 1.0f, 4.0f, 1.0f};
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, modelAmb);
+	glLightfv(GL_LIGHT0, GL_AMBIENT, lightAmb);
+	glLightfv(GL_LIGHT0, GL_DIFFUSE, lightDif);
+	glLightfv(GL_LIGHT0, GL_POSITION, lightPos);
+
 	gluLookAt(eye.x, eye.y, eye.z, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 
 	GLMaterial white(wxColour(255, 255, 255));
 	white.UseMaterial();
+	glColor3f(1.0f, 1.0f, 1.0f);
 
 	//render the object
 	object->Render(-1);
@@ -754,8 +836,12 @@ void wxSettlersGLCanvas::OnImageUpdate(bool)
 	SetCurrent();
 
 	IMAGE.IgnoreCache();
-	DRAWOBJECT.ReleaseAll();
+	if(true == mGLResourcesReady)
+	{
+		DRAWOBJECT.ReleaseAll();
+	}
 	DRAWOBJECT.ObtainAll();
+	mGLResourcesReady = true;
 }
 
 void wxSettlersGLCanvas::OnDirty(wxInt32)
@@ -771,8 +857,13 @@ void wxSettlersGLCanvas::OnRenderBitmaps(wxInt32)
 		TRUE);
 	wxInt32 framebuffer = CONFIG.read<wxInt32>(swConfigSectionOpenGL, 
 		swFramebuffer, FALSE);
-	wxInt32 pixelbuffer = CONFIG.read<wxInt32>(swConfigSectionOpenGL, 
-		swPixelBuffer, TRUE);
+		wxInt32 pixelbuffer = CONFIG.read<wxInt32>(swConfigSectionOpenGL, 
+			swPixelBuffer, FALSE);
+#ifdef __WIN32__
+		// wx 3.x's GL context is not compatible with the old WGL pbuffer
+		// capture path; using it after the first paint freezes on this driver.
+		pixelbuffer = FALSE;
+#endif
 
 #	ifdef __WXGTK__
 	// FIXME: disable pixelbuffer on wxGTK until we have a
@@ -841,56 +932,52 @@ void wxSettlersGLCanvas::OnRenderBitmaps(wxInt32)
 			(GLEW_ARB_depth_texture))
 #endif
 		{
-			wxLogDebug(
-				wxT("wxSettlersGLCanvas: Setting render mode to Pixelbuffer."));
-			mRenderToBitmapMode = Pixelbuffer;
-			reset = true;
-
 			mpRenderTexture.reset(new RenderTexture);
             mpRenderTexture->Reset(shRgbTex2D.c_str());
-			mpFBO.reset();
-			mpRB.reset();
 
-			// Create a texture that will hold the scaled image.
-			if(false == mpRenderTexture->Initialize
+			if(true == mpRenderTexture->Initialize
 				(static_cast<wxInt32>(RENDER_TEXTURE_SIZE), 
 				 static_cast<wxInt32>(RENDER_TEXTURE_SIZE)))
 			{
-				wxLogDebug(wxT("Failed to initialize render texture."));
+				wxLogDebug(
+					wxT("wxSettlersGLCanvas: Setting render mode to Pixelbuffer."));
+				mRenderToBitmapMode = Pixelbuffer;
+				reset = true;
+
+				mpFBO.reset();
+				mpRB.reset();
+
+				mpRenderTexture->BeginCapture();
+				
+				glShadeModel(GL_SMOOTH);
+				glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+				glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+				glClearColor(0., 0., 0., 0.);
+				glClearDepth(1.0f);
+				glEnable(GL_DEPTH_TEST);
+				glDepthFunc(GL_LEQUAL);
+
+				GLfloat amb[] = {1.0f, 1.0f, 1.0f, 1.0f};
+				GLfloat dif[] = {1.0f, 1.0f, 1.0f, 1.0f};
+				GLfloat pos[] = {0.0f, 1.0f, 4.0f, 1.0f};
+				glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
+				glLightfv(GL_LIGHT0, GL_DIFFUSE, dif);
+				glLightfv(GL_LIGHT0, GL_POSITION, pos);
+
+				glEnable(GL_LIGHTING);
+				glEnable(GL_LIGHT0);
+				mpRenderTexture->EndCapture();
+				SetCurrent();
+
+				mRenderImage = wxImage(RENDER_TEXTURE_SIZE, RENDER_TEXTURE_SIZE);
+
+				done = true;
 			}
-
-			mpRenderTexture->BeginCapture();
-			
-			// Set up defaults.
-			glShadeModel(GL_SMOOTH);
-
-			//adjust the perspective hwxInt32
-			glHint(GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
-			glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-
-			//set the clear color
-			glClearColor(0., 0., 0., 0.);
-
-			//set up depth testing
-			glClearDepth(1.0f);
-			glEnable(GL_DEPTH_TEST);
-			glDepthFunc(GL_LEQUAL);
-
-			//set up lighting
-			GLfloat amb[] = {1.0f, 1.0f, 1.0f, 1.0f};
-			GLfloat dif[] = {1.0f, 1.0f, 1.0f, 1.0f};
-			GLfloat pos[] = {0.0f, 1.0f, 4.0f, 1.0f};
-			glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
-			glLightfv(GL_LIGHT0, GL_DIFFUSE, dif);
-			glLightfv(GL_LIGHT0, GL_POSITION, pos);
-
-			glEnable(GL_LIGHTING);
-			glEnable(GL_LIGHT0);
-			mpRenderTexture->EndCapture();
-
-			mRenderImage = wxImage(RENDER_TEXTURE_SIZE, RENDER_TEXTURE_SIZE);
-
-			done = true;
+			else
+			{
+				wxLogDebug(wxT("Failed to initialize render texture."));
+				mpRenderTexture.reset();
+			}
 		}
 		
 		// The back buffer is our last choice.

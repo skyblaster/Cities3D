@@ -464,7 +464,7 @@ void wxTexEditorPane::previewItem(wxInt32 index)
 	wxImage image(file);
 
 	//see if we were successful
-	if(FALSE == image.Ok())
+	if(FALSE == image.IsOk())
 	{
 		wxLogMessage(wxString::Format(wxT("Unable to open file %s."), 
 			mPaths[index].second.c_str()));

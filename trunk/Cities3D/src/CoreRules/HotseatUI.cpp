@@ -15,6 +15,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <wx/aui/aui.h>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "UIPlugin.h"
@@ -27,6 +28,7 @@
 #include "Map.h"
 #include "IUIEngine.h"
 #include "IRuleEngine.h"
+#include "EventWindow.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -57,6 +59,21 @@ public:
 
 		Controller::get().Transmit(shEventChangeMainPane, 
 			DataObject(static_cast<PaneMixin*>(pane), stHotseatSetup));
+	}
+
+	virtual void CreateUI(const GamePtr&, wxAuiManager& manager)
+	{
+		// Keep ProvidesUI() false so the saved-layout key stays
+		// CoreDevCards (etc.). A true ProvidesUI() renamed the layout
+		// file and wxAui loaded no default, which rearranged every pane.
+		wxWindow* frame = GetMainFrame();
+		wxSize minSize = wxSize(165, 150);
+		wxEventWindow* events = new wxEventWindow(frame, wxID_ANY);
+
+		manager.AddPane(events, wxAuiPaneInfo().Name(swEvents)
+			.Caption(stEvents).MinSize(minSize)
+			.CloseButton(false).MaximizeButton(false)
+			.Dockable(true).Right().Layer(1).Position(2));
 	}
 };
 

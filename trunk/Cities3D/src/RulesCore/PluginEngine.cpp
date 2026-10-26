@@ -85,10 +85,11 @@ void PluginEngine::Start()
 void PluginEngine::Stop()
 {
 	mLoadedRulesets.clear();
-	
-	//by destroying the objects, they are automatically unloaded from memory
-	mRulePlugins.clear();
-	mOptionPlugins.clear();
+
+	// Keep plugin DLLs mapped for the process lifetime. Unloading them here
+	// (LAN / Network -> Hotseat) runs static destructors while wxWidgets is
+	// still live; LoadLibrary of CoreRules then fails with ERROR_DLL_INIT_FAILED
+	// (1114). RuleEngine::Stop already drops the copied rulesets.
 }
 
 void PluginEngine::GetLoadedRuleSets(StringPairArray &array)
@@ -577,6 +578,11 @@ void PluginEngine::FindPlugins()
 			//see if we've got it
 			if(NULL != func)
 			{
+				// Keep the module mapped. Unloading after discovery runs
+				// static destructors while wxWidgets is live and leaves
+				// Controller/UI receivers dangling; the next plugin's
+				// DllMain then fails with ERROR_DLL_INIT_FAILED (1114).
+				mRulePlugins[module] = lib;
 				mRulesetPaths[module] = path;
 				wxLogDebug(wxT("Located plugin: %s"), module.c_str());
 
@@ -642,6 +648,7 @@ void PluginEngine::FindPlugins()
 
 			if(NULL != option)
 			{
+				mOptionPlugins[module] = lib;
 				mOptionPaths[module] = path;
 				wxLogDebug(wxT("Located option: %s"), module.c_str());
 
@@ -658,9 +665,6 @@ void PluginEngine::FindPlugins()
 				}
 			}
 		}
-
-		//DLL is automatically unloaded when the object goes out of scope and is 
-		//destroyed
 	}
 }
 

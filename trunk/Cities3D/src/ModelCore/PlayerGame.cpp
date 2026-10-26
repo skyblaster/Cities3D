@@ -85,7 +85,10 @@ void PlayerGame::getGameObjects(std::list<GameObjectPtr> &objects) const
 		CornerObjectArray::const_iterator it2, it2End = it->second.end();
 		for(it2 = it->second.begin(); it2 != it2End; ++it2)
 		{
-			objects.push_back((*it2));
+			if(*it2)
+			{
+				objects.push_back(boost::static_pointer_cast<IGameObject>(*it2));
+			}
 		}
 	}
 
@@ -96,7 +99,40 @@ void PlayerGame::getGameObjects(std::list<GameObjectPtr> &objects) const
 		SideObjectArray::const_iterator it4, it4End = it3->second.end();
 		for(it4 = it3->second.begin(); it4 != it4End; ++it4)
 		{
-			objects.push_back((*it4));
+			if(*it4)
+			{
+				objects.push_back(boost::static_pointer_cast<IGameObject>(*it4));
+			}
+		}
+	}
+}
+
+void PlayerGame::reapplyObjectFlags(const IGameObject::ObjectFlag *flags,
+	size_t count)
+{
+	CornerObjectHash::const_iterator it, itEnd = mCornerObjects.end();
+	for(it = mCornerObjects.begin(); it != itEnd; ++it)
+	{
+		CornerObjectArray::const_iterator it2, it2End = it->second.end();
+		for(it2 = it->second.begin(); it2 != it2End; ++it2)
+		{
+			if(*it2)
+			{
+				(*it2)->reapplyFlags(flags, count, true);
+			}
+		}
+	}
+
+	SideObjectHash::const_iterator it3, it3End = mSideObjects.end();
+	for(it3 = mSideObjects.begin(); it3 != it3End; ++it3)
+	{
+		SideObjectArray::const_iterator it4, it4End = it3->second.end();
+		for(it4 = it3->second.begin(); it4 != it4End; ++it4)
+		{
+			if(*it4)
+			{
+				(*it4)->reapplyFlags(flags, count, true);
+			}
 		}
 	}
 }
@@ -176,15 +212,29 @@ void PlayerGame::removeSideObject(const HashString &key,
 }
 
 const PlayerGame::CornerObjectArray &PlayerGame::getCornerObjects(
-	const HashString &key)
+	const HashString &key) const
 {
-	return mCornerObjects[key];
+	CornerObjectHash::const_iterator it = mCornerObjects.find(key);
+	if(mCornerObjects.end() == it)
+	{
+		static CornerObjectArray empty;
+		return empty;
+	}
+
+	return it->second;
 }
 
 const PlayerGame::SideObjectArray &PlayerGame::getSideObjects(
-	const HashString &key)
+	const HashString &key) const
 {
-	return mSideObjects[key];
+	SideObjectHash::const_iterator it = mSideObjects.find(key);
+	if(mSideObjects.end() == it)
+	{
+		static SideObjectArray empty;
+		return empty;
+	}
+
+	return it->second;
 }
 
 void PlayerGame::getAllSideObjects(SideObjectArray &objects) const

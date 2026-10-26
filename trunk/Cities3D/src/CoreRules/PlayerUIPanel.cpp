@@ -76,10 +76,8 @@ wxPlayerUIPanel::wxPlayerUIPanel(wxWindow* parent, wxSettlersGLCanvas* canvas,
 
 		wxSizer* horz = new wxBoxSizer(wxHORIZONTAL);
 		horz->Add(ui, 1, wxEXPAND);
-		vert->Add(horz, players, wxEXPAND);
+		vert->Add(horz, 1, wxEXPAND);
 	}
-
-    vert->AddStretchSpacer();
 
 	minSize.x += 2;
 	minSize.y += 1;

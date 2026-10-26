@@ -100,13 +100,17 @@ void Game::setHexObject(const HashString &key, const HexObjectPtr &object)
 
 const HexObjectPtr &Game::getHexObject(const HashString &key)
 {
-	if(mHexObjects.end() == mHexObjects.find(key))
+	HexObjectHash::const_iterator it = mHexObjects.find(key);
+	if(mHexObjects.end() == it)
 	{
 		wxLogError(wxT("Programmer Error: No HexObject at key %s"), 
 			key.cwx_str());
+
+		static HexObjectPtr empty;
+		return empty;
 	}
 
-	return mHexObjects[key];
+	return it->second;
 }
 
 void Game::getAllHexObjects(HexObjectArray &objects) const
@@ -115,7 +119,24 @@ void Game::getAllHexObjects(HexObjectArray &objects) const
 
 	for(it = mHexObjects.begin(); it != itEnd; ++it)
 	{
-		objects.push_back(it->second);
+		if(it->second)
+		{
+			objects.push_back(it->second);
+		}
+	}
+}
+
+void Game::reapplyHexObjectFlags(const IGameObject::ObjectFlag *flags,
+	size_t count)
+{
+	HexObjectHash::const_iterator it, itEnd = mHexObjects.end();
+
+	for(it = mHexObjects.begin(); it != itEnd; ++it)
+	{
+		if(it->second)
+		{
+			it->second->reapplyFlags(flags, count, false);
+		}
 	}
 }
 

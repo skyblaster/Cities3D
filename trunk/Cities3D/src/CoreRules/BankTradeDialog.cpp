@@ -513,9 +513,9 @@ namespace
 
 			// Calculate offsets.
 			wxSizeEvent event(wxSize(initial, initial));
-			spPlayerBank->ProcessEvent(event);
-			spBank->ProcessEvent(event);
-			spPoolBank->ProcessEvent(event);
+			spPlayerBank->ProcessWindowEvent(event);
+			spBank->ProcessWindowEvent(event);
+			spPoolBank->ProcessWindowEvent(event);
 
 			// Calculate the ratio needed to keep all cards the same size in
 			// the window.

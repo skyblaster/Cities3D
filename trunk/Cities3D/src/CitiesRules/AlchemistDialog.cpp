@@ -295,9 +295,9 @@ namespace
 
 			// Calculate offsets.
 			wxSizeEvent event(wxSize(0, 0));
-			left->ProcessEvent(event);
-			right->ProcessEvent(event);
-			spSelection->ProcessEvent(event);
+			left->ProcessWindowEvent(event);
+			right->ProcessWindowEvent(event);
+			spSelection->ProcessWindowEvent(event);
 
 			// Calculate the ratio needed to keep all cards the same size in
 			// the window.

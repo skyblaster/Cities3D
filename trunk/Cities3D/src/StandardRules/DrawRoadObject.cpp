@@ -271,13 +271,18 @@ void DrawRoadObject::RenderSelection() const
 
 void DrawRoadObject::RenderModel(const wxInt32) const
 {
-	DrawObject::material(GetObject()).UseMaterial();
+	IGameObject *object = GetObject();
+	if(NULL == object)
+	{
+		return;
+	}
+
+	DrawObject::material(object).UseMaterial();
 	drawRoad();
 	DrawObject::material(White).UseMaterial();
 
 	// If this road is part of Longest Road, also draw that.
-	RoadObject *road = static_cast<RoadObject *>(GetObject());
-	wxASSERT(NULL != road);
+	RoadObject *road = static_cast<RoadObject *>(object);
 	if(true == road->longest())
 	{
 		DrawObject::material(LongestOutline).UseMaterial();

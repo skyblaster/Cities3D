@@ -117,7 +117,7 @@ void GLTextures::ReadGLTextures(const wxInt32 size, GLuint *pList,
 	IMAGE.ReadImages(size, images.get(), filename);
 
 	//sanity check
-	if(false == images[0].Ok())
+	if(false == images[0].IsOk())
 	{
 		return;
 	}

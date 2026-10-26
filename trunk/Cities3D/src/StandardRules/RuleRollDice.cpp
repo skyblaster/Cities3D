@@ -61,13 +61,13 @@ public:
 	virtual void Execute(const DataObject &object)
 	{
 		bool valid = false;
-		size_t die1 = 0, die2 = 0;
+		wxInt32 die1 = 0, die2 = 0;
 
 		do
 		{
-			// Roll two six sided dice.
-			die1 = RAND.get().pooled(6) + 1;
-			die2 = RAND.get().pooled(6) + 1;
+			// pooled(n) returns 0 .. n-1.
+			die1 = static_cast<wxInt32>(RAND.get().pooled(6)) + 1;
+			die2 = static_cast<wxInt32>(RAND.get().pooled(6)) + 1;
 
 			DataObject input(die1, die2), output;
 			RULE.Decide(shLogicIsValidDiceRoll, input, output);
@@ -75,9 +75,10 @@ public:
 		}
 		while(false == valid);
 
-		// Make a note of these rolls so future rules can use them.
 		gameData<wxInt32>(shDie1) = die1;
 		gameData<wxInt32>(shDie2) = die2;
+
+		Controller::get().Transmit(shEventDiceRoll, DataObject(die1, die2));
 
 		// Execute any extensions to dice rolling.
 		ExecuteExtensions(object);
@@ -85,7 +86,9 @@ public:
 		RULE.Execute(shRuleRollDiceText, DataObject());	
 		RULE.Execute(shRulePlaySound, DataObject(SOUND_ROLL_DICE));
 
-		wxLogDebug(wxT("Dice roll: %d"), (die1 + die2));
+		wxLogDebug(wxT("Dice roll: %d + %d = %d"),
+			static_cast<int>(die1), static_cast<int>(die2),
+			static_cast<int>(die1 + die2));
 	}
 };
 

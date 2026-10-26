@@ -57,10 +57,12 @@ public:
 
 		HashString rule;
 
-		// Transmit the roll to the UI.
 		Controller::get().Transmit(shEventDiceRoll, DataObject(die1, die2));
 
-		if(7 == roll)
+		const bool diceOk = (1 <= die1) && (6 >= die1) &&
+			(1 <= die2) && (6 >= die2);
+
+		if((7 == roll) && (true == diceOk))
 		{
 			rule = shRuleHandle7;
 		}

@@ -65,8 +65,8 @@ public:
 		RULE.Execute(shRuleRestartTurn, DataObject());
 
 		// Clean up rolls.
-		eraseGameData<HashString>(shDie1);
-		eraseGameData<HashString>(shDie2);
+		eraseGameData<wxInt32>(shDie1);
+		eraseGameData<wxInt32>(shDie2);
 
 		// Allow other extensions.
 		ExecuteExtensions(DataObject());

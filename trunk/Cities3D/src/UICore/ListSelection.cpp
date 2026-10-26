@@ -111,7 +111,7 @@ namespace
 		event.m_x = pos.x;
 		event.m_y = pos.y;
 
-		parent->ProcessEvent(event);
+		parent->ProcessWindowEvent(event);
 	}
 }
 
@@ -227,7 +227,7 @@ void wxListSelection::OnSkin()
 		mpImpl->mBitmap = wxBitmap(thisImage);
 	}
 
-	if(true == mpImpl->mBitmap.Ok())
+	if(true == mpImpl->mBitmap.IsOk())
 	{
 		mpImpl->mBitmap.SetMask(new wxMask(mpImpl->mBitmap, 
 			SKIN.Element(shIconTransparent)));
@@ -297,7 +297,7 @@ void wxListSelection::SetMinimumSize()
 	mpImpl->mImageBufferY = 4;
 
 	// Things are different if we have an image to work with.
-	if(true == mpImpl->mBitmap.Ok())
+	if(true == mpImpl->mBitmap.IsOk())
 	{
 		x += mpImpl->mBitmap.GetWidth() + sImageBufferX;
 		width = x;
@@ -330,7 +330,7 @@ void wxListSelection::SetMinimumSize()
 			x = sLeftIndent;
 			y += h + sSubItemSpace;
 
-			if(true == mpImpl->mBitmap.Ok())
+			if(true == mpImpl->mBitmap.IsOk())
 			{
 				x += mpImpl->mBitmap.GetWidth() + sImageBufferX;
 			}
@@ -390,7 +390,7 @@ void wxListSelection::SetMinimumSize()
 	// If the image height with buffers is greater than the text height, we
 	// need to adjust all of the heights calculated to center them on the 
 	// image.
-	if(true == mpImpl->mBitmap.Ok())
+	if(true == mpImpl->mBitmap.IsOk())
 	{
 		wxInt32 imageHeight = mpImpl->mBitmap.GetHeight() + 
 			(mpImpl->mImageBufferY * 2);
@@ -400,8 +400,10 @@ void wxListSelection::SetMinimumSize()
 			wxInt32 dif = (imageHeight - height) / 2;
 
 			std::transform(mpImpl->mPoints.begin(), mpImpl->mPoints.end(), 
-				mpImpl->mPoints.begin(), std::bind2nd(std::plus<wxPoint>(), 
-				wxPoint(0, dif)));
+				mpImpl->mPoints.begin(), [dif](const wxPoint& point)
+				{
+					return point + wxPoint(0, dif);
+				});
 
 			height = imageHeight;
 		}
@@ -443,7 +445,7 @@ void wxListSelection::Paint(wxMemoryDC &dc)
 	dc.DrawRectangle(0, 0, size.x, size.y);
 
 	// Bitmap (if any)
-	if(true == mpImpl->mBitmap.Ok())
+	if(true == mpImpl->mBitmap.IsOk())
 	{
 		dc.DrawBitmap(mpImpl->mBitmap, sImageBufferX, mpImpl->mImageBufferY, true);
 	}

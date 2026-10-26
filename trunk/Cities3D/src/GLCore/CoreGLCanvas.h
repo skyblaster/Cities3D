@@ -55,6 +55,14 @@ public:
 	//
 	wxGLContext* GetContext();
 
+	// RGBA + double-buffer, with a depth size the driver actually supports.
+	// requestedDepth is a hint (config); 24 then 16 are tried if needed.
+	static const int* ChooseDisplayAttribList(int requestedDepth);
+
+	// wxWidgets 3.x requires an explicit context; this restores the 2.8
+	// zero-argument SetCurrent() used throughout the GL code.
+	void SetCurrent();
+
 	//-----------------------------------------------------------------------//
 	// Section: Protected
 	//
@@ -195,6 +203,10 @@ private:
 	// A pointer to the top level window parent of this canvas, if any.
 	//
 	wxTopLevelWindow *mpTopLevelWindow;
+
+	wxGLContext *m_glContext;
+
+	bool mGLInitialized;
 
 	//-----------------------------------------------------------------------//
 	// Bool: mDirty
