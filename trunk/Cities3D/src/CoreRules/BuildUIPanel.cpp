@@ -30,10 +30,17 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+namespace
+{
+	const wxInt32 sBuildIconPad = 2;
+	const wxInt32 sBuildIconMin = 50;
+}
 
 //---------------------------- PUBLIC           -----------------------------//
 wxBuildUIPanel::wxBuildUIPanel(wxWindow* parent, wxSettlersGLCanvas* canvas)
 : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0)
+, mMaxPerRow(0)
+, mInResize(false)
 {
 	SetBackgroundColour(SKIN.Element(shBackground));
 
@@ -80,41 +87,93 @@ wxBuildUIPanel::wxBuildUIPanel(wxWindow* parent, wxSettlersGLCanvas* canvas)
         BuildDataMap::const_reverse_iterator it3 = it2->second.rbegin(),
 			it3End = it2->second.rend();
 
-		// If it's a new row, use the next sizer.
 		wxSizer* sizer = sizers[index];
 		++index;
-		
+
+		wxInt32 iconsInRow = 0;
         for(; it3 != it3End; ++it3)
         {
 			wxBuildUI* ui = new wxBuildUI(this, it3->second, canvas);
+			mBuildUIs.push_back(ui);
+			++iconsInRow;
             
 			wxSize min = ui->GetMinSize();
 			if(true == calcX)
 			{
-				minSize.x += min.x + 2;
+				minSize.x += min.x + sBuildIconPad;
 			}
 			if(true == calcY)
 			{
-				minSize.y += min.y + 2;
+				minSize.y += min.y + sBuildIconPad;
 				calcY = false;
 			}
 
-			sizer->Add(ui, 0, wxEXPAND | wxALL | wxSHAPED, 2);
+			sizer->Add(ui, 0, wxALL, sBuildIconPad);
+		}
+
+		if(iconsInRow > mMaxPerRow)
+		{
+			mMaxPerRow = iconsInRow;
 		}
 
 		calcX = false;
 		calcY = true;
-		vert->Add(sizer, 1, wxEXPAND);
+		vert->Add(sizer, 0, wxEXPAND);
     }
 
+	vert->AddStretchSpacer(1);
 	minSize += wxSize(2, 2);
 
 	horz->Add(vert, 1, wxEXPAND | wxTOP | wxLEFT | wxBOTTOM, 2);
 
 	SetMinSize(minSize);
 	SetSizer(horz);
+	Bind(wxEVT_SIZE, &wxBuildUIPanel::OnPanelSize, this);
+	CallAfter(&wxBuildUIPanel::ResizeIcons);
 }
 
 //---------------------------- PROTECTED        -----------------------------//
 
 //---------------------------- PRIVATE          -----------------------------//
+void wxBuildUIPanel::OnPanelSize(wxSizeEvent& event)
+{
+	ResizeIcons();
+	event.Skip();
+}
+
+void wxBuildUIPanel::ResizeIcons()
+{
+	if( (true == mInResize) ||
+		(0 >= mMaxPerRow) ||
+		(true == mBuildUIs.empty()))
+	{
+		return;
+	}
+
+	mInResize = true;
+
+	const wxInt32 width = GetClientSize().GetWidth();
+	const wxInt32 totalPad = 2 + (mMaxPerRow * (sBuildIconPad * 2));
+	wxInt32 cell = (std::max(width, 1) - totalPad) / mMaxPerRow;
+	cell = std::max(sBuildIconMin, cell);
+
+	const wxSize iconSize(cell, cell);
+	for(size_t i = 0; i < mBuildUIs.size(); ++i)
+	{
+		wxBuildUI* ui = mBuildUIs[i];
+		if(NULL == ui)
+		{
+			continue;
+		}
+
+		ui->SetMinSize(iconSize);
+		ui->SetMaxSize(iconSize);
+	}
+
+	if(NULL != GetSizer())
+	{
+		GetSizer()->Layout();
+	}
+
+	mInResize = false;
+}

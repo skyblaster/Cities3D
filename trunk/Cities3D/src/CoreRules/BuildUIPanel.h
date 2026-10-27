@@ -16,6 +16,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <vector>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 
@@ -23,6 +24,7 @@
 
 //---------------------------- TYPEDEFS         -----------------------------//
 class wxSettlersGLCanvas;
+class wxBuildUI;
 
 //---------------------------- CLASSES          -----------------------------//
 
@@ -57,6 +59,13 @@ class wxBuildUIPanel : public wxPanel
 public:
 	wxBuildUIPanel(wxWindow* parent, wxSettlersGLCanvas* canvas);
 
+private:
+	void OnPanelSize(wxSizeEvent& event);
+	void ResizeIcons();
+
+	std::vector<wxBuildUI*> mBuildUIs;
+	wxInt32 mMaxPerRow;
+	bool mInResize;
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//

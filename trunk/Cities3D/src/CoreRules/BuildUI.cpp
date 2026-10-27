@@ -240,23 +240,35 @@ namespace
 
 		wxBitmap GetBitmap(const wxSize &size) const
 		{
-			if(mGameObject)
+			wxBitmap bitmap;
+
+			if( (TRUE == CONFIG.read<wxInt32>(swConfigSectionOpenGL,
+				swRenderBitmaps, TRUE)) &&
+				(NULL != mCanvas) &&
+				(NULL != mDrawObject))
 			{
-				mGameObject->color(mPlayerColor);
+				if(mGameObject)
+				{
+					mGameObject->color(mPlayerColor);
+				}
+
+				Vector vector(10.0f, 10.0f, 10.0f);
+				bitmap = mCanvas->ConvertGLtoWX(mDrawObject, size.GetWidth(),
+					size.GetHeight(), vector);
 			}
 
-			// Colorize the 2D build art with the player colour. The offscreen
-			// GL capture is often still unlit on the first paint, which left
-			// these icons black until a later recapture.
-			wxBitmap bitmap(IMAGE.Colorize(mImage, mMask, mPlayerColor, size,
-				true));
-
-			if(true == bitmap.IsOk())
+			if(false == bitmap.IsOk())
 			{
-				wxImage image = bitmap.ConvertToImage();
-				PunchBuildBackground(image);
-				bitmap = wxBitmap(image);
-				bitmap.SetMask(new wxMask(bitmap, *wxBLACK));
+				bitmap = wxBitmap(
+					IMAGE.Colorize(mImage, mMask, mPlayerColor, size, true));
+
+				if(true == bitmap.IsOk())
+				{
+					wxImage image = bitmap.ConvertToImage();
+					PunchBuildBackground(image);
+					bitmap = wxBitmap(image);
+					bitmap.SetMask(new wxMask(bitmap, *wxBLACK));
+				}
 			}
 
 			OverlayIcons(bitmap);
