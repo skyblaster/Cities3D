@@ -17,6 +17,21 @@
       }
     },
     {
+      "name": "release",
+      "displayName": "Windows Release (Ninja + MSVC)",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+      },
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      }
+    },
+    {
       "name": "linux",
       "displayName": "Linux (Ninja + GCC)",
       "generator": "Ninja",
@@ -36,6 +51,10 @@
     {
       "name": "default",
       "configurePreset": "default"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release"
     },
     {
       "name": "linux",

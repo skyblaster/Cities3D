@@ -109,3 +109,20 @@ add_custom_command(TARGET Cities3D POST_BUILD
         -P "${CMAKE_SOURCE_DIR}/cmake/CleanPluginDir.cmake"
     COMMENT "Removing non-plugin libraries from the plugin directory"
 )
+if(MSVC)
+    set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+    include(InstallRequiredSystemLibraries)
+    set(_vc_redist_list "${CMAKE_BINARY_DIR}/vc_redist_dlls.txt")
+    file(WRITE "${_vc_redist_list}" "")
+    foreach(_dll ${CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS})
+        file(APPEND "${_vc_redist_list}" "${_dll}\n")
+    endforeach()
+    add_custom_command(TARGET Cities3D POST_BUILD
+        COMMAND ${CMAKE_COMMAND}
+            -DCONFIG=$<CONFIG>
+            -DDEST=$<TARGET_FILE_DIR:Cities3D>
+            -DDLL_LIST_FILE=${_vc_redist_list}
+            -P "${CMAKE_SOURCE_DIR}/cmake/CopyVcRedist.cmake"
+        COMMENT "Copying the Visual C++ runtime next to Cities3D.exe"
+    )
+endif()
