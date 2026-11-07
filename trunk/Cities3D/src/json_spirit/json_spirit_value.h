@@ -18,6 +18,7 @@
 #include <vector>
 #include <string>
 #include <cassert>
+#include <utility>
 
 namespace json_spirit
 {
@@ -39,6 +40,12 @@ namespace json_spirit
         Value_impl();  // creates null value
         Value_impl( Const_str_ptr  value ); 
         Value_impl( const String&  value );
+        template< class T, class = decltype(std::declval<const T&>().wc_str()) >
+        Value_impl( const T& value )
+        :   type_( str_type )
+        ,   str_( static_cast< const wchar_t* >( value.wc_str() ) )
+        {
+        }
         Value_impl( const Object&  value );
         Value_impl( const Array&   value );
         Value_impl( bool           value );
@@ -95,6 +102,18 @@ namespace json_spirit
         typedef Value_impl< String > Value_type;
 
         Pair_impl( const String& name, const Value_type& value );
+        template< class T, class = decltype(std::declval<const T&>().wc_str()) >
+        Pair_impl( const T& name, const Value_type& value )
+        :   name_( static_cast< const wchar_t* >( name.wc_str() ) )
+        ,   value_( value )
+        {
+        }
+        template< class T, class = decltype(std::declval<const T&>().wc_str()) >
+        Pair_impl( const T& name, const T& value )
+        :   name_( static_cast< const wchar_t* >( name.wc_str() ) )
+        ,   value_( Value_type( std::wstring( static_cast< const wchar_t* >( value.wc_str() ) ) ) )
+        {
+        }
 
         bool operator==( const Pair_impl< String >& lhs ) const;
 

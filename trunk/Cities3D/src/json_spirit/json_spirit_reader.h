@@ -14,6 +14,7 @@
 
 #include "json_spirit_value.h"
 #include <iostream>
+#include <utility>
 
 namespace json_spirit
 {
@@ -26,6 +27,11 @@ namespace json_spirit
 #ifndef BOOST_NO_STD_WSTRING
 
     bool read( const std::wstring& s, wValue& value );
+    template< class T, class = decltype(std::declval<const T&>().wc_str()) >
+    bool read( const T& s, wValue& value )
+    {
+        return read( std::wstring( static_cast< const wchar_t* >( s.wc_str() ) ), value );
+    }
     bool read( std::wistream&  is,    wValue& value );
     bool read( std::wstring::const_iterator& begin, std::wstring::const_iterator end, wValue& value );    
 
