@@ -7,7 +7,7 @@
  *  any later version.
  * 
  *  This program is distributed in the hope that it will be useful, but 
- *  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+    10| *  WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
  *  or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License 
  *  for more details.
  */
@@ -15,11 +15,12 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <wx/ffile.h>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "Rule.h"
 #include "RuleSetDatabase.h"
-#include "HexObject.h"
+#include "Game.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -27,6 +28,18 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+namespace
+{
+	void WriteResetObjectFlagsStage(const wxString &stage)
+	{
+		wxFFile breadcrumb(wxT("cities3d-last-rule.txt"), wxT("w"));
+		if(true == breadcrumb.IsOpened())
+		{
+			breadcrumb.Write(wxT("RuleResetObjectFlags:") + stage);
+			breadcrumb.Flush();
+		}
+	}
+}
 
 //---------------------------- RULES            -----------------------------//
 
@@ -50,68 +63,51 @@ class RuleResetObjectFlags : public Rule
 public:
 	virtual void Execute(const DataObject &object)
 	{
+		WriteResetObjectFlagsStage(wxT("start"));
+
 		typedef std::vector<IGameObject::ObjectFlag> FlagArray;
 		FlagArray flags;
 
 		//read desired flags out of the DataObject
 		for(size_t i = 0; i < object.numItems(); ++i)
 		{
-			flags.push_back(object.read<IGameObject::ObjectFlag>(i));
-		}
-
-		// Gather all of the game objects.
-		typedef std::list<GameObjectPtr> GameObjectList;
-		GameObjectList objects;
-		for(wxInt32 i = 0; i < numPlayers(); ++i)
-		{
-			playerGame(i).getGameObjects(objects);
-		}
-
-		// Reset them all.
-		GameObjectList::const_iterator it, itEnd = objects.end();
-		for(it = objects.begin(); it != itEnd; ++it)
-		{
-			// Keep the hidden flag.
-			bool hidden = (*it)->isset(IGameObject::Hidden);
-
-			(*it)->reset();
-
-			for(size_t i = 0; i < flags.size(); ++i)
+			try
 			{
-				(*it)->set(flags[i]);
+				flags.push_back(object.read<IGameObject::ObjectFlag>(i));
 			}
-
-			if(true == hidden)
+			catch(const boost::bad_any_cast &)
 			{
-				(*it)->set(IGameObject::Hidden);
-			}
-		}
-
-		// Repeat for hex objects, but they are special in that they cannot
-		// be dimmed.
-		Game::HexObjectArray hexes;
-		GetGame()->getAllHexObjects(hexes);
-
-		{
-			Game::HexObjectArray::const_iterator it, itEnd = hexes.end();
-			for(it = hexes.begin(); it != itEnd; ++it)
-			{
-				// Keep the hidden flag.
-				bool hidden = (*it)->isset(IGameObject::Hidden);
-
-				(*it)->reset();
-
-				for(size_t i = 0; i < flags.size(); ++i)
+				try
 				{
-					(*it)->set(flags[i] & ~IGameObject::Dim);
+					const wxInt32 value = object.read<wxInt32>(i);
+					if( (0 <= value) &&
+						(16 > value))
+					{
+						flags.push_back(
+							static_cast<IGameObject::ObjectFlag>(value));
+					}
 				}
-
-				if(true == hidden)
+				catch(const boost::bad_any_cast &)
 				{
-					(*it)->set(IGameObject::Hidden);
 				}
 			}
 		}
+
+		WriteResetObjectFlagsStage(wxT("players"));
+
+		const wxInt32 players = numPlayers();
+		for(wxInt32 i = 0; i < players; ++i)
+		{
+			playerGame(i).reapplyObjectFlags(
+				flags.empty() ? NULL : &flags[0], flags.size());
+		}
+
+		WriteResetObjectFlagsStage(wxT("hexes"));
+
+		GetGame()->reapplyHexObjectFlags(
+			flags.empty() ? NULL : &flags[0], flags.size());
+
+		WriteResetObjectFlagsStage(wxT("done"));
 	}
 };
 

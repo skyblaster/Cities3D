@@ -579,9 +579,9 @@ namespace
 
 			// Calculate offsets.
 			wxSizeEvent event(wxSize(initial, initial));
-			spPlayerOthers->ProcessEvent(event);
-			spOthers->ProcessEvent(event);
-			spPoolOthers->ProcessEvent(event);
+			spPlayerOthers->ProcessWindowEvent(event);
+			spOthers->ProcessWindowEvent(event);
+			spPoolOthers->ProcessWindowEvent(event);
 
 			// Calculate the ratio needed to keep all cards the same size in
 			// the window.
@@ -631,8 +631,8 @@ namespace
 			spTradeRight->SetPixelSpacing(4);
 			spTradeRight->SetFlags(wxImageStrip::FlagAlignCenter);
 			
-			spTradeLeft->ProcessEvent(event);
-			spTradeRight->ProcessEvent(event);
+			spTradeLeft->ProcessWindowEvent(event);
+			spTradeRight->ProcessWindowEvent(event);
 
 			spTradeOthersButton = new wxBaseButton(mpWindow, ID_TRADE_OTHERS_BUTTON, 
 				stTradeExclamation);

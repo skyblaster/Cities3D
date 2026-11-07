@@ -38,6 +38,11 @@ ChipObject::ChipObject(const TileObject * const pTile)
 
 wxInt32 ChipObject::roll() const
 {
+	if(NULL == mpTile)
+	{
+		return -1;
+	}
+
 	return mpTile->read<wxInt32>(shRoll);
 }
 

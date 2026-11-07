@@ -36,7 +36,7 @@ void BaseModalSizer::CreateLayout(wxBoxSizer *sizer)
 	// Then tack on the modal buttons.
 	wxBoxSizer *buttonSizer = new wxBoxSizer(wxVERTICAL);
 	CreateButtons(buttonSizer);
-	sizer->Add(buttonSizer, 0, wxEXPAND | wxALIGN_RIGHT | wxALL, 3);
+	sizer->Add(buttonSizer, 0, wxEXPAND | wxALL, 3);
 }
 //---------------------------- PROTECTED        -----------------------------//
 

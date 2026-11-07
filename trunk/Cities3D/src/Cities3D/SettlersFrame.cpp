@@ -216,7 +216,6 @@ wxSettlersFrame::wxSettlersFrame(wxWindow *parent, const wxPoint &pos,
 	// Always load the core rulesets.  This has to be done after the frame
 	// exists.
 	PLUGIN.LoadRuleset(swCoreRules, swCore);
-	PLUGIN.LoadRuleset(swCitiesOnlineRules, swCitiesOnlineNoSpace);
 }
 
 wxSettlersFrame::~wxSettlersFrame()
@@ -569,7 +568,6 @@ void wxSettlersFrame::OnIdle(wxIdleEvent& )
 		mRestartEngine = false;
 		GameEngine::get().StartEngine();
 		PLUGIN.LoadRuleset(swCoreRules, swCore);
-		PLUGIN.LoadRuleset(swCitiesOnlineRules, swCitiesOnlineNoSpace);
 
 		// If we have a menu click run it.
 		if(-1 != mClickId)

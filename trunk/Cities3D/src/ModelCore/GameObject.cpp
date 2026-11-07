@@ -37,26 +37,78 @@ GameObject::GameObject()
 
 bool GameObject::isset(const ObjectFlag flag) const
 {
-	return (mDisplayFlags & (1 << flag)) || false;
+	const unsigned value = static_cast<unsigned>(flag);
+	if(16U <= value)
+	{
+		return false;
+	}
+
+	return (mDisplayFlags & (1 << value)) || false;
 }
 
 void GameObject::set(const ObjectFlag flag)
 {
-	mDisplayFlags |= (1 << flag);
+	const unsigned value = static_cast<unsigned>(flag);
+	if(16U <= value)
+	{
+		return;
+	}
+
+	mDisplayFlags |= (1 << value);
 }
 
 bool GameObject::isset(const wxInt32 flag) const
 {
-	wxASSERT(16 > (wxUint32) flag);
+	if( (0 > flag) ||
+		(16 <= flag))
+	{
+		return false;
+	}
 
 	return (mDisplayFlags & (1 << (16 + flag))) || false;
 }
 
 void GameObject::set(const wxInt32 flag)
 {
-	wxASSERT(16 > (wxUint32) flag);
+	if( (0 > flag) ||
+		(16 <= flag))
+	{
+		return;
+	}
 
 	mDisplayFlags |= (1 << (16 + flag));
+}
+
+void GameObject::reapplyFlags(const ObjectFlag *flags, size_t count,
+	bool allowDim)
+{
+	const wxInt32 hiddenBit = (1 << Hidden);
+	const bool hidden = (0 != (mDisplayFlags & hiddenBit));
+
+	mDisplayFlags = 0;
+
+	if(NULL != flags)
+	{
+		for(size_t i = 0; i < count; ++i)
+		{
+			const unsigned value = static_cast<unsigned>(flags[i]);
+			if(16U <= value)
+			{
+				continue;
+			}
+			if((false == allowDim) && (Dim == flags[i]))
+			{
+				continue;
+			}
+
+			mDisplayFlags |= (1 << value);
+		}
+	}
+
+	if(true == hidden)
+	{
+		mDisplayFlags |= hiddenBit;
+	}
 }
 
 void GameObject::load(wxDataInputStream &stream)

@@ -130,12 +130,12 @@ wxNetworkGamePage::wxNetworkGamePage(wxWindow* parent)
 		wxBoxSizer *innerHorz1 = new wxBoxSizer(wxHORIZONTAL);
 		wxBaseButton *button = new wxBaseButton(this, ID_SELECT_MAP_BUTTON, 
 			stSelectMap);
-		innerHorz1->Add(button, 0, wxALIGN_LEFT);
+		innerHorz1->Add(button, 0);
 		innerHorz1->Add(5, 0, 1, wxEXPAND);
 		spVariantsButton = new wxBaseButton(this, ID_GAME_OPTIONS_BUTTON, 
 			stOptions);
 		spVariantsButton->Enable(false);
-		innerHorz1->Add(spVariantsButton, 0, wxALIGN_RIGHT);
+		innerHorz1->Add(spVariantsButton, 0);
 
 		innerVert11->Add(innerHorz1, 0, wxEXPAND | wxTOP, 5);
 	}

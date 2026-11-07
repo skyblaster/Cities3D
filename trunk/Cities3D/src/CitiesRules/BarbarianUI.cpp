@@ -839,9 +839,8 @@ wxBarbarianUI::wxBarbarianUI(wxWindow *parent, const GamePtr& game,
 	// Set up the GL scene.
 	if(GetContext())
 	{
-		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
-
 		SetCurrent();
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 		glEnable(GL_TEXTURE_2D);
 		obtain();
 	}

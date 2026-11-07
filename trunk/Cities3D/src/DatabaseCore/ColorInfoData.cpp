@@ -135,26 +135,40 @@ const wxString &ColorInfoData::InternalName(const ColorType type)
 
 wxColour ColorInfoData::GLColor(const ColorType type)
 {
-	wxASSERT((0 <= type) && (CR_SIZE > type));
-
 	checkColors();
+
+	if( (0 > type) ||
+		(CR_SIZE <= type))
+	{
+		return wxColour(185, 185, 185);
+	}
 
 	ColorMap::const_iterator it;
 	it = sColorMap.find(type);
-	wxASSERT(sColorMap.end() != it);
+	if(sColorMap.end() == it)
+	{
+		return wxColour(185, 185, 185);
+	}
 
 	return it->second.gl;
 }
 
 wxColour ColorInfoData::UIColor(const ColorType type)
 {
-	wxASSERT((0 <= type) && (CR_SIZE > type));
-
 	checkColors();
+
+	if( (0 > type) ||
+		(CR_SIZE <= type))
+	{
+		return wxColour(245, 245, 245);
+	}
 
 	ColorMap::const_iterator it;
 	it = sColorMap.find(type);
-	wxASSERT(sColorMap.end() != it);
+	if(sColorMap.end() == it)
+	{
+		return wxColour(245, 245, 245);
+	}
 
 	return it->second.ui;
 }
@@ -174,6 +188,11 @@ wxImage ColorInfoData::UIImage(const ColorType type, const wxSize &size)
 
 	// The easiest way to do this is to just create a memory bitmap and draw
 	// into it.
+	if( (0 >= size.x) || (0 >= size.y) )
+	{
+		return wxImage();
+	}
+
 	wxBitmap bitmap(size.x, size.y);
 	wxMemoryDC dc;
 	dc.SelectObject(bitmap);

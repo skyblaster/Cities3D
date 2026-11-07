@@ -67,13 +67,23 @@ void StatEngine::UnprocessRule(const HashString& rule)
 		(true == mStatUpdate))
 	{
 		mStatUpdate = false;
-		Controller::get().Transmit(shEventStats, GetGame()->read<wxInt32>(shID));
+		wxInt32 id = -1;
+		if(GetGame())
+		{
+			id = GetGame()->read<wxInt32>(shID);
+		}
+		Controller::get().Transmit(shEventStats, id);
 	}
 }
 
 void StatEngine::GetJson(json_spirit::wObject& obj, bool forceEnglish)
 {
 	using namespace json_spirit;
+
+	if(false == GetGame())
+	{
+		return;
+	}
 
 	const HashString& state = GetGame()->read<HashString>(shState);
 	bool gameOver = (shComplete == state);

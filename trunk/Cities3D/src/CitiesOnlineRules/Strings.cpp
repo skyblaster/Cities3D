@@ -26,12 +26,11 @@
 //---------------------------- STATICS          -----------------------------//
 namespace
 {
-    // Force all strings to be statically initialized first.
-#ifdef __WIN32__
-    #pragma warning(disable:4073)
-    #pragma init_seg(lib)
-    #pragma warning(default:4073)
-#endif
+    // String constants must be constructed before the rest of this unity TU.
+    // Do not use #pragma init_seg(lib): it applies to the entire bulkbuild
+    // translation unit (MSVC C2356 if reset later) and runs every plugin
+    // registrar as a CRT library initializer, which can fail LoadLibrary
+    // with error 1114.
 
     // All strings used in this project.
 
@@ -208,6 +207,7 @@ namespace
     const wxString SOUND_USE_ONE_TURN_TIMER = wxT("UseOneTurnTimer.mp3");
     const wxString SOUND_YOU_NEED_TO_DO_SOMETHING = wxT("YouNeedToDoSomething.mp3");
 }
+
 
 //---------------------------- PUBLIC           -----------------------------//
 

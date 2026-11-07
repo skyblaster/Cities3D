@@ -273,7 +273,7 @@ void wxBaseListCtrl::SetSelectedItem(const wxInt32 index)
 
 		// Fire the selected event.
 		wxListEvent event(wxEVT_COMMAND_LIST_ITEM_DESELECTED, GetId());
-		ProcessEvent(event);
+		ProcessWindowEvent(event);
 	}
 
 	if( (-1 != mSelectedItem) &&
@@ -283,7 +283,7 @@ void wxBaseListCtrl::SetSelectedItem(const wxInt32 index)
 
 		// Fire the selected event.
 		wxListEvent event(wxEVT_COMMAND_LIST_ITEM_SELECTED, GetId());
-		ProcessEvent(event);
+		ProcessWindowEvent(event);
 	}
 }
 
@@ -475,7 +475,7 @@ void wxBaseListCtrl::OnLeftDoubleClick(wxMouseEvent &event)
 	LeftDoubleClick(event);
 
 	wxListEvent listEvent(wxEVT_COMMAND_LIST_ITEM_ACTIVATED, GetId());
-	ProcessEvent(listEvent);
+	ProcessWindowEvent(listEvent);
 }
 
 void wxBaseListCtrl::OnMouseWheel(wxMouseEvent &event)

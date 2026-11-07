@@ -16,6 +16,9 @@
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
 #include <GL/glew.h>
+#ifdef __WIN32__
+#include <GL/wglew.h>
+#endif
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "CoreGLCanvas.h"
@@ -66,37 +69,73 @@ namespace
 }
 
 //---------------------------- PUBLIC           -----------------------------//
+const int* wxCoreGLCanvas::ChooseDisplayAttribList(int requestedDepth)
+{
+	static int attrib[8];
+
+	int depths[4];
+	int count = 0;
+	if(0 < requestedDepth)
+	{
+		depths[count++] = requestedDepth;
+	}
+	if(24 != requestedDepth)
+	{
+		depths[count++] = 24;
+	}
+	if(16 != requestedDepth)
+	{
+		depths[count++] = 16;
+	}
+	depths[count++] = 0;
+
+	for(int i = 0; i < count; ++i)
+	{
+		int a = 0;
+		attrib[a++] = WX_GL_RGBA;
+		attrib[a++] = WX_GL_DOUBLEBUFFER;
+		if(0 < depths[i])
+		{
+			attrib[a++] = WX_GL_DEPTH_SIZE;
+			attrib[a++] = depths[i];
+		}
+		attrib[a] = 0;
+
+		if(true == wxGLCanvas::IsDisplaySupported(attrib))
+		{
+			return attrib;
+		}
+	}
+
+	return NULL;
+}
 
 //---------------------------- PROTECTED        -----------------------------//
 wxCoreGLCanvas::wxCoreGLCanvas(wxWindow *parent, wxWindowID id, 
 							   const wxPoint& pos, const wxSize& size, 
 							   long style, const wxString& name, 
 							   wxInt32 *attrib)
+#if wxCHECK_VERSION(2, 9, 0)
+: wxGLCanvas(parent, id, attrib, pos, size, style, name)
+#else
 : wxGLCanvas(parent, id, pos, size, style, name, attrib)
+#endif
 , mpTopLevelWindow(dynamic_cast<wxTopLevelWindow *>(parent))
 , mDirty(true)
+, m_glContext(NULL)
+, mGLInitialized(false)
 #ifdef __WXGTK__
 , mPainted(false)
 #endif
 {
-	if (GetContext())
-    {
-        SetCurrent();
-
-		// Initialize glew extensions.
-		GLenum err = glewInit();
-		if(GLEW_OK != err)
-		{
-			wxLogError(
-				wxT("No OpenGL extensions are available on this hardware."));
-		}
-
-		InitGL(this);
-	}
 }
 
 wxCoreGLCanvas::~wxCoreGLCanvas()
 {
+#if wxCHECK_VERSION(2, 9, 0)
+	delete m_glContext;
+	m_glContext = NULL;
+#endif
 }
 
 wxGLContext* wxCoreGLCanvas::GetContext()
@@ -108,7 +147,49 @@ wxGLContext* wxCoreGLCanvas::GetContext()
 	}
 	#endif
 
+#if wxCHECK_VERSION(2, 9, 0)
+	if( (NULL == m_glContext) && (NULL != GetHandle()) )
+	{
+		m_glContext = new wxGLContext(this);
+	}
+	return m_glContext;
+#else
 	return wxGLCanvas::GetContext();
+#endif
+}
+
+void wxCoreGLCanvas::SetCurrent()
+{
+	wxGLContext* context = GetContext();
+	if(NULL == context)
+	{
+		return;
+	}
+
+#if wxCHECK_VERSION(2, 9, 0)
+	wxGLCanvas::SetCurrent(*context);
+#else
+	wxGLCanvas::SetCurrent();
+#endif
+
+	if(false == mGLInitialized)
+	{
+		glewExperimental = GL_TRUE;
+		GLenum err = glewInit();
+		if(GLEW_OK != err)
+		{
+			wxLogError(
+				wxT("No OpenGL extensions are available on this hardware."));
+		}
+#ifdef __WIN32__
+		if(WGLEW_EXT_swap_control)
+		{
+			wglSwapIntervalEXT(0);
+		}
+#endif
+		InitGL(this);
+		mGLInitialized = true;
+	}
 }
 
 void wxCoreGLCanvas::ResizeGL(void)
@@ -142,8 +223,7 @@ void wxCoreGLCanvas::SetDirty(bool dirty)
 	
 	if(true == dirty)
 	{
-		wxPaintEvent event;
-		AddPendingEvent(event);
+		Refresh(false);
 	}
 }
 

@@ -100,7 +100,6 @@ namespace
         switch(event.GetKeyCode())
         {
         case 0:
-        case WXK_COMMAND:
         case WXK_RETURN:
         case WXK_TAB:
 		case WXK_ESCAPE:

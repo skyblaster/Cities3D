@@ -15,6 +15,8 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <wx/ffile.h>
+#include <wx/app.h>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "UIPlugin.h"
@@ -30,6 +32,7 @@
 #include "OthersTradeDialog.h"
 #include "StockyardDialog.h"
 #include "SettlersView.h"
+#include "CoreGLCanvas.h"
 #include "BaseMessageBox.h"
 
 #include "MessageUI.h"
@@ -249,12 +252,39 @@ private:
 		}
 		else
 		{
-			// Clear things back to normal.
-			RULE.AsynchExecute(shRuleResetTileFlags, DataObject());
-			RULE.AsynchExecute(shRuleResetObjectFlags, DataObject());
+			// Only cancel the overlay. Resetting object flags here is
+			// deferred from eventShowResources(false) when a selection
+			// starts, and that wipe removed robber-steal Select flags.
 		}
 
-		Controller::get().Transmit(shEventDirty, 0);
+		{
+			wxFFile breadcrumb(wxT("cities3d-last-rule.txt"), wxT("w"));
+			if(true == breadcrumb.IsOpened())
+			{
+				breadcrumb.Write(wxT("OnShowResources:dirty"));
+				breadcrumb.Flush();
+			}
+		}
+
+		if(NULL != wxTheApp)
+		{
+			wxTheApp->CallAfter([]() {
+				Controller::get().Transmit(shEventDirty, 0);
+			});
+		}
+		else
+		{
+			Controller::get().Transmit(shEventDirty, 0);
+		}
+
+		{
+			wxFFile breadcrumb(wxT("cities3d-last-rule.txt"), wxT("w"));
+			if(true == breadcrumb.IsOpened())
+			{
+				breadcrumb.Write(wxT("OnShowResources:done"));
+				breadcrumb.Flush();
+			}
+		}
 	}
 
 	void OnShutdownModelessUI(wxInt32 = 0)
@@ -289,27 +319,27 @@ private:
 	{
 		wxLogDebug(wxT("Timer: OnHideResources"));
 
+		RULE.Execute(shRuleResetTileFlags, DataObject());
+		RULE.Execute(shRuleResetObjectFlags, DataObject());
 		OnShowResources(DataObject(false));
 	}
 
 	void OnCreateGameWindow(wxAuiManager* manager)
 	{
+		// wxDisplayDepth() is the desktop color depth (usually 32), not a
+		// valid OpenGL Z-buffer size. wx 3.3 MSW fails Create() if DEPTH_SIZE
+		// 32 is unavailable. Default to 24 and fall back via IsDisplaySupported.
 		wxInt32 depthSize = CONFIG.read<wxInt32>(swConfigSectionOpenGL, 
-			swDepthBuffer,	::wxDisplayDepth());
+			swDepthBuffer, 24);
 
-		wxInt32 attrib[] = {
-			WX_GL_RGBA,
-			WX_GL_DEPTH_SIZE, 
-			depthSize,
-			WX_GL_DOUBLEBUFFER,
-			0,
-		};
+		wxInt32* attrib = const_cast<wxInt32*>(
+			wxCoreGLCanvas::ChooseDisplayAttribList(depthSize));
 
 		wxWindow* window = GetMainFrame();
 		wxSize size = window->GetSize();
 
 		mSettlersView = new wxSettlersView(GetMainFrame(), manager, -1, 
-			wxDefaultPosition, size, 0, swEmpty, &attrib[0]);
+			wxDefaultPosition, size, 0, swEmpty, attrib);
 	}
 
 	void OnCloseGameWindow(wxInt32)

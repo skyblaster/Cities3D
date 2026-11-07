@@ -46,8 +46,8 @@ void wxSplashDialog::Create(wxWindow *parent)
 	sSplash.reset(new wxImage[1]);
 	IMAGE.ReadImages(1, sSplash.get(), swUISpashTex);
 
-	sWidth = sSplash[0].GetWidth();
-	wxSize size(sWidth, sSplash[0].GetHeight());
+	sWidth = sSplash[0].IsOk() ? sSplash[0].GetWidth() : 0;
+	wxSize size(sWidth, sSplash[0].IsOk() ? sSplash[0].GetHeight() : 0);
 
 	wxDialog::Create(parent, -1, swEmpty, wxDefaultPosition, wxDefaultSize, 0);
 
@@ -55,10 +55,12 @@ void wxSplashDialog::Create(wxWindow *parent)
 
 	wxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
-	// Set the image.
-	wxStaticBitmap* bitmap = new wxStaticBitmap(this, 0, wxBitmap(sSplash[0]), 
-		wxPoint(0, 0), size);
-	sizer->Add(bitmap, 0, wxEXPAND);
+	if( (true == sSplash[0].IsOk()) && (0 < size.x) && (0 < size.y) )
+	{
+		wxStaticBitmap* bitmap = new wxStaticBitmap(this, 0,
+			wxBitmap(sSplash[0]), wxPoint(0, 0), size);
+		sizer->Add(bitmap, 0, wxEXPAND);
+	}
 
 	// Add the load text.
     static const wxString stFindingPlugins = _("Finding plugins...");

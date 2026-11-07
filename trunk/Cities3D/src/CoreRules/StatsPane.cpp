@@ -215,20 +215,30 @@ END_EVENT_TABLE()
 
 void wxStatsPane::OnStats(wxInt32 id)
 {
-	json_spirit::wObject obj;
-	
-	STAT.GetJson(obj);
+	try
+	{
+		json_spirit::wObject obj;
+		
+		STAT.GetJson(obj);
 
-	wxString html;
-	ConvertJsonToHtml(obj, id, html);
+		wxString html;
+		ConvertJsonToHtml(obj, id, html);
 
-	wxASSERT(NULL != spHtmlWindow);
+		if(NULL == spHtmlWindow)
+		{
+			return;
+		}
 
-    // Save off the current scroll position
-    wxInt32 x, y;
-    spHtmlWindow->Freeze();
-    spHtmlWindow->GetViewStart(&x, &y);
-	spHtmlWindow->SetPage(html);
-    spHtmlWindow->Scroll(x, y);
-    spHtmlWindow->Thaw();
+		wxInt32 x, y;
+		spHtmlWindow->Freeze();
+		spHtmlWindow->GetViewStart(&x, &y);
+		spHtmlWindow->SetPage(html);
+		spHtmlWindow->Scroll(x, y);
+		spHtmlWindow->Thaw();
+	}
+	catch(const std::exception &e)
+	{
+		wxLogError(wxT("Stats pane update failed: %s"),
+			HashString(e.what()).cwx_str());
+	}
 }

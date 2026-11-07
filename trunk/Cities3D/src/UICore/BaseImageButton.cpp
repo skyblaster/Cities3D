@@ -232,7 +232,16 @@ void wxBaseImageButton::SetBitmaps(const HashString &enabled,
 void wxBaseImageButton::GetBitmaps()
 {
 	wxSize size = GetSize() - wxSize(1, 1);
+	if( (0 >= size.x) || (0 >= size.y) )
+	{
+		return;
+	}
+
 	wxImage image = IMAGE.GetImage(mKey, mEnabled, size);
+	if(false == image.IsOk())
+	{
+		return;
+	}
 
 	wxBitmap enabled = wxBitmap(image);
 
@@ -242,7 +251,10 @@ void wxBaseImageButton::GetBitmaps()
 	if(false == mDisabled.empty())
 	{
 		image = IMAGE.GetImage(mKey, mDisabled, size);
-		disabled = wxBitmap(image);
+		if(true == image.IsOk())
+		{
+			disabled = wxBitmap(image);
+		}
 	}
 
 	wxBaseBitmapButton::SetBitmaps(enabled, disabled);

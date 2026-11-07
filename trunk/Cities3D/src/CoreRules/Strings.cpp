@@ -26,12 +26,11 @@
 //---------------------------- STATICS          -----------------------------//
 namespace
 {
-    // Force all strings to be statically initialized first.
-#ifdef __WIN32__
-    #pragma warning(disable:4073)
-    #pragma init_seg(lib)
-    #pragma warning(default:4073)
-#endif
+    // String constants must be constructed before the rest of this unity TU.
+    // Do not use #pragma init_seg(lib): it applies to the entire bulkbuild
+    // translation unit (MSVC C2356 if reset later) and runs every plugin
+    // registrar as a CRT library initializer, which can fail LoadLibrary
+    // with error 1114.
 
     // All strings used in this project.
 
@@ -119,6 +118,7 @@ namespace
 	const HashString shSpectatorListSubFont = "SpectatorListSubFont";
 	const HashString shSystemMessageFont = "SystemMessageFont";
 	const HashString shSystemMessageText = "SystemMessageText";
+	const HashString shSystemMessageTimestamp = "SystemMessageTimestamp";
 	const HashString shTabHeight = "TabHeight";
 	const HashString shTabWidth = "TabWidth";
 	const HashString shTextFont = "TextFont";
@@ -179,6 +179,7 @@ namespace
 	const HashString shEventSkin = "eventSkin";
 	const HashString shEventSpectator = "eventSpectator";
 	const HashString shEventStartGame = "eventStartGame";
+	const HashString shEventSystemMessage = "eventSystemMessage";
 	const HashString shEventStats = "eventStats";
 	const HashString shEventTrade = "eventTrade";
 	const HashString shEventUncheckMenu = "eventUncheckMenu";
@@ -215,6 +216,7 @@ namespace
 	const HashString shRuleExecuteTrade = "RuleExecuteTrade";
 	const HashString shRuleFindPorts = "RuleFindPorts";
 	const HashString shRuleGenerateBoard = "RuleGenerateBoard";
+	const HashString shRuleGenerateSystemMessage = "RuleGenerateSystemMessage";
 	const HashString shRuleGeneratePorts = "RuleGeneratePorts";
 	const HashString shRuleInitializeData = "RuleInitializeData";
 	const HashString shRuleInitializeOptionOverrides = "RuleInitializeOptionOverrides";
@@ -270,6 +272,8 @@ namespace
 	const wxString swAnimationBoard = wxT("Animation/Board");
 	const wxString swBank = wxT("Bank");
     const wxString swBaseGLCanvas = wxT("wxBaseGLCanvas");
+	const wxString swBracketLeft = wxT("[");
+	const wxString swBracketRightSpace = wxT("] ");
 	const wxString swBuildOptions = wxT("BuildOptions");
 	const wxString swCards = wxT("Cards");
 	const wxString swCitiesOnline = wxT("Cities Online");
@@ -285,6 +289,7 @@ namespace
 	const wxString swDepthBuffer = wxT("DepthBuffer");
 	const wxString swEmpty = wxT("");
 	const wxString swEnglishUS = wxT("English (U.S.)");
+	const wxString swEvents = wxT("Events");
 	const wxString swExit = wxT("Exit");
 	const wxString swFileAmp = wxT("&File");
 	const wxString swFrameBuffer = wxT("Framebuffer");
@@ -382,6 +387,7 @@ namespace
 	const wxString stDragAndDropNames = _("Drag and drop names, or double-click to add/remove.");
 	const wxString stEndTheTurn = _("End the turn");
 	const wxString stEndTurn = _("End Turn");
+	const wxString stEvents = _("Events");
 	const wxString stExit = _("Exit");
 	const wxString stExitAmp = _("E&xit");
 	const wxString stFew = _("Few");
@@ -515,6 +521,7 @@ namespace
 	const wxString STATS = wxT("Stats");
 	const wxString QUIT = wxT("Quit");
 }
+
 
 //---------------------------- PUBLIC           -----------------------------//
 

@@ -58,7 +58,26 @@ public:
 		//read desired flags out of the DataObject
 		for(size_t i = 0; i < object.numItems(); ++i)
 		{
-			flags.push_back(object.read<IGameObject::ObjectFlag>(i));
+			try
+			{
+				flags.push_back(object.read<IGameObject::ObjectFlag>(i));
+			}
+			catch(const boost::bad_any_cast &)
+			{
+				try
+				{
+					const wxInt32 value = object.read<wxInt32>(i);
+					if( (0 <= value) &&
+						(16 > value))
+					{
+						flags.push_back(
+							static_cast<IGameObject::ObjectFlag>(value));
+					}
+				}
+				catch(const boost::bad_any_cast &)
+				{
+				}
+			}
 		}
 
 		wxInt32 tiles = numTiles();

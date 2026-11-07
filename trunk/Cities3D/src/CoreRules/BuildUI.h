@@ -138,6 +138,8 @@ private:
 	//
 	void CreateDisabledBitmap();
 
+	void RebuildBitmaps(const wxSize& windowSize = wxDefaultSize);
+
 	//-----------------------------------------------------------------------//
 	// Group: Virtual Functions
 	//
@@ -285,6 +287,8 @@ private:
 	// A flag that is true if the wxBuildUI can be clicked and false if not.
 	//
 	bool mClickable;
+
+	wxColour mFillColour;
 
 	wxBitmap mEnabledBitmap;
 	wxBitmap mDisabledBitmap;

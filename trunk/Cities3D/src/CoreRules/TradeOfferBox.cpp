@@ -46,7 +46,7 @@ namespace
 		event.m_x = pos.x;
 		event.m_y = pos.y;
 
-		parent->ProcessEvent(event);
+		parent->ProcessWindowEvent(event);
 	}
 
 	const size_t TIMER_RESOLUTION = 500;

@@ -51,10 +51,12 @@ public:
 	{
 		wxInt32 die1 = gameData<wxInt32>(shDie1);
 		wxInt32 die2 = gameData<wxInt32>(shDie2);
+		const wxInt32 total = die1 + die2;
 
-		// Send out a system message.
-		wxString str = wxString::Format(stRollsA.c_str(), 
-            swStringFormat.c_str(), (die1 + die2));
+		wxString str = playerGame().player().Name();
+		str += wxT(" rolls a ");
+		str << total;
+		str += wxT(".");
 		RULE.Execute(shRuleUpdateNetworkUI, DataObject(str));
 	}
 };

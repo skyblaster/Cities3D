@@ -72,12 +72,12 @@ namespace
 		wxBoxSizer *horzSizer2 = new wxBoxSizer(wxHORIZONTAL);
 		wxBaseButton *button = new wxBaseButton(parent, 
 			ID_ADD_PLAYER_BUTTON, stAdd);
-		horzSizer2->Add(button, 0, wxALIGN_LEFT | wxTOP, 2);
+		horzSizer2->Add(button, 0, wxTOP, 2);
 		horzSizer2->Add(5, 0, 1, wxEXPAND);
 		spDeleteButtonGame = new wxBaseButton(parent, ID_DELETE_PLAYER_BUTTON, 
 			stDelete);
 		spDeleteButtonGame->Enable(false);
-		horzSizer2->Add(spDeleteButtonGame, 0, wxALIGN_RIGHT | wxTOP, 2);
+		horzSizer2->Add(spDeleteButtonGame, 0, wxTOP, 2);
 
 		wxBoxSizer *vertSizer1 = new wxBoxSizer(wxVERTICAL);
 		vertSizer1->Add(horzSizer1, 0, wxEXPAND | wxALL, 1);
@@ -121,12 +121,12 @@ namespace
 		wxBoxSizer *horzSizer2 = new wxBoxSizer(wxHORIZONTAL);
 		wxBaseButton *button = new wxBaseButton(parent, 
 			ID_SELECT_MAP_BUTTON, stSelectMap);
-		horzSizer2->Add(button, 0, wxALIGN_LEFT | wxTOP, 2);
+		horzSizer2->Add(button, 0, wxTOP, 2);
 		horzSizer2->Add(5, 0, 1, wxEXPAND);
 		spVariantsButton = new wxBaseButton(parent, 
 			ID_GAME_OPTIONS_BUTTON, stOptions);
 		spVariantsButton->Enable(false);
-		horzSizer2->Add(spVariantsButton, 0, wxALIGN_RIGHT | wxTOP, 2);
+		horzSizer2->Add(spVariantsButton, 0, wxTOP, 2);
 
 		vertSizer1->Add(horzSizer1, 0, wxEXPAND | wxALL, 1);
 		vertSizer1->Add(horzSizer2, 0, wxEXPAND | wxALL, 1);
@@ -155,15 +155,13 @@ namespace
 		CreateMap(mapSizer, window);
 
 		// Add the top level sizers.
-		sizer->Add(playerSizer, 8, wxALIGN_LEFT | wxALIGN_TOP | wxEXPAND | 
-			wxALL, 3);
-		sizer->Add(mapSizer, 5, wxALIGN_RIGHT | wxALIGN_TOP | wxEXPAND | 
-			wxALL, 3);
+		sizer->Add(playerSizer, 8, wxEXPAND | wxALL, 3);
+		sizer->Add(mapSizer, 5, wxEXPAND | wxALL, 3);
 
 		// Then tack on the buttons.
 		wxBoxSizer *buttonSizer = new wxBoxSizer(wxVERTICAL);
 		CreateButtons(buttonSizer, window);
-		sizer->Add(buttonSizer, 0, wxEXPAND | wxALIGN_RIGHT | wxALL, 3);
+		sizer->Add(buttonSizer, 0, wxEXPAND | wxALL, 3);
 
 		window->SetSizer(sizer);
 		sizer->SetSizeHints(window);

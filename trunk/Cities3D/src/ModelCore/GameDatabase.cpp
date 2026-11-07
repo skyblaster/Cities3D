@@ -199,8 +199,15 @@ void GameDatabase::DeleteGame(const size_t index, const bool reload)
 	// If there's only one game in the file, just delete the files.
 	if(1 == size)
 	{
-		wxRemoveFile(file);
-		wxRemoveFile(keyfile);
+		wxLogNull silent;
+		if(true == wxFileExists(file))
+		{
+			wxRemoveFile(file);
+		}
+		if(true == wxFileExists(keyfile))
+		{
+			wxRemoveFile(keyfile);
+		}
 	}
 	else
 	{

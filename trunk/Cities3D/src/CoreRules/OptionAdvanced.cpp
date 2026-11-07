@@ -72,7 +72,7 @@ wxOptionAdvanced::wxOptionAdvanced(wxWindow* parent)
 	bool framebuffer = CONFIG.read<wxInt32>(swConfigSectionOpenGL, swFrameBuffer, 
 		FALSE) || false;
 	bool pixelbuffer = CONFIG.read<wxInt32>(swConfigSectionOpenGL, swPixelBuffer, 
-		TRUE) || false;
+		FALSE) || false;
 	wxBoxSizer *innerVert2 = new wxBoxSizer(wxVERTICAL);
 	spRenderCheck = new wxBaseCheckBox(this, ID_RENDER_CHECK, 
 		stRenderBitmapsWithOpenGL);
@@ -106,7 +106,7 @@ wxOptionAdvanced::wxOptionAdvanced(wxWindow* parent)
 
 	// Get the default window color depth and use that as the default.
 	wxInt32 defaultSize = CONFIG.read<wxInt32>(swConfigSectionOpenGL, swDepthBuffer,
-		::wxDisplayDepth());
+		24);
 	switch(defaultSize)
 	{
 	case 32:

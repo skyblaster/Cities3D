@@ -29,6 +29,7 @@
 #include "NetworkPlayers.h"
 #include "INetworkEngine.h"
 #include "IStatEngine.h"
+#include <wx/ffile.h>
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -87,6 +88,22 @@ void RuleEngine::AsynchExecute(const HashString &rule,
 {
 	wxMutexLocker lock(mLock);
 
+	if(64 < mRuleDepth)
+	{
+		wxLogError(wxT("Rule recursion limit reached at %s (depth %d)."),
+			rule.cwx_str(), mRuleDepth);
+		return;
+	}
+
+	{
+		wxFFile breadcrumb(wxT("cities3d-last-rule.txt"), wxT("w"));
+		if(true == breadcrumb.IsOpened())
+		{
+			breadcrumb.Write(rule.wx_str());
+			breadcrumb.Flush();
+		}
+	}
+
 	//design by contract
 	wxASSERT(0 != mRuleHash.size());
 
@@ -144,6 +161,11 @@ void RuleEngine::AsynchExecute(const HashString &rule,
 		//log the error
 		wxLogError(wxT("Bad call to DataObject::read<> in %s."), 
 			rule.cwx_str());
+	}
+	catch(const std::exception &e)
+	{
+		wxLogError(wxT("Exception in %s: %s"), rule.cwx_str(),
+			HashString(e.what()).cwx_str());
 	}
 
 	//see if this rule branches into another rule in the rule chain

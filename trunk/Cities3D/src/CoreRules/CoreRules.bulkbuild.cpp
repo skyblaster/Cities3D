@@ -66,6 +66,7 @@
 #include "RuleDecrementPlayer.cpp"
 #include "RuleFindPorts.cpp"
 #include "RuleGenerateBoard.cpp"
+#include "RuleGenerateSystemMessageHotseat.cpp"
 #include "RuleGeneratePorts.cpp"
 #include "RuleGenerateSystemMessage.cpp"
 #include "RuleIncrementPlayer.cpp"

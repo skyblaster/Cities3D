@@ -25,6 +25,7 @@
 #include "Player.h"
 #include "ModelExport.h"
 #include "ColorInfoData.h"
+#include "IGameObject.h"
 
 //---------------------------- DEFINES          -----------------------------//
 
@@ -161,6 +162,14 @@ public:
 	//
 	void getGameObjects(std::list<GameObjectPtr> &objects) const;
 
+	//-----------------------------------------------------------------------//
+	// Function: reapplyObjectFlags
+	//
+	// Reapplies display flags on every corner and side object this player
+	// owns.  Runs in ModelCore so flag updates do not cross plugin vtables.
+	//
+	void reapplyObjectFlags(const IGameObject::ObjectFlag *flags, size_t count);
+
 	typedef std::vector<CornerObjectPtr> CornerObjectArray;
 
 	//-----------------------------------------------------------------------//
@@ -176,7 +185,7 @@ public:
 	//     A const reference to the container of <CornerObjects> at the
 	//     given key.
 	//
-	const CornerObjectArray &getCornerObjects(const HashString &key);
+	const CornerObjectArray &getCornerObjects(const HashString &key) const;
 
 	//-----------------------------------------------------------------------//
 	// Function: getAllCornerObjects
@@ -238,7 +247,7 @@ public:
 	//     A const reference to the container of <SideObjects> at the
 	//     given key.
 	//
-	const SideObjectArray &getSideObjects(const HashString &key);
+	const SideObjectArray &getSideObjects(const HashString &key) const;
 
 	//-----------------------------------------------------------------------//
 	// Function: getAllSideObjects

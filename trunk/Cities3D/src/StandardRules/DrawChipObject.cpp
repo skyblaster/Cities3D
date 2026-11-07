@@ -71,18 +71,26 @@ namespace
 	void drawChip(const DrawChipObject * const pObject)
 	{
 		ChipObject *pChip = static_cast<ChipObject *>(pObject->GetObject());
-
-		wxInt32 roll(pChip->roll());
-
-		//sanity
-		if(-1 == roll)
+		if(NULL == pChip)
 		{
 			return;
 		}
 
-		//set the proper texture
-		glBindTexture(GL_TEXTURE_2D, 
-			sTexBase[(roll < 7) ? roll - 2 : roll - 3]);
+		if(NULL == sQuad_Chip)
+		{
+			return;
+		}
+
+		wxInt32 roll(pChip->roll());
+
+		wxInt32 tex = (roll < 7) ? (roll - 2) : (roll - 3);
+		if( (0 > tex) ||
+			((GL_TEX_CHIPS - 1) <= tex))
+		{
+			return;
+		}
+
+		glBindTexture(GL_TEXTURE_2D, sTexBase[tex]);
 
 		//draw chip top
 		glPushMatrix();

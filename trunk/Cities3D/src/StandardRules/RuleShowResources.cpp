@@ -75,13 +75,16 @@ public:
 
 		// Get the current robber tile to see if it needs to be noted.
 		const HexObjectPtr &robber = GetGame()->getHexObject(shRobber);
-		wxASSERT(robber);
-		wxInt32 robberTile = robber->tile();
-
-		// If the robber is hidden, he does not affect resources.
-		if(true == robber->isset(IGameObject::Hidden))
+		wxInt32 robberTile = -1;
+		if(robber)
 		{
-			robberTile = -1;
+			robberTile = robber->tile();
+
+			// If the robber is hidden, he does not affect resources.
+			if(true == robber->isset(IGameObject::Hidden))
+			{
+				robberTile = -1;
+			}
 		}
 
 		for(wxInt32 i = 0; i < numTiles(); ++i)
@@ -137,6 +140,11 @@ public:
 private:
 	void HighlightObject(const CornerObjectPtr &object, const wxInt32 tileNum)
 	{
+		if(false == object)
+		{
+			return;
+		}
+
 		if( (object->tile1().first == tileNum) ||
 			(object->tile2().first == tileNum) ||
 			(object->tile3().first == tileNum))

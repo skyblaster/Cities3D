@@ -38,8 +38,11 @@ namespace
 		wxString file;
 		file = FilePath::Data(DataFilePlayers);
 
-		//clear any existing file
-		::wxRemoveFile(file);
+		if(true == ::wxFileExists(file))
+		{
+			wxLogNull silent;
+			::wxRemoveFile(file);
+		}
 
 		wxFile playerdb;
 		playerdb.Open(file, wxFile::write);

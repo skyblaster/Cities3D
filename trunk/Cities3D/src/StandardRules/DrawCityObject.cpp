@@ -342,7 +342,13 @@ void DrawCityObject::RenderSelection() const
 
 void DrawCityObject::RenderModel(const wxInt32) const
 {
-	DrawObject::material(GetObject()).UseMaterial();
+	IGameObject *object = GetObject();
+	if(NULL == object)
+	{
+		return;
+	}
+
+	DrawObject::material(object).UseMaterial();
 	drawCity();
 	DrawObject::material(White).UseMaterial();
 }

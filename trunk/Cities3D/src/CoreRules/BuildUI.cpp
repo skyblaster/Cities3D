@@ -31,6 +31,7 @@
 #include "ConfigDatabase.h"
 #include "BaseBitmapButton.h"
 #include "IRuleEngine.h"
+#include "ColorInfoData.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -59,6 +60,11 @@ public:
 	void SetBitmaps(const wxBitmap& enabled, const wxBitmap& disabled)
 	{
 		wxBaseBitmapButton::SetBitmaps(enabled, disabled);
+	}
+
+	void SetFillColour(const wxColour& colour)
+	{
+		wxBaseBitmapButton::SetFillColour(colour);
 	}
 };
 
@@ -160,6 +166,37 @@ namespace
 	wxColour sBackgroundBuild;
 	wxColour sOutline;
 	wxColour sClickable;
+
+	void PunchBuildBackground(wxImage& image)
+	{
+		if( (false == image.IsOk()) ||
+			(NULL == image.GetData()))
+		{
+			return;
+		}
+
+		const wxColour trans = SKIN.Element(shIconTransparent);
+		const wxColour skinBg = SKIN.Element(shBackground);
+		unsigned char* p = image.GetData();
+		const size_t pixels = static_cast<size_t>(image.GetWidth()) *
+			image.GetHeight();
+		for(size_t i = 0; i < pixels; ++i)
+		{
+			const bool punch =
+				( (12 > p[0]) && (12 > p[1]) && (12 > p[2]) ) ||
+				( (p[0] == trans.Red()) &&
+				  (p[1] == trans.Green()) &&
+				  (p[2] == trans.Blue()) ) ||
+				( (p[0] == skinBg.Red()) &&
+				  (p[1] == skinBg.Green()) &&
+				  (p[2] == skinBg.Blue()) );
+			if(true == punch)
+			{
+				p[0] = p[1] = p[2] = 0;
+			}
+			p += 3;
+		}
+	}
 	
 	class wxBuildUIBitmap : public BuildBitmap
 	{
@@ -203,23 +240,23 @@ namespace
 
 		wxBitmap GetBitmap(const wxSize &size) const
 		{
-			wxBitmap bitmap;
-
-			if(TRUE == 
-				CONFIG.read<wxInt32>(swConfigSectionOpenGL, swRenderBitmaps, TRUE))
+			if(mGameObject)
 			{
-				//set the game object's color
 				mGameObject->color(mPlayerColor);
-
-				//use the conversion function
-				Vector vector(10.0f, 10.0f, 10.0f);
-				bitmap = mCanvas->ConvertGLtoWX(mDrawObject, size.GetWidth(), 
-					size.GetHeight(), vector);
 			}
-			else
+
+			// Colorize the 2D build art with the player colour. The offscreen
+			// GL capture is often still unlit on the first paint, which left
+			// these icons black until a later recapture.
+			wxBitmap bitmap(IMAGE.Colorize(mImage, mMask, mPlayerColor, size,
+				true));
+
+			if(true == bitmap.IsOk())
 			{
-				bitmap = wxBitmap(
-					IMAGE.Colorize(mImage, mMask, mPlayerColor, size));
+				wxImage image = bitmap.ConvertToImage();
+				PunchBuildBackground(image);
+				bitmap = wxBitmap(image);
+				bitmap.SetMask(new wxMask(bitmap, *wxBLACK));
 			}
 
 			OverlayIcons(bitmap);
@@ -256,6 +293,7 @@ wxBuildUI::wxBuildUI(wxWindow* parent, const BuildDataPtr &build,
 , BuildPopup(this)
 , mLastIndex(-1)
 , mClickable(false)
+, mFillColour()
 {
 	SetMinSize(sMinSizeBuild);
 
@@ -301,6 +339,7 @@ wxBuildUI::wxBuildUI(wxWindow* parent, const BuildDataPtr &build,
 	sBackgroundBuild = SKIN.Element(shBackground);
 	sOutline = SKIN.Element(shGameUIOutline);
 	sClickable = SKIN.Element(shGameUIClickable);
+	mFillColour = sBackgroundBuild;
 
 	wxSizeEvent event(sMinSizeBuild);
 	Size(event);
@@ -356,7 +395,17 @@ void wxBuildUI::CreateDisabledBitmap()
 		mBuildBitmap->SetIconCount(0);
 	}
 
+	if(false == temp.IsOk())
+	{
+		return;
+	}
+
 	wxImage image = temp.ConvertToImage();
+	if( (false == image.IsOk()) || (NULL == image.GetData()) )
+	{
+		return;
+	}
+
 	wxInt32 size = image.GetHeight() * image.GetWidth();
 
 	wxColour trans = SKIN.Element(shIconTransparent);
@@ -394,53 +443,66 @@ void wxBuildUI::CreateDisabledBitmap()
 	mDisabledBitmap.SetMask(new wxMask(mDisabledBitmap, trans));
 }
 
+void wxBuildUI::RebuildBitmaps(const wxSize& windowSize)
+{
+	wxSize size = windowSize;
+	if( (2 >= size.x) ||
+		(2 >= size.y))
+	{
+		size = GetSize();
+	}
+	if( (2 >= size.x) ||
+		(2 >= size.y))
+	{
+		size = sMinSizeBuild;
+	}
+
+	wxSize bitmapSize = size - wxSize(2, 2);
+	bitmapSize.x = std::max(bitmapSize.x, 1);
+	bitmapSize.y = std::max(bitmapSize.y, 1);
+
+	mEnabledBitmap = mBuildBitmap->GetBitmap(bitmapSize);
+	CreateDisabledBitmap();
+	mBitmap->SetSize(bitmapSize);
+	mBitmap->SetFillColour(mFillColour);
+	mBitmap->SetBitmaps(mEnabledBitmap, mDisabledBitmap);
+	Refresh();
+}
+
 void wxBuildUI::Paint(wxMemoryDC &dc)
 {
 	wxSize size = GetSize();
 
-	dc.SetBrush(wxBrush(sBackgroundBuild, wxSOLID));
-	dc.SetPen(wxPen(mClickable ? sClickable : sOutline, 1, wxSOLID));
-	
-	dc.DrawRectangle(0, 0, size.x, size.y);
-
-	// If we're not clickable, draw hatch lines over the bitmap to show it.
-	if(false == mClickable)
+	if(true == mClickable)
 	{
-		wxBrush brush(sOutline);
-		brush.SetStyle(wxBDIAGONAL_HATCH);
-
-		dc.SetBrush(brush);
+		dc.SetBrush(wxBrush(mFillColour, wxSOLID));
+		dc.SetPen(wxPen(sClickable, 1, wxSOLID));
+		dc.DrawRectangle(0, 0, size.x, size.y);
+	}
+	else
+	{
+		dc.SetBackground(wxBrush(*wxBLACK, wxSOLID));
+		dc.SetBackgroundMode(wxSOLID);
+		dc.SetBrush(wxBrush(*wxBLACK, wxSOLID));
+		dc.SetPen(wxPen(sOutline, 1, wxSOLID));
 		dc.DrawRectangle(0, 0, size.x, size.y);
 
-		dc.DrawBitmap(mDisabledBitmap, 1, 1, true);
+		wxBrush hatch(sOutline, wxBDIAGONAL_HATCH);
+		dc.SetBrush(hatch);
+		dc.DrawRectangle(0, 0, size.x, size.y);
+
+		if(true == mDisabledBitmap.IsOk())
+		{
+			dc.DrawBitmap(mDisabledBitmap, 1, 1, true);
+		}
 	}
 }
 
 void wxBuildUI::Size(wxSizeEvent& event)
 {
-	// Resize the bitmaps.
 	if(wxSize(0, 0) != event.GetSize())
 	{
-		wxSize bitmapSize = event.GetSize() - wxSize(2, 2);
-
-		bitmapSize.x = std::max(bitmapSize.x, 1);
-		bitmapSize.y = std::max(bitmapSize.y, 1);
-
-		ColorType color = mBuildBitmap->GetPlayerColor();
-		mBuildBitmap->SetPlayerColor(CR_WHITE);
-		mEnabledBitmap = mBuildBitmap->GetBitmap(bitmapSize);
-		CreateDisabledBitmap();
-		mBitmap->SetSize(bitmapSize);
-
-		if(CR_WHITE != color)
-		{
-			mBuildBitmap->SetPlayerColor(color);
-		}
-
-		mEnabledBitmap = mBuildBitmap->GetBitmap(bitmapSize);
-		mBitmap->SetBitmaps(mEnabledBitmap, mDisabledBitmap);
-
-		Refresh();
+		RebuildBitmaps(event.GetSize());
 	}
 }
 
@@ -457,19 +519,17 @@ void wxBuildUI::OnUpdate(const DataObject &object)
 	RULE.Decide(shLogicIsThisPlayer, input, output);
 
 	bool thisPlayer = output.read<bool>();
-	bool afford = true;
+	bool afford = false;
+	wxInt32 icons = 0;
 
 	wxInt32 numIcons = mBuildBitmap->GetIconCount();
 
 	if( (true == thisPlayer) &&
 		(true == enable))
 	{
-		wxInt32 icons = 0;
-
 		DataObject input(0), output;
 		RULE.Decide(mLogic, input, output);
 
-		//sanity
 		if(0 == output.numItems())
 		{
 			afford = false;
@@ -483,25 +543,30 @@ void wxBuildUI::OnUpdate(const DataObject &object)
 				icons = output.read<wxInt32>(1);
 			}
 		}
-
-		mBuildBitmap->SetIconCount(icons);
-
-		// See if we need to reset the colors.
-		wxInt32 index = game->read<wxInt32>(shCurrentPlayer);
-		if( (mLastIndex != index) ||
-			(numIcons != mBuildBitmap->GetIconCount()))
-		{
-			mLastIndex = index;
-			mBuildBitmap->SetPlayerColor(game->playerGame(index).color());
-			mEnabledBitmap = mBuildBitmap->GetBitmap(mBitmap->GetSize());
-		}
 	}
 
-	// We are only enabled if we are the player at this machine and we can
-	// afford the item (and the game wants it enabled).
-
+	mBuildBitmap->SetIconCount(icons);
 	mClickable = enable && thisPlayer && afford;
 
+	wxInt32 index = -1;
+	if(game)
+	{
+		index = game->read<wxInt32>(shCurrentPlayer);
+	}
+
+	if( (NULL != game) &&
+		(0 <= index) &&
+		(game->numPlayers() > index))
+	{
+		const ColorType playerColor = game->playerGame(index).color();
+		mLastIndex = index;
+		mFillColour = ColorInfoData::UIColor(playerColor);
+		mBuildBitmap->SetPlayerColor(playerColor);
+		RebuildBitmaps(GetSize());
+		CallAfter([this]() { RebuildBitmaps(GetSize()); });
+	}
+
+	mBitmap->SetFillColour(mFillColour);
 	mBitmap->SetBitmaps(mEnabledBitmap, mDisabledBitmap);
 	mBitmap->Enable(mClickable);
 	mBitmap->Show(mClickable);
@@ -521,6 +586,7 @@ void wxBuildUI::OnShutdownUI(wxInt32)
 
 void wxBuildUI::OnResetBitmaps(wxInt32)
 {
+	RebuildBitmaps(GetSize());
 }
 
 void wxBuildUI::OnKeyEvent(wxInt32)

@@ -181,6 +181,11 @@ namespace
 
 	void drawTileOutline(const GLMaterial &mat)
 	{
+		if(!sLists_Tile)
+		{
+			return;
+		}
+
 		//set polygon mode to outline
 		glDisable(GL_TEXTURE_2D);
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -201,6 +206,10 @@ namespace
 	void drawTile(const DrawTileObject * const pObject)
 	{
 		TileObject *pTile = static_cast<TileObject *>(pObject->GetObject());
+		if(NULL == pTile)
+		{
+			return;
+		}
 
 		HashString type = pTile->read<HashString>(shTileType);
 
@@ -214,9 +223,12 @@ namespace
 
 		//sanity
 		GLuintHash::iterator it(sTexHash.find(type));
-		wxASSERT(sTexHash.end() != it);
+		if(sTexHash.end() == it)
+		{
+			return;
+		}
 
-		glBindTexture(GL_TEXTURE_2D, sTexHash[type]);
+		glBindTexture(GL_TEXTURE_2D, it->second);
 
 		glCallList(sLists_Tile[Tile]);
 

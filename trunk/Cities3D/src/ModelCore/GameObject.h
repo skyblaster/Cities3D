@@ -120,6 +120,14 @@ public:
 	virtual void set(const wxInt32 flag);
 
 	//-----------------------------------------------------------------------//
+	// Function: reapplyFlags
+	//
+	// Resets display flags, then applies the given flags. Hidden is preserved.
+	// If allowDim is false, Dim is not applied.
+	//
+	void reapplyFlags(const ObjectFlag *flags, size_t count, bool allowDim);
+
+	//-----------------------------------------------------------------------//
 	// Function: id
 	//
 	// Provides the ID of the object.

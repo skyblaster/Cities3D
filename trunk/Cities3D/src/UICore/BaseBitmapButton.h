@@ -72,6 +72,13 @@ public:
 	bool Enable(bool enable = true);
 
 	//-----------------------------------------------------------------------//
+	// Function: SetFillColour
+	//
+	// Sets the per-button fill colour drawn behind a masked bitmap.
+	//
+	void SetFillColour(const wxColour& colour);
+
+	//-----------------------------------------------------------------------//
 	// Section: Protected
 	//
 protected:
@@ -288,6 +295,8 @@ private:
 	// the disabled state.
 	//
 	wxBitmap mDisabledBitmap;
+
+	wxColour mFillColour;
 
 	//-----------------------------------------------------------------------//
 	// Object: mMode

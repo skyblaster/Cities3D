@@ -183,7 +183,7 @@ IMPLEMENT_PLAYER_IMAGE_DATA(STANDARD, PlayerPoints, boost::bind(
 							stVictoryPoints);
 IMPLEMENT_PLAYER_IMAGE_DATA(STANDARD, PlayerPoints, boost::bind(
 							updateAmount, _1, _2, shRoadLength), 
-							boost::bind(colorRoads, _1, _2), 1, Points, Roads, 
+							boost::bind(colorRoads, _1, _2), 1, Build, road32, 
 							stRoadLength);
 
 //---------------------------- PUBLIC           -----------------------------//

@@ -366,7 +366,7 @@ void ImageEngine::ReadImages(const wxInt32 size, wxImage pList[],
 		wxImage image(mem);
 		
 		//see if we were successful
-		if(FALSE == image.Ok())
+		if(FALSE == image.IsOk())
 		{
 			wxLogError(wxString::Format(wxT("Unable to open file %s from %s."), 
 				strIn.c_str(), file.c_str()));

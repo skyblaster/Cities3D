@@ -232,6 +232,15 @@ public:
 	void getAllHexObjects(HexObjectArray &objects) const;
 
 	//-----------------------------------------------------------------------//
+	// Function: reapplyHexObjectFlags
+	//
+	// Reapplies display flags on hex objects (robber, pirate, merchant).
+	// Dim is never applied to hex objects.
+	//
+	void reapplyHexObjectFlags(const IGameObject::ObjectFlag *flags,
+		size_t count);
+
+	//-----------------------------------------------------------------------//
 	// Function: load
 	//
 	// Loads the Game from the given input stream.  Uses the 

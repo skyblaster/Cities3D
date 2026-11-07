@@ -421,7 +421,7 @@ void wxStockyardDialog::OnClearOffer(wxInt32)
 void wxStockyardDialog::OnPaint(wxPaintEvent& event)
 {
 	wxPaintDC dc(this);
-	wxASSERT(TRUE == dc.Ok());
+	wxASSERT(TRUE == dc.IsOk());
 
 	// Draw the selection box if needed.
 	if(-1 != mSelection)

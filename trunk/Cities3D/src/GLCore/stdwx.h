@@ -22,6 +22,7 @@
 #include "stdCommon.h"
 #include "wxCommon.h"
 #include "boostCommon.h"
+#include "gluCommon.h"
 
 #include "HashString.h"
 

@@ -32,7 +32,7 @@
 #endif
 
 #ifdef __WIN32__
-extern WXDLLEXPORT WXWORD wxCharCodeWXToMSW(int id, bool *isVirtual);
+#include <wx/accel.h>
 #endif
 
 #ifdef __WXGTK__
@@ -61,29 +61,8 @@ namespace
 		}
 
 #ifdef __WIN32__
-		// Back convert the wx key to a Win32 virtual key.
-		WORD vk = wxCharCodeWXToMSW(code, NULL);
-		
-		unsigned int sc = MapVirtualKeyEx(vk, 0, GetKeyboardLayout(0));
-
-		switch(vk) {
-			// Keys which are "extended" (except for Return which is Numeric Enter as extended)
-			case VK_INSERT:
-			case VK_DELETE:
-			case VK_HOME:
-			case VK_END:
-			case VK_NEXT:  // Page down
-			case VK_PRIOR: // Page up
-			case VK_LEFT:
-			case VK_RIGHT:
-			case VK_UP:
-			case VK_DOWN:
-				sc |= 0x100; // Add extended bit
-		}	
-		
-		TCHAR buf[256];
-		GetKeyNameText(sc << 16, buf, 256);
-		text += buf;
+		wxAcceleratorEntry entry(wxACCEL_NORMAL, code);
+		text += entry.ToString();
 #endif
 
 #ifdef __WXGTK__

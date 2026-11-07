@@ -98,7 +98,7 @@ void BuildPopup::CreatePopup(wxWindow* window, wxSizer* sizer) const
 		}
 
 		wxSizeEvent event(wxSize(-1, -1));
-		images->ProcessEvent(event);
+		images->ProcessWindowEvent(event);
 
 		sizer->Add(images, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 4);
 	}

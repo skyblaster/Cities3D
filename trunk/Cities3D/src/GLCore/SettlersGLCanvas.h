@@ -204,6 +204,8 @@ private:
 	//
 	virtual void DrawScene();
 
+	void EnsureGLResources();
+
 	//-----------------------------------------------------------------------//
 	// Function: Select
 	//
@@ -458,5 +460,7 @@ private:
 	// The image buffer that reads from the pixel buffer texture.
 	//
 	wxImage mRenderImage;
+
+	bool mGLResourcesReady;
 };
 //---------------------------- PROTOTYPES       -----------------------------//

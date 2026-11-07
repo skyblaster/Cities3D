@@ -64,6 +64,11 @@ void Utility::otherTiles(const GamePtr &game, const wxInt32 nT1,
 void Utility::calculateFontSize(wxDC &dc, wxFont &font, wxInt32 height,
 								wxInt32 rows)
 {
+	if( (0 >= height) || (0 >= rows) )
+	{
+		return;
+	}
+
 	for(wxInt32 size = 1; size <= 100; size++)
 	{
 		font.SetPointSize(size);
@@ -77,7 +82,7 @@ void Utility::calculateFontSize(wxDC &dc, wxFont &font, wxInt32 height,
 		//previous valid size
 		if(height < (h * (rows)) + (rows - 1))
 		{
-			font.SetPointSize(size - 1);
+			font.SetPointSize((1 < size) ? (size - 1) : 1);
 			break;
 		}
 	}
