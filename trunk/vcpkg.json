@@ -1,0 +1,22 @@
+{
+  "name": "cities3d",
+  "version-string": "0.10.0",
+  "builtin-baseline": "0c2a9ace1964b818b15f7ae50ba1c42404918a7b",
+  "dependencies": [
+    "boost-any",
+    "boost-bind",
+    "boost-config",
+    "boost-function",
+    "boost-lexical-cast",
+    "boost-random",
+    "boost-smart-ptr",
+    "boost-spirit",
+    "boost-tuple",
+    "boost-type-traits",
+    "boost-utility",
+    "glew",
+    "miniaudio",
+    "opengl",
+    "wxwidgets"
+  ]
+}

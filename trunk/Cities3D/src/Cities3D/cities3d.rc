@@ -2,5 +2,5 @@
 
 a_cities3d ICON "cities3d.ico"
 
-#include "../../../wxWidgets/2.8.10/include/wx/msw/wx.rc"
+#include "wx/msw/wx.rc"
 
