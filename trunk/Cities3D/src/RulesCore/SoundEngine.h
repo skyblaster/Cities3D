@@ -27,20 +27,11 @@
 
 //---------------------------- CLASSES          -----------------------------//
 
-#ifdef FMOD4
-// fmod4 forward declarations
-namespace FMOD {
-	class System;
-}
-#endif
-
 //---------------------------------------------------------------------------//
 // Class: SoundEngine
 // 
 // The default implementation of the <ISoundEngine> interface.  
-// Plays sounds when requested using the fmod sound engine.
-// See <http://www.fmod.org> for full documentation of the
-// fmod sound engine.
+// Plays one-shot files from the sounds directory using miniaudio.
 //
 // Derived From:
 //     <ISoundEngine>
@@ -65,19 +56,16 @@ public:
 	// Constructor: SoundEngine
 	// 
 	// The SoundEngine constructor.  The constructor
-	// initializes the fmod sound engine so that it is ready
-	// to play sounds.
+	// initializes miniaudio so that it is ready to play sounds.
 	// 
 	SoundEngine();
 
-#	ifdef FMOD4
 	//-----------------------------------------------------------------------//
 	// Destructor: ~SoundEngine
 	//
-	// The SoundEngine deconstructor. Releases the fmod system.
-	// It currently is only defined when FMOD4 is used.
+	// Releases the miniaudio engine.
+	//
 	~SoundEngine();
-#	endif
 
 	//-----------------------------------------------------------------------//
 	// Group: Functions
@@ -92,9 +80,7 @@ public:
 	// information.
 	//
 	// Parameters:
-	//     sound - The full path to the sound file.  Sound files
-	//             may be .wav, .mp3, or various other file formats.
-	//             See <http://www.fmod.org> for more information.
+	//     sound - The name of the sound file in the sounds directory.
 	//
 	void PlaySound(const wxString &sound) const;
 
@@ -102,20 +88,12 @@ public:
 	// Section: Private
 	//
 private:
-#	ifdef FMOD4
 	//-----------------------------------------------------------------------//
 	// Group: Variables
 	//
 
-	//-----------------------------------------------------------------------//
-	// Pointer: mSystem
-	//
-	// A pointer to a FMOD4 system.
-	// It is only available, if FMOD4 is defined.
-	//
-	FMOD::System *mSystem;
-#	endif
+	struct Impl;
+	Impl *mpImpl;
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//
-
