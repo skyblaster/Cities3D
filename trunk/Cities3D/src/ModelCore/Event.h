@@ -16,6 +16,9 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#ifdef new
+#undef new
+#endif
 #include <boost/type_traits.hpp>
 #include <list>
 
