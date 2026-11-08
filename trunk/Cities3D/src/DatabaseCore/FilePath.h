@@ -167,6 +167,15 @@ namespace FilePath
 			const wxString &dirname = wxEmptyString);
 
 	//-----------------------------------------------------------------------//
+	// Function: LastRuleBreadcrumb
+	//
+	// Full path to the crash-debug breadcrumb file that records the last
+	// rule executed. Always under the user-writable data directory so Flatpak
+	// (read-only /app) and other sandboxes can create it.
+	//
+	wxString DATABASE_EXPORT_SPEC LastRuleBreadcrumb();
+
+	//-----------------------------------------------------------------------//
 	// Function: Data
 	//
 	// Provides the full path to a data file.  Data files include

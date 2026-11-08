@@ -29,6 +29,7 @@
 #include "NetworkPlayers.h"
 #include "INetworkEngine.h"
 #include "IStatEngine.h"
+#include "FilePath.h"
 #include <wx/ffile.h>
 
 //---------------------------- TYPEDEFS         -----------------------------//
@@ -96,7 +97,7 @@ void RuleEngine::AsynchExecute(const HashString &rule,
 	}
 
 	{
-		wxFFile breadcrumb(wxT("cities3d-last-rule.txt"), wxT("w"));
+		wxFFile breadcrumb(FilePath::LastRuleBreadcrumb(), wxT("w"));
 		if(true == breadcrumb.IsOpened())
 		{
 			breadcrumb.Write(rule.wx_str());

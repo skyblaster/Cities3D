@@ -21,6 +21,7 @@
 #include "Rule.h"
 #include "RuleSetDatabase.h"
 #include "Game.h"
+#include "FilePath.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -32,7 +33,7 @@ namespace
 {
 	void WriteResetObjectFlagsStage(const wxString &stage)
 	{
-		wxFFile breadcrumb(wxT("cities3d-last-rule.txt"), wxT("w"));
+		wxFFile breadcrumb(FilePath::LastRuleBreadcrumb(), wxT("w"));
 		if(true == breadcrumb.IsOpened())
 		{
 			breadcrumb.Write(wxT("RuleResetObjectFlags:") + stage);
