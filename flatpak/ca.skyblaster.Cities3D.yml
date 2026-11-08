@@ -26,7 +26,19 @@ finish-args:
 inherit-extensions:
   - org.freedesktop.Platform.GL
 
+# Drop build-only metadata after all modules finish. Keep libGLU.so for GLEW.
+cleanup:
+  - /include
+  - /lib/pkgconfig
+  - /lib/*.a
+  - /lib/*.la
+  - /share/pkgconfig
+
 modules:
+  # Freedesktop SDK has OpenGL but not GLU. vcpkg's glew port requires glu.pc.
+  # Keep pkg-config files until the final cleanup so the cities3d module can see them.
+  - glu-9.json
+
   - name: cities3d
     buildsystem: simple
     build-options:
@@ -36,6 +48,7 @@ modules:
       env:
         VCPKG_DEFAULT_TRIPLET: x64-linux
         VCPKG_FORCE_SYSTEM_BINARIES: "1"
+
     build-commands:
       - |
         set -euo pipefail

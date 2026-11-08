@@ -77,10 +77,11 @@ The first build downloads the SDK, fetches the pinned vcpkg commit, bootstraps v
 
 ### What the manifest does
 
-1. Downloads vcpkg at the commit pinned in `trunk/vcpkg.json` (`builtin-baseline`) during the source-fetch phase.
-2. Bootstraps vcpkg, then configures `trunk/` with Ninja + the vcpkg toolchain (Release).
-3. Builds Cities3D and the rule plugins.
-4. Installs the executable, shared libraries, plugins, and game data under `/app/share/cities3d`, with a launcher at `/app/bin/Cities3D`.
+1. Builds Mesa **GLU** into `/app` (the Freedesktop SDK has OpenGL but not `glu.pc` / `libGLU`, which vcpkg’s GLEW port requires).
+2. Downloads vcpkg at the commit pinned in `trunk/vcpkg.json` (`builtin-baseline`) during the source-fetch phase.
+3. Bootstraps vcpkg, then configures `trunk/` with Ninja + the vcpkg toolchain (Release).
+4. Builds Cities3D and the rule plugins.
+5. Installs the executable, shared libraries, plugins, and game data under `/app/share/cities3d`, with a launcher at `/app/bin/Cities3D`.
 
 ## Run
 
