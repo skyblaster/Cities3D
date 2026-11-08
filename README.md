@@ -2,7 +2,7 @@
 
 Linux build for an immutable system, using [Homebrew](https://docs.brew.sh/Homebrew-on-Linux) only. The CMake project is in `trunk/`. The checked-in `linux` preset is a Debug build that downloads and compiles its own copies of Boost, wxWidgets, GTK, and the rest through vcpkg. The first configure is a long source build and needs several gigabytes of disk.
 
-This path uses the same manifest as the Windows build (`trunk/vcpkg.json`, baseline `0c2a9ace1964b818b15f7ae50ba1c42404918a7b`). vcpkg does not build OpenGL. The headers and link libraries come from Homebrew's Mesa. Homebrew Mesa is classic `libGL` (GLX included), not GLVND, so the Linux preset and `trunk/triplets/x64-linux.cmake` set `OpenGL_GL_PREFERENCE=LEGACY` for CMake and for vcpkg ports such as GLEW.
+This path uses the same manifest as the Windows build (`trunk/vcpkg.json`, baseline `0c2a9ace1964b818b15f7ae50ba1c42404918a7b`). vcpkg does not build OpenGL. The headers and link libraries come from Homebrew's Mesa (and the X11 libraries Mesa pulls in). Homebrew Mesa is classic `libGL` (GLX included), not GLVND, so the Linux preset and `trunk/triplets/x64-linux.cmake` set `OpenGL_GL_PREFERENCE=LEGACY` for CMake and for vcpkg ports such as GLEW. Export Homebrew's `pkg-config` so vcpkg/meson can see those X11 `.pc` files; the system `/bin/pkg-config` will not.
 
 ## Homebrew
 
@@ -39,10 +39,11 @@ git clone https://github.com/microsoft/vcpkg.git "$HOME/vcpkg"
 export VCPKG_ROOT="$HOME/vcpkg"
 export VCPKG_DEFAULT_TRIPLET=x64-linux
 export CMAKE_PREFIX_PATH="$(brew --prefix):$(brew --prefix mesa):$(brew --prefix mesa-glu)"
+export PKG_CONFIG="$(brew --prefix)/bin/pkg-config"
 export PKG_CONFIG_PATH="$(brew --prefix)/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
 ```
 
-Keep the `export` lines (including `CC` / `CXX`) in the same shell you use for CMake. Add them next to the `brew shellenv` line if you want them in every new terminal.
+Keep the `export` lines (including `CC` / `CXX` / `PKG_CONFIG`) in the same shell you use for CMake. Add them next to the `brew shellenv` line if you want them in every new terminal.
 
 ## Build
 
