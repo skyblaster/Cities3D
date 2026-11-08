@@ -177,12 +177,14 @@ protected:
 	//
 	template <typename T> T& data(const HashString &key, bool safety = false)
 	{
-		//by doing a void return here, we make it so that any developer who
-		//tries to access a data type that this class does not provide will get
-		//a compile-time error saying that this function does not return a 
-		//value; this works because template declarations are never 
-		//instantiated until they are actually required
-		return;
+		// Primary template is intentionally unusable; only the explicit
+		// specializations below are valid. Older compilers deferred checking
+		// a void return in a T& function until instantiation; GCC 16 diagnoses
+		// it up front, so use static_assert instead.
+		static_assert(sizeof(T) == 0, "Data::data is not specialized for this type");
+		(void)key;
+		(void)safety;
+		return *static_cast<T*>(nullptr);
 	}
 
 	//-----------------------------------------------------------------------//
