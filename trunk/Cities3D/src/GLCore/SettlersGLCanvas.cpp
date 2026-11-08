@@ -215,7 +215,7 @@ wxBitmap wxSettlersGLCanvas::ConvertGLtoWX(const DrawObjectPtr &object,
 
 	wxImage image;
 
-	if( (FALSE != GetContext()) &&
+	if(GetContext() &&
 		(0 < width) &&
 		(0 < height))
 	{
@@ -374,11 +374,11 @@ void wxSettlersGLCanvas::DrawScene()
 	{
 		PriorityMap::iterator itNow(it++);
 
-		if(false == itNow->second)
+		if(!itNow->second)
 		{
 			mPriorityMap.erase(itNow);
 		}
-		else if(true == itNow->second->CanDelete())
+		else if(itNow->second->CanDelete())
 		{
 			mPriorityMap.erase(itNow);
 		}
@@ -825,7 +825,7 @@ void wxSettlersGLCanvas::OnResetCamera(bool)
 
 void wxSettlersGLCanvas::OnImageUpdate(bool)
 {
-	if(FALSE == GetContext()) 
+	if(!GetContext())
 	{
 		return;
 	}

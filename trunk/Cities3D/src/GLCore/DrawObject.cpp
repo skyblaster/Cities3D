@@ -141,7 +141,9 @@ const GLMaterial &DrawObject::material(Material type)
 		}
 
 		sMaterials[type].SetMaterial(black);
-		wxInt32 pixel((wxInt32) color.GetPixel());
+		// wxColour::GetPixel() was a Windows COLORREF helper removed in wx 3.
+		// GetRGB() packs the same default used by wxColour(int).
+		wxInt32 pixel(static_cast<wxInt32>(color.GetRGB()));
 		sMaterials[type].SetProperty(GLMaterial::Emissive, 
 			CONFIG.read(swConfigSectionOpenGL, option, pixel));
 	}
