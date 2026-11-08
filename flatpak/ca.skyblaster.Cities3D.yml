@@ -29,6 +29,8 @@ finish-args:
   - --filesystem=xdg-documents
   - --filesystem=xdg-download
   - --env=GDK_BACKEND=x11
+  # wxConfig uses ~/.Cities3D/; persist it into the Flatpak app data dir.
+  - --persist=.Cities3D
 
 # Do not inherit org.freedesktop.Platform.GL. The runtime already exposes GL via
 # --device=dri; inheriting it also mounts under /app and breaks launch with:
