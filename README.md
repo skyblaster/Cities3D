@@ -69,12 +69,15 @@ cd ~/Cities3D   # or your checkout path
 ./flatpak/build.sh
 ```
 
-`./flatpak/build.sh` **reuses** `.flatpak-builder/` caches by default (so a second run after a small packaging change does not rebuild glu/vcpkg from scratch). Pass `./flatpak/build.sh --force-clean` only when you want to wipe `build-flatpak/` and redo the module build dirs.
+`flatpak-builder` needs `--force-clean` whenever `build-flatpak/` already exists (otherwise you get `App dir 'build-flatpak' is not empty`). That flag only clears the staging app dir. The **module cache** lives in `.flatpak-builder/` and still produces `Cache hit for glu` / unchanged modules on later runs.
+
+- Packaging-only changes (icons, desktop file, install steps): `./flatpak/build.sh` — expects a cache hit for glu; `cities3d` rebuilds if the manifest/sources changed.
+- Wipe everything and recompile from scratch: `./flatpak/build.sh --full-rebuild`
 
 Or run `flatpak-builder` yourself:
 
 ```sh
-flatpak-builder --user --install \
+flatpak-builder --user --install --force-clean \
   --disable-rofiles-fuse \
   --install-deps-from=flathub \
   build-flatpak \

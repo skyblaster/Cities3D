@@ -1,27 +1,30 @@
 #!/usr/bin/env bash
 # Build and install the Cities3D Flatpak (run inside the Distrobox).
 #
-# Reuses .flatpak-builder/ and build-flatpak/ caches by default.
-# Force a clean rebuild with:
-#   ./flatpak/build.sh --force-clean
-#   FORCE_CLEAN=1 ./flatpak/build.sh
+# Always passes --force-clean so the staging app dir (build-flatpak/) can be
+# rewritten. That does NOT wipe the module cache in .flatpak-builder/, so glu
+# and an unchanged cities3d module still show "Cache hit".
+#
+# True from-scratch rebuild (also delete the module cache):
+#   ./flatpak/build.sh --full-rebuild
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${ROOT}"
 
-FORCE_CLEAN="${FORCE_CLEAN:-0}"
+FULL_REBUILD=0
 for arg in "$@"; do
   case "${arg}" in
-    --force-clean) FORCE_CLEAN=1 ;;
+    --full-rebuild) FULL_REBUILD=1 ;;
     -h|--help)
-      echo "Usage: $0 [--force-clean]"
-      echo "Reuses flatpak-builder caches unless --force-clean (or FORCE_CLEAN=1) is set."
+      echo "Usage: $0 [--full-rebuild]"
+      echo "  (default)  --force-clean app dir; reuse .flatpak-builder module cache"
+      echo "  --full-rebuild  also delete .flatpak-builder/ before building"
       exit 0
       ;;
     *)
       echo "Unknown option: ${arg}" >&2
-      echo "Usage: $0 [--force-clean]" >&2
+      echo "Usage: $0 [--full-rebuild]" >&2
       exit 1
       ;;
   esac
@@ -45,21 +48,16 @@ if grep -q ' /etc/resolv.conf .*//deleted' /proc/self/mountinfo 2>/dev/null \
   exit 1
 fi
 
-args=(
-  --user
-  --install
-  --disable-rofiles-fuse
-  --install-deps-from=flathub
-)
-if [[ "${FORCE_CLEAN}" == "1" ]]; then
-  args+=(--force-clean)
-  echo "Forcing a clean rebuild (--force-clean)."
-else
-  echo "Reusing flatpak-builder cache (pass --force-clean to wipe build-flatpak/)."
+if [[ "${FULL_REBUILD}" == "1" ]]; then
+  echo "Full rebuild: removing .flatpak-builder/ and build-flatpak/."
+  rm -rf .flatpak-builder build-flatpak
 fi
 
-# Distrobox / rootless Podman usually cannot run rofiles-fuse (Permission denied
-# on .flatpak-builder/rofiles). Hard links / copies are slower but work.
-exec flatpak-builder "${args[@]}" \
+# --force-clean clears build-flatpak/ (required when that dir already exists).
+# Module artifacts stay cached under .flatpak-builder/ unless --full-rebuild.
+# Distrobox / rootless Podman usually cannot run rofiles-fuse.
+exec flatpak-builder --user --install --force-clean \
+  --disable-rofiles-fuse \
+  --install-deps-from=flathub \
   build-flatpak \
   flatpak/ca.skyblaster.Cities3D.yml
