@@ -13,6 +13,7 @@
     </p>
   </description>
   <launchable type="desktop-id">ca.skyblaster.Cities3D.desktop</launchable>
+  <icon type="stock">ca.skyblaster.Cities3D</icon>
   <categories>
     <category>Game</category>
     <category>BoardGame</category>

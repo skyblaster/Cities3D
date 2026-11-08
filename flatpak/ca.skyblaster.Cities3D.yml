@@ -85,6 +85,15 @@ modules:
         install -m755 flatpak/cities3d-launcher.sh "${FLATPAK_DEST}/bin/Cities3D"
       - install -Dm644 flatpak/ca.skyblaster.Cities3D.desktop "${FLATPAK_DEST}/share/applications/ca.skyblaster.Cities3D.desktop"
       - install -Dm644 flatpak/ca.skyblaster.Cities3D.metainfo.xml "${FLATPAK_DEST}/share/metainfo/ca.skyblaster.Cities3D.metainfo.xml"
+      - |
+        set -euo pipefail
+        # AppStream compose requires a themed icon matching Icon= in the desktop file.
+        for size in 32 48 64 128 256; do
+          install -Dm644 \
+            "flatpak/icons/${size}/apps/ca.skyblaster.Cities3D.png" \
+            "${FLATPAK_DEST}/share/icons/hicolor/${size}x${size}/apps/ca.skyblaster.Cities3D.png"
+        done
+
     sources:
       # Pin to the builtin-baseline in trunk/vcpkg.json so port versions match.
       - type: git
