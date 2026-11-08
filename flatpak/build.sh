@@ -11,6 +11,18 @@ if ! command -v flatpak-builder >/dev/null 2>&1; then
   exit 1
 fi
 
+# Distrobox often bind-mounts the host resolv.conf. When the host rewrites that
+# file (VPN, Wi-Fi, sleep), the mount can point at a deleted inode and nested
+# bwrap fails with: Can't bind mount /etc/resolv.conf
+if grep -q ' /etc/resolv.conf .*//deleted' /proc/self/mountinfo 2>/dev/null \
+  || { [[ -e /etc/resolv.conf ]] && [[ "$(stat -c %h /etc/resolv.conf 2>/dev/null || echo 1)" == "0" ]]; }; then
+  echo "Distrobox DNS mount looks stale (deleted /etc/resolv.conf inode)." >&2
+  echo "Fix, then re-run ./flatpak/build.sh:" >&2
+  echo "  distrobox stop cities3d-flatpak && distrobox enter cities3d-flatpak" >&2
+  echo "Or recreate the box with --unshare-netns (see README.md)." >&2
+  exit 1
+fi
+
 # Distrobox / rootless Podman usually cannot run rofiles-fuse (Permission denied
 # on .flatpak-builder/rofiles). Hard links / copies are slower but work.
 exec flatpak-builder --user --install --force-clean \

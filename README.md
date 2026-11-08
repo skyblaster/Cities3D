@@ -21,8 +21,18 @@ Create a Fedora 45 toolbox container (current Fedora toolbox release) and enter 
 distrobox create \
   --name cities3d-flatpak \
   --image quay.io/fedora/fedora-toolbox:45 \
+  --unshare-netns \
   --yes
 
+distrobox enter cities3d-flatpak
+```
+
+`--unshare-netns` gives the box its own network namespace so nested `bwrap` (used by `flatpak-builder`) is not tied to the host’s bind-mounted `/etc/resolv.conf`. Without it, VPN/Wi‑Fi/sleep on the host can leave that mount pointing at a deleted inode and builds fail with `bwrap: Can't bind mount /etc/resolv.conf`.
+
+If you already created the box without `--unshare-netns`, either recreate it with the flags above, or as a short-term fix after a DNS change:
+
+```sh
+distrobox stop cities3d-flatpak
 distrobox enter cities3d-flatpak
 ```
 
@@ -74,6 +84,8 @@ flatpak-builder --user --install --force-clean \
 The first build downloads the SDK, fetches the pinned vcpkg commit, bootstraps vcpkg, and compiles wxWidgets/GTK and the rest. Expect a long run and several gigabytes of disk under `.flatpak-builder/` and `build-flatpak/`.
 
 `flatpak-builder` sandboxes each module **without network** unless the manifest opts in. This manifest grants `--share=network` for the `cities3d` module so vcpkg can download port archives. If you still see `Could not resolve host: github.com`, check DNS from inside Distrobox (`getent hosts github.com`) before rebuilding.
+
+If the build dies immediately with `bwrap: Can't bind mount /etc/resolv.conf`, stop and re-enter the Distrobox (or recreate it with `--unshare-netns` as above). That is a Distrobox/host DNS mount issue, not a Cities3D compile failure.
 
 ### What the manifest does
 
