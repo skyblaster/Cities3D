@@ -67,23 +67,62 @@ modules:
       - |
         set -euo pipefail
         VCPKG_ROOT="${PWD}/vcpkg"
+        TRIPLET=x64-linux-wxshared
+        OVERLAY_TRIPLETS="${PWD}/triplets"
+        if [ ! -f "${OVERLAY_TRIPLETS}/${TRIPLET}.cmake" ]; then
+          echo "ERROR: missing overlay triplet ${OVERLAY_TRIPLETS}/${TRIPLET}.cmake" >&2
+          ls -la "${OVERLAY_TRIPLETS}" >&2 || true
+          exit 1
+        fi
         if [ ! -x "${VCPKG_ROOT}/vcpkg" ]; then
           "${VCPKG_ROOT}/bootstrap-vcpkg.sh" -disableMetrics
         fi
         export VCPKG_ROOT
-        export VCPKG_DEFAULT_TRIPLET=x64-linux-wxshared
-        export VCPKG_OVERLAY_TRIPLETS="${PWD}/triplets"
+        export VCPKG_DEFAULT_TRIPLET="${TRIPLET}"
+        export VCPKG_OVERLAY_TRIPLETS="${OVERLAY_TRIPLETS}"
+        # Never reuse a host/cached CMake tree that may still be on static x64-linux.
+        rm -rf trunk/build/flatpak
         cmake -S trunk -B trunk/build/flatpak -G Ninja \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
-          -DVCPKG_TARGET_TRIPLET=x64-linux-wxshared \
-          -DVCPKG_OVERLAY_TRIPLETS="${PWD}/triplets" \
+          -DVCPKG_TARGET_TRIPLET="${TRIPLET}" \
+          -DVCPKG_OVERLAY_TRIPLETS="${OVERLAY_TRIPLETS}" \
           -DOpenGL_GL_PREFERENCE=LEGACY
         cmake --build trunk/build/flatpak -j "$(nproc)"
+        DIST="trunk/Cities3D/distribute"
+        WX_LIB_DIR="trunk/build/flatpak/vcpkg_installed/${TRIPLET}/lib"
+        if [ ! -d "${WX_LIB_DIR}" ]; then
+          echo "ERROR: vcpkg installed dir missing for ${TRIPLET}: ${WX_LIB_DIR}" >&2
+          ls -la trunk/build/flatpak/vcpkg_installed >&2 || true
+          exit 1
+        fi
+        if ! compgen -G "${WX_LIB_DIR}/libwx_*.so*" > /dev/null; then
+          echo "ERROR: no shared libwx_*.so under ${WX_LIB_DIR} (static wx would SEGV)" >&2
+          ls -la "${WX_LIB_DIR}"/libwx_* >&2 || true
+          exit 1
+        fi
+        for lib in DatabaseCore ModelCore RulesCore GLCore UICore Cities3D; do
+          path="${DIST}/${lib}"
+          if [ "${lib}" != "Cities3D" ]; then
+            path="${DIST}/${lib}.so"
+          fi
+          if [ ! -e "${path}" ]; then
+            echo "ERROR: missing build output ${path}" >&2
+            exit 1
+          fi
+          if ! ldd "${path}" | grep -q 'libwx_'; then
+            echo "ERROR: ${path} does not link shared libwx (still static?)" >&2
+            ldd "${path}" >&2 || true
+            exit 1
+          fi
+        done
+        echo "cities3d: verified shared libwx linkage for cores + Cities3D"
       - install -d "${FLATPAK_DEST}/share/cities3d"
       - |
         set -euo pipefail
         DIST="trunk/Cities3D/distribute"
+        TRIPLET=x64-linux-wxshared
+        WX_LIB_DIR="trunk/build/flatpak/vcpkg_installed/${TRIPLET}/lib"
         # Binary + core shared libraries next to plugins/tex/skins.
         install -m755 "${DIST}/Cities3D" "${FLATPAK_DEST}/share/cities3d/Cities3D"
         for lib in DatabaseCore ModelCore RulesCore GLCore UICore; do
@@ -93,10 +132,16 @@ modules:
         done
         # One shared libwx for the executable, cores, and plugins.
         shopt -s nullglob
-        for so in "${DIST}"/libwx_*.so* \
-                  trunk/build/flatpak/vcpkg_installed/x64-linux-wxshared/lib/libwx_*.so*; do
+        wx_installed=0
+        for so in "${DIST}"/libwx_*.so* "${WX_LIB_DIR}"/libwx_*.so*; do
           install -m755 "${so}" "${FLATPAK_DEST}/share/cities3d/$(basename "${so}")"
+          wx_installed=$((wx_installed + 1))
         done
+        if [ "${wx_installed}" -eq 0 ]; then
+          echo "ERROR: installed zero libwx_*.so* into the Flatpak" >&2
+          exit 1
+        fi
+        echo "cities3d: installed ${wx_installed} libwx shared objects"
         if [ -d "${DIST}/plugins" ]; then
           cp -a "${DIST}/plugins" "${FLATPAK_DEST}/share/cities3d/"
         fi
@@ -114,6 +159,12 @@ modules:
         dest: vcpkg
       - type: dir
         path: ..
+        # Basename match: skip host build trees that can pin the wrong triplet.
+        skip:
+          - build
+          - build-flatpak
+          - .flatpak-builder
+          - .git
 
   # Desktop integration only — keep this module tiny so packaging tweaks do not
   # invalidate the cities3d compile cache.
