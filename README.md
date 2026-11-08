@@ -110,10 +110,20 @@ If the build dies immediately with `bwrap: Can't bind mount /etc/resolv.conf`, s
 4. Builds Cities3D and the rule plugins; installs binaries, `libwx_*.so*`, and game data (including `data/maps.db`) under `/app/share/cities3d`.
 5. Installs the launcher, desktop file, metainfo, and icons (`cities3d-metadata` module).
 
-After pulling a cities3d module change (especially the wxshared triplet), rebuild with a cold module cache once:
+After pulling a cities3d / wx linkage change, rebuild with a cold module cache:
 
 ```sh
+git pull
 ./flatpak/build.sh --full-rebuild
+```
+
+A good build must print `cities3d: verified shared libwx linkage` during the Flatpak module build, and at runtime the first stderr lines must include `cities3d: build=wxshared-2` then `cities3d: single-instance check`. If you only see `OnInit begin` / immediate fatal exception, the Flatpak is still an older binary — pull and `--full-rebuild` again.
+
+Confirm shared wx is inside the installed app:
+
+```sh
+flatpak run --command=sh ca.skyblaster.Cities3D -c \
+  'ls /app/share/cities3d/libwx_*.so* && ldd /app/share/cities3d/DatabaseCore.so | grep libwx'
 ```
 
 ## Run
