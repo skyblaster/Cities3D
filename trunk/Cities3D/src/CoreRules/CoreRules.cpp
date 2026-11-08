@@ -84,7 +84,7 @@ struct sAny##T##U \
 	private: \
 		IAnySerializerPtr mSerializer; \
 	}; \
-	sAny##T##U sObject##T##U(new T<U>(#T"<"#U">")); \
+	sAny##T##U sObject##T##U(new T<U>(#T "<" #U ">")); \
 }
 
 #define REGISTER_EXPLICIT_SERIALIZER_2(T, U, V) \
@@ -103,7 +103,7 @@ struct sAny##T##U##V \
 	private: \
 		IAnySerializerPtr mSerializer; \
 	}; \
-	sAny##T##U##V sObject##T##U##V(new T<U, V>(#T"<"#U", "#V">")); \
+	sAny##T##U##V sObject##T##U##V(new T<U, V>(#T "<" #U ", " #V ">")); \
 }
 
 //---------------------------- STATICS          -----------------------------//

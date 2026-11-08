@@ -244,7 +244,7 @@ private:
 		const HashString &logic, const wxInt32 tileNum, ResourceMap &total, 
 		ResourceMap &player, ResourceMap& blocked, wxInt32 index, wxInt32 robber)
 	{
-		if(false == object)
+		if(!object)
 		{
 			return;
 		}

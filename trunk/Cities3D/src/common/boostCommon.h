@@ -20,6 +20,11 @@
 #ifndef BOOST_BIND_GLOBAL_PLACEHOLDERS
 #define BOOST_BIND_GLOBAL_PLACEHOLDERS
 #endif
+// Many .cpp files do `#define new DEBUG_NEW` for MSVC leak checks. On Linux
+// that still makes `new` a macro and Boost headers refuse to compile.
+#ifdef new
+#undef new
+#endif
 #include <boost/any.hpp>
 #include <boost/bind.hpp>
 #include <boost/function.hpp>

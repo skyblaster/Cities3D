@@ -17,6 +17,9 @@
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
 #include <map>
+#ifdef new
+#undef new
+#endif
 #include <boost/function.hpp>
 
 //---------------------------- USER INCLUDES    -----------------------------//

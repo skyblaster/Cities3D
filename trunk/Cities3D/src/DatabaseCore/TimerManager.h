@@ -18,6 +18,9 @@
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
 #include <map>
 #include <list>
+#ifdef new
+#undef new
+#endif
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 

@@ -2,6 +2,22 @@ set(CITIES3D_WX_LIBS wx::core wx::base wx::net wx::xml wx::adv wx::aui wx::gl wx
 
 cities3d_add_core(DatabaseCore DATABASE_EXPORT "")
 target_link_libraries(DatabaseCore PUBLIC ${CITIES3D_WX_LIBS} Boost::headers)
+if(UNIX AND NOT APPLE)
+    # Static wxGTK can leave pcre2-8 / dbus / atspi unresolved in our shared
+    # cores. Link them when pkg-config can see them (Fedora/Homebrew hosts);
+    # Flatpak's Freedesktop SDK usually provides them too.
+    find_package(PkgConfig)
+    if(PkgConfig_FOUND)
+        pkg_check_modules(CITIES3D_WXGTK_EXTRA IMPORTED_TARGET
+            libpcre2-8
+            dbus-1
+            atspi-2
+        )
+        if(CITIES3D_WXGTK_EXTRA_FOUND)
+            target_link_libraries(DatabaseCore PUBLIC PkgConfig::CITIES3D_WXGTK_EXTRA)
+        endif()
+    endif()
+endif()
 
 cities3d_add_core(ModelCore MODEL_EXPORT "${CITIES3D_SRC_DIR}/DatabaseCore")
 target_link_libraries(ModelCore PUBLIC DatabaseCore)

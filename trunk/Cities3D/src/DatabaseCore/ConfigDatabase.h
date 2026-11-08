@@ -80,9 +80,13 @@ public:
 	template <typename T> T read(const wxString &section,
 		const wxString &option, T defaultValue)
 	{
-		//use the same trick as in Data.h; if they try and use any version of this
-		//function that's not explicitly specialized, they get a compile error
-		return;
+		// Primary template is intentionally unusable; only explicit
+		// specializations are valid. GCC 16 checks this before instantiation.
+		static_assert(sizeof(T) == 0, "ConfigDatabase::read is not specialized for this type");
+		(void)section;
+		(void)option;
+		(void)defaultValue;
+		return T{};
 	}
 
 	//-----------------------------------------------------------------------//

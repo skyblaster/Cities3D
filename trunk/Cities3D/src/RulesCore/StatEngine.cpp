@@ -80,7 +80,7 @@ void StatEngine::GetJson(json_spirit::wObject& obj, bool forceEnglish)
 {
 	using namespace json_spirit;
 
-	if(false == GetGame())
+	if(!GetGame())
 	{
 		return;
 	}
