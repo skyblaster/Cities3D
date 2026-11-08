@@ -23,8 +23,9 @@ finish-args:
   - --filesystem=xdg-documents
   - --filesystem=xdg-download
 
-inherit-extensions:
-  - org.freedesktop.Platform.GL
+# Do not inherit org.freedesktop.Platform.GL here. The runtime already exposes
+# GL via --device=dri; inheriting it also mounts under /app and breaks launch:
+#   bwrap: Can't mkdir parents for /app/lib/.../GL: Read-only file system
 
 # Drop build-only metadata after all modules finish. Keep libGLU.so for GLEW.
 cleanup:
