@@ -11,7 +11,10 @@ if ! command -v flatpak-builder >/dev/null 2>&1; then
   exit 1
 fi
 
+# Distrobox / rootless Podman usually cannot run rofiles-fuse (Permission denied
+# on .flatpak-builder/rofiles). Hard links / copies are slower but work.
 exec flatpak-builder --user --install --force-clean \
+  --disable-rofiles-fuse \
   --install-deps-from=flathub \
   build-flatpak \
   flatpak/ca.skyblaster.Cities3D.yml
