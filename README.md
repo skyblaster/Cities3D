@@ -106,9 +106,15 @@ If the build dies immediately with `bwrap: Can't bind mount /etc/resolv.conf`, s
 
 1. Builds Mesa **GLU** into `/app` (the Freedesktop SDK has OpenGL but not `glu.pc` / `libGLU`, which vcpkg’s GLEW port requires).
 2. Downloads vcpkg at the commit pinned in `trunk/vcpkg.json` (`builtin-baseline`) during the source-fetch phase.
-3. Bootstraps vcpkg, then configures `trunk/` with Ninja + the vcpkg toolchain (`RelWithDebInfo`, unstripped).
-4. Builds Cities3D and the rule plugins; installs binaries and game data (including `data/maps.db`) under `/app/share/cities3d`.
+3. Bootstraps vcpkg, then configures `trunk/` with Ninja + the vcpkg toolchain (`RelWithDebInfo`, unstripped) using the `x64-linux-wxshared` overlay triplet (shared `libwx`, other ports static). Static wx duplicated into each `.so` crashes on the first `FilePath` call.
+4. Builds Cities3D and the rule plugins; installs binaries, `libwx_*.so*`, and game data (including `data/maps.db`) under `/app/share/cities3d`.
 5. Installs the launcher, desktop file, metainfo, and icons (`cities3d-metadata` module).
+
+After pulling a cities3d module change (especially the wxshared triplet), rebuild with a cold module cache once:
+
+```sh
+./flatpak/build.sh --full-rebuild
+```
 
 ## Run
 
