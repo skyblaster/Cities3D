@@ -105,24 +105,22 @@ public:
 			return;
 		}
 
-		// The trade mark is 16px art. On the smallest build icon that covers
-		// the model. Keep it to a quarter of the cell, and no larger than the
-		// original art, tucked into the bottom-right corner.
-		const wxInt32 native = std::max(mIconImage.GetWidth(),
-			mIconImage.GetHeight());
+		// 0.9.7 draws the 16px trade art at full size in the bottom-right
+		// corner. Shrinking it to a quarter of a short pane turns the mark
+		// into a speck. Only shrink when the art is taller than the cell.
 		const wxInt32 cell = std::min(width, height);
-		wxInt32 badge = std::min(native, std::max(8, cell / 4));
-		if( (2 > badge) ||
-			(badge > cell))
-		{
-			return;
-		}
-
 		wxImage scaled = mIconImage;
-		if( (scaled.GetWidth() != badge) ||
-			(scaled.GetHeight() != badge))
+		if( (scaled.GetWidth() > cell) ||
+			(scaled.GetHeight() > cell))
 		{
-			scaled = mIconImage.Scale(badge, badge, wxIMAGE_QUALITY_NEAREST);
+			const double fit = std::min(
+				static_cast<double>(cell) / scaled.GetWidth(),
+				static_cast<double>(cell) / scaled.GetHeight());
+			const wxInt32 badgeW = std::max(1, static_cast<wxInt32>(
+				scaled.GetWidth() * fit));
+			const wxInt32 badgeH = std::max(1, static_cast<wxInt32>(
+				scaled.GetHeight() * fit));
+			scaled = mIconImage.Scale(badgeW, badgeH, wxIMAGE_QUALITY_NEAREST);
 		}
 
 		wxBitmap icon(scaled);
@@ -131,11 +129,10 @@ public:
 		wxMemoryDC dc;
 		dc.SelectObject(bitmap);
 
-		const wxInt32 margin = 1;
 		const wxInt32 w = icon.GetWidth();
 		const wxInt32 h = icon.GetHeight();
-		wxInt32 x = width - w - margin;
-		wxInt32 y = height - h - margin;
+		wxInt32 x = width - w;
+		wxInt32 y = height - h;
 
 		for(wxInt32 i = 0; i < mNumIcons; ++i)
 		{
@@ -148,7 +145,7 @@ public:
 			y -= h;
 			if(0 > y)
 			{
-				y = height - h - margin;
+				y = height - h;
 				x -= w;
 			}
 		}

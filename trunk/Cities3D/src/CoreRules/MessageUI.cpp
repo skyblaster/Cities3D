@@ -35,7 +35,9 @@
 //---------------------------- STATICS          -----------------------------//
 namespace
 {
-	const wxSize sMinSizeMessage = wxSize(165, 40);
+	// Tall enough that the status line sits in a pane the height of the
+	// 0.9.7 default, even with the Events pane sharing the right dock.
+	const wxSize sMinSizeMessage = wxSize(165, 127);
 
 	wxBaseStaticText* spText = NULL;
 }

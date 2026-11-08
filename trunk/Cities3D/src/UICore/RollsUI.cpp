@@ -118,20 +118,20 @@ wxRollsUI::wxRollsUI(wxWindow *parent, const GamePtr &game, bool threeDice)
 	spDie1 = new wxImageCenteredBitmap(this, wxSize(30, 30), wxSize(28, 28), 
 		shDice, sh1);
 	spDie1->SetMinSize(wxSize(30, 30));
-	innerHorz->Add(spDie1, 0, wxALIGN_CENTER);
+	innerHorz->Add(spDie1, 30, wxEXPAND | wxSHAPED);
 
 	// Second die might be red in a three dice game.
 	spDie2 = new wxImageCenteredBitmap(this, wxSize(30, 30), wxSize(28, 28), 
 		threeDice ? shDiceRed : shDice, threeDice ? shRed1 : sh1);
 	spDie2->SetMinSize(wxSize(30, 30));
-	innerHorz->Add(spDie2, 0, wxALIGN_CENTER);
+	innerHorz->Add(spDie2, 30, wxEXPAND | wxSHAPED);
 
 	if(true == threeDice)
 	{
 		spDie3 = new wxImageCenteredBitmap(this, wxSize(30, 30), wxSize(28, 28), 
 			shDiceCK, shBarbarians);
 		spDie3->SetMinSize(wxSize(30, 30));
-		innerHorz->Add(spDie3, 0, wxALIGN_CENTER);
+		innerHorz->Add(spDie3, 30, wxEXPAND | wxSHAPED);
 	}
 	innerHorz->AddStretchSpacer(xStretch);
 
@@ -151,10 +151,10 @@ wxRollsUI::wxRollsUI(wxWindow *parent, const GamePtr &game, bool threeDice)
 		sImageStrips[i] = strip;
 	}
 
-	horz->Add(color, 40, wxEXPAND);
-	horz->Add(display, 110, wxEXPAND);
+	horz->Add(color, 40, wxEXPAND | wxSHAPED);
+	horz->Add(display, 110, wxEXPAND | wxSHAPED);
 
-	sizer->Add(horz, 1, wxEXPAND);
+	sizer->Add(horz, 1, wxEXPAND | wxSHAPED);
 
 	SetSizer(sizer);
 

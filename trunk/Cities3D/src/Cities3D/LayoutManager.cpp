@@ -131,6 +131,33 @@ namespace
 			layout.insert(static_cast<size_t>(dock), eventsPane);
 		}
 	}
+
+	// The stock status pane is 48px. That fit when Status only shared the
+	// right dock with Dice Rolls. Events now takes a share of that dock, so
+	// raise the client to the 127px the 0.9.7 layout showed.
+	void RaiseStatusPane(wxString& layout)
+	{
+		const int start = layout.Find(wxT("name=Status;"));
+		if(wxNOT_FOUND == start)
+		{
+			return;
+		}
+
+		const wxString rest = layout.Mid(start);
+		int end = rest.Find(wxT("|"));
+		if(wxNOT_FOUND == end)
+		{
+			end = rest.length();
+		}
+
+		wxString pane = rest.Left(end);
+		pane.Replace(wxT("besth=48"), wxT("besth=127"));
+		pane.Replace(wxT("minh=48"), wxT("minh=127"));
+		pane.Replace(wxT("besth=104"), wxT("besth=127"));
+		pane.Replace(wxT("minh=104"), wxT("minh=127"));
+		layout.replace(static_cast<size_t>(start), static_cast<size_t>(end),
+			pane);
+	}
 }
 
 //---------------------------- PUBLIC           -----------------------------//
@@ -149,6 +176,7 @@ void LayoutManager::LoadLayout(wxString& layout)
 	}
 
 	InjectEventsPane(layout);
+	RaiseStatusPane(layout);
 }
 
 void LayoutManager::SaveLayout(const wxString& layout)
@@ -168,6 +196,7 @@ void LayoutManager::RestoreLayout(wxString& layout)
 
 	layout = FindDefaultLayout(layoutPath);
 	InjectEventsPane(layout);
+	RaiseStatusPane(layout);
 
 	wxString path = swLayouts + swForwardSlash + layoutPath;
 	CONFIG.write<wxString>(swConfigSectionUI, path, layout);
