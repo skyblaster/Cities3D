@@ -1,5 +1,5 @@
-# Overlay for Homebrew-on-Linux builds. Same as vcpkg's default x64-linux
-# triplet, plus a FindOpenGL hint for Mesa without GLVND.
+# Overlay for Homebrew-on-Linux / immutable builds. Same as vcpkg's default
+# x64-linux triplet, plus a FindOpenGL hint for Mesa without GLVND.
 #
 # Homebrew's mesa formula ships a classic libGL.so that already contains GLX.
 # It does not install a separate libGLX.so. CMake's default GLVND preference
