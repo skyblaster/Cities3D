@@ -112,11 +112,24 @@ If the build dies immediately with `bwrap: Can't bind mount /etc/resolv.conf`, s
 
 ## Run
 
+Prefer running from your **host** desktop session (not only inside Distrobox), so `$DISPLAY` / Wayland come from the real graphical login:
+
 ```sh
 flatpak run ca.skyblaster.Cities3D
 ```
 
-LAN play needs network access; the manifest already grants `--share=network`, DRI, and PulseAudio.
+LAN play needs network access; the manifest already grants `--share=network`, DRI, PulseAudio, and an explicit X11 socket (wxWidgets/GTK still expects X11 even when Wayland is present).
+
+If you see `Unable to initialize GTK+, is DISPLAY set properly?` before rebuilding with that X11 finish-arg, try a one-shot override (no rebuild):
+
+```sh
+flatpak run --socket=x11 --env=GDK_BACKEND=x11 ca.skyblaster.Cities3D
+# or persist:
+flatpak override --user --socket=x11 --env=GDK_BACKEND=x11 ca.skyblaster.Cities3D
+```
+
+The launcher runs from a writable `$XDG_DATA_HOME/cities3d` tree (symlinked to `/app/share/cities3d`) so crash breadcrumbs like `cities3d-last-rule.txt` can be created. `/app` itself is read-only.
+
 
 ## Export a bundle (optional)
 
