@@ -91,6 +91,7 @@ namespace
     const HashString shClay = "Clay";
     const HashString shCloth = "Cloth";
     const HashString shCoin = "Coin";
+    const HashString shComplete = "Complete";
     const HashString shCommercialHarbor = "CommercialHarbor";
     const HashString shCommercialHarborCommodity = "CommercialHarborCommodity";
     const HashString shCommercialHarborResource = "CommercialHarborResource";

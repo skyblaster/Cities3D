@@ -57,7 +57,20 @@ public:
 		// See if it's this player.
 		RULE.Decide(shLogicIsThisPlayer, DataObject(index), output);
 
-		if(false == output.read<bool>())
+		bool showCards = (0 < output.numItems()) && output.read<bool>();
+
+		// Hotseat reports every seat as the local player and returns whose
+		// turn it is. Only that hand may be opened. A finished game may
+		// show every hand.
+		if( (true == showCards) &&
+			(1 < output.numItems()) &&
+			(index != output.read<wxInt32>(1)) &&
+			(shComplete != gameData<HashString>(shState)))
+		{
+			showCards = false;
+		}
+
+		if(false == showCards)
 		{
 			// Not their cards.
 			output = DataObject(false);
