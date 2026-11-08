@@ -26,6 +26,7 @@
 #include "DataObject.h"
 #include "TimerManager.h"
 #include "ConfigDatabase.h"
+#include "FilePath.h"
 #include "IRuleEngine.h"
 
 #include "BankTradeDialog.h"
@@ -258,7 +259,7 @@ private:
 		}
 
 		{
-			wxFFile breadcrumb(wxT("cities3d-last-rule.txt"), wxT("w"));
+			wxFFile breadcrumb(FilePath::LastRuleBreadcrumb(), wxT("w"));
 			if(true == breadcrumb.IsOpened())
 			{
 				breadcrumb.Write(wxT("OnShowResources:dirty"));
@@ -278,7 +279,7 @@ private:
 		}
 
 		{
-			wxFFile breadcrumb(wxT("cities3d-last-rule.txt"), wxT("w"));
+			wxFFile breadcrumb(FilePath::LastRuleBreadcrumb(), wxT("w"));
 			if(true == breadcrumb.IsOpened())
 			{
 				breadcrumb.Write(wxT("OnShowResources:done"));

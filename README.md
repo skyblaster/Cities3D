@@ -128,7 +128,7 @@ flatpak run --socket=x11 --env=GDK_BACKEND=x11 ca.skyblaster.Cities3D
 flatpak override --user --socket=x11 --env=GDK_BACKEND=x11 ca.skyblaster.Cities3D
 ```
 
-The launcher runs from a writable `$XDG_DATA_HOME/cities3d` tree (symlinked to `/app/share/cities3d`) so crash breadcrumbs like `cities3d-last-rule.txt` can be created. `/app` itself is read-only.
+The launcher uses a writable `$XDG_DATA_HOME/cities3d` cwd (assets symlinked from `/app`). The `cities3d-last-rule.txt` breadcrumb is written under the wx user data dir (`~/.Cities3D/data`, persisted via `--persist=.Cities3D`), not into read-only `/app`.
 
 
 ## Export a bundle (optional)

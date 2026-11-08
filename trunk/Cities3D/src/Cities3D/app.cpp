@@ -135,7 +135,7 @@ bool wxCities3DApp::OnInit()
 void wxCities3DApp::OnFatalException()
 {
 	wxString last = wxT("(unknown)");
-	wxFFile breadcrumb(wxT("cities3d-last-rule.txt"), wxT("r"));
+	wxFFile breadcrumb(FilePath::LastRuleBreadcrumb(), wxT("r"));
 	if(true == breadcrumb.IsOpened())
 	{
 		breadcrumb.ReadAll(&last);

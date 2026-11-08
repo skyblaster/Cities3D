@@ -307,6 +307,14 @@ wxString FilePath::UserDataDir(const wxString &dirname)
 	return fn.GetFullPath();
 }
 
+wxString FilePath::LastRuleBreadcrumb()
+{
+	wxFileName fn;
+	fn.AssignDir(UserDataDir());
+	fn.SetFullName(wxT("cities3d-last-rule.txt"));
+	return fn.GetFullPath();
+}
+
 wxString FilePath::Data(const DataFileType type)
 {
 	wxASSERT(DataFileSize > (wxUint32) type);
