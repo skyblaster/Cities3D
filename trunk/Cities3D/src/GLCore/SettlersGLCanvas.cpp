@@ -224,15 +224,17 @@ wxBitmap wxSettlersGLCanvas::ConvertGLtoWX(const DrawObjectPtr &object,
 
 		//try to use a 4x size image for creating the initial image, which will 
 		//be scaled down to required size and then cropped if needed
+		// Supersample small icons. Large ones render near their display
+		// size so widening the pane does not blow a 256px capture up.
 		size_t dim = std::max(width, height);
-		if(64 < dim)
-		{
-			dim = 64;
-		}
-		size_t size = (dim << 2);
+		size_t size = dim << 2;
 		if(256 < size)
 		{
-			size = 256;
+			size = std::max(dim, static_cast<size_t>(256));
+		}
+		if(512 < size)
+		{
+			size = 512;
 		}
 
 		// If we're using pixel buffers, we have to stay within the render
@@ -598,19 +600,25 @@ wxImage wxSettlersGLCanvas::RenderGLtoWX(const DrawObjectPtr &object,
 	//reset the modelview matrix
 	glMatrixMode(GL_MODELVIEW);
 
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
-	glEnable(GL_NORMALIZE);
+	// 0.9.7 left normals unnormalized. City and settlement roofs are
+	// authored at length sqrt(2), which is what lifts those faces. The
+	// road top is already a unit normal, so it stays even with the sides.
+	glDisable(GL_NORMALIZE);
 	glShadeModel(GL_SMOOTH);
 	glDisable(GL_COLOR_MATERIAL);
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-	GLfloat modelAmb[] = {0.45f, 0.45f, 0.45f, 1.0f};
-	GLfloat lightAmb[] = {0.35f, 0.35f, 0.35f, 1.0f};
+	// Same light the 0.9.7 board uses. A dimmer override flattened the
+	// grey pieces and hid the hatch behind a near-black backdrop.
+	GLfloat modelAmb[] = {0.2f, 0.2f, 0.2f, 1.0f};
+	GLfloat lightAmb[] = {1.0f, 1.0f, 1.0f, 1.0f};
 	GLfloat lightDif[] = {1.0f, 1.0f, 1.0f, 1.0f};
 	GLfloat lightPos[] = {0.0f, 1.0f, 4.0f, 1.0f};
 	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, modelAmb);
@@ -715,38 +723,27 @@ wxImage wxSettlersGLCanvas::ProcessGLtoWX(wxImage image, const size_t width,
 	// the image around.
 	wxImage final(image.Mirror(false));
 
-	// Rescale the image to the right dimensions.
-	size_t dim = std::max(width, height);
-	final.Rescale(dim, dim);
+	// Scale uniformly, then crop the center. A non-uniform scale stretches
+	// the model when the icon cell is not square.
+	const size_t dim = std::max(width, height);
+	final.Rescale(dim, dim, wxIMAGE_QUALITY_HIGH);
 
-	//and finally, crop the image if needed
-	if(width != height)
+	if( (width != height) &&
+		(width <= dim) &&
+		(height <= dim))
 	{
-		wxImage temp = wxImage(width, height);
-		wxUint8 *source = final.GetData();
-		wxUint8 *dest = temp.GetData();
+		wxImage temp(width, height);
+		const wxUint8* source = final.GetData();
+		wxUint8* dest = temp.GetData();
+		const size_t x0 = (dim - width) / 2;
+		const size_t y0 = (dim - height) / 2;
+		const size_t rowBytes = width * 3;
 
-		wxUint8 *byte = NULL;
-		wxUint8 *end = NULL;
-
-		//determine if we need to crop horizontally or vertically
-		if(width > height)
+		for(size_t y = 0; y < height; ++y)
 		{
-			wxInt32 start = (width - height) >> 1;
-
-			//crop horizontally
-			byte = source + (start * width * 3);
-			end = byte + (height * width * 3);
-			for(; byte < end; byte += 3, dest += 3)
-			{
-				dest[0] = byte[0];
-				dest[1] = byte[1];
-				dest[2] = byte[2];
-			}
-		}
-		else
-		{
-			//TODO: vertical cropping
+			const wxUint8* row = source + (((y0 + y) * dim) + x0) * 3;
+			memcpy(dest, row, rowBytes);
+			dest += rowBytes;
 		}
 
 		final = temp;

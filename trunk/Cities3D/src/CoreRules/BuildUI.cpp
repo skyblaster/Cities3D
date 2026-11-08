@@ -31,7 +31,6 @@
 #include "ConfigDatabase.h"
 #include "BaseBitmapButton.h"
 #include "IRuleEngine.h"
-#include "ColorInfoData.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -60,11 +59,6 @@ public:
 	void SetBitmaps(const wxBitmap& enabled, const wxBitmap& disabled)
 	{
 		wxBaseBitmapButton::SetBitmaps(enabled, disabled);
-	}
-
-	void SetFillColour(const wxColour& colour)
-	{
-		wxBaseBitmapButton::SetFillColour(colour);
 	}
 };
 
@@ -96,32 +90,65 @@ public:
 
 	void OverlayIcons(wxBitmap& bitmap) const
 	{
-		// To do this, we need to draw into a memory dc.
+		if( (0 >= mNumIcons) ||
+			(false == bitmap.IsOk()) ||
+			(false == mIconImage.IsOk()))
+		{
+			return;
+		}
+
+		const wxInt32 width = bitmap.GetWidth();
+		const wxInt32 height = bitmap.GetHeight();
+		if( (4 > width) ||
+			(4 > height))
+		{
+			return;
+		}
+
+		// The trade mark is 16px art. On the smallest build icon that covers
+		// the model. Keep it to a quarter of the cell, and no larger than the
+		// original art, tucked into the bottom-right corner.
+		const wxInt32 native = std::max(mIconImage.GetWidth(),
+			mIconImage.GetHeight());
+		const wxInt32 cell = std::min(width, height);
+		wxInt32 badge = std::min(native, std::max(8, cell / 4));
+		if( (2 > badge) ||
+			(badge > cell))
+		{
+			return;
+		}
+
+		wxImage scaled = mIconImage;
+		if( (scaled.GetWidth() != badge) ||
+			(scaled.GetHeight() != badge))
+		{
+			scaled = mIconImage.Scale(badge, badge, wxIMAGE_QUALITY_NEAREST);
+		}
+
+		wxBitmap icon(scaled);
+		icon.SetMask(new wxMask(icon, SKIN.Element(shIconTransparent)));
+
 		wxMemoryDC dc;
 		dc.SelectObject(bitmap);
 
-		wxBitmap icon(mIconImage);
-		icon.SetMask(new wxMask(icon, SKIN.Element(shIconTransparent)));
-
-		wxInt32 w = mIconImage.GetWidth();
-		wxInt32 h = mIconImage.GetHeight();
-
-		wxInt32 width = bitmap.GetWidth();
-		wxInt32 height = bitmap.GetHeight();
-
-		// Start in the lower right corner and draw up until we run out of 
-		// room.
-		wxInt32 x = width - w;
-		wxInt32 y = height - h;
+		const wxInt32 margin = 1;
+		const wxInt32 w = icon.GetWidth();
+		const wxInt32 h = icon.GetHeight();
+		wxInt32 x = width - w - margin;
+		wxInt32 y = height - h - margin;
 
 		for(wxInt32 i = 0; i < mNumIcons; ++i)
 		{
-			dc.DrawBitmap(icon, x, y, true);
-			y -= h;
+			if( (0 <= x) &&
+				(0 <= y))
+			{
+				dc.DrawBitmap(icon, x, y, true);
+			}
 
+			y -= h;
 			if(0 > y)
 			{
-				y = height - h;
+				y = height - h - margin;
 				x -= w;
 			}
 		}
@@ -240,26 +267,53 @@ namespace
 
 		wxBitmap GetBitmap(const wxSize &size) const
 		{
-			if(mGameObject)
+			wxBitmap bitmap;
+
+			if( (TRUE == CONFIG.read<wxInt32>(swConfigSectionOpenGL,
+				swRenderBitmaps, TRUE)) &&
+				(NULL != mCanvas) &&
+				(NULL != mDrawObject))
 			{
-				mGameObject->color(mPlayerColor);
+				if(mGameObject)
+				{
+					mGameObject->color(mPlayerColor);
+				}
+
+				Vector vector(10.0f, 10.0f, 10.0f);
+				bitmap = mCanvas->ConvertGLtoWX(mDrawObject, size.GetWidth(),
+					size.GetHeight(), vector);
+
+				// Keep the lit model and drop the capture's black backdrop so
+				// the icon background stays the skin, as in 0.9.7.
+				if(true == bitmap.IsOk())
+				{
+					wxImage image = bitmap.ConvertToImage();
+					PunchBuildBackground(image);
+					bitmap = wxBitmap(image);
+				}
 			}
 
-			// Colorize the 2D build art with the player colour. The offscreen
-			// GL capture is often still unlit on the first paint, which left
-			// these icons black until a later recapture.
-			wxBitmap bitmap(IMAGE.Colorize(mImage, mMask, mPlayerColor, size,
-				true));
+			if(false == bitmap.IsOk())
+			{
+				bitmap = wxBitmap(
+					IMAGE.Colorize(mImage, mMask, mPlayerColor, size, true));
 
+				if(true == bitmap.IsOk())
+				{
+					wxImage image = bitmap.ConvertToImage();
+					PunchBuildBackground(image);
+					bitmap = wxBitmap(image);
+				}
+			}
+
+			// Draw the bank mark before masking. wx 3 clips a draw to the
+			// bitmap's mask, so a mark painted on the punched corner is
+			// thrown away and the road shows no trade indicator.
+			OverlayIcons(bitmap);
 			if(true == bitmap.IsOk())
 			{
-				wxImage image = bitmap.ConvertToImage();
-				PunchBuildBackground(image);
-				bitmap = wxBitmap(image);
 				bitmap.SetMask(new wxMask(bitmap, *wxBLACK));
 			}
-
-			OverlayIcons(bitmap);
 
 			return bitmap;
 		}
@@ -293,7 +347,6 @@ wxBuildUI::wxBuildUI(wxWindow* parent, const BuildDataPtr &build,
 , BuildPopup(this)
 , mLastIndex(-1)
 , mClickable(false)
-, mFillColour()
 {
 	SetMinSize(sMinSizeBuild);
 
@@ -339,7 +392,6 @@ wxBuildUI::wxBuildUI(wxWindow* parent, const BuildDataPtr &build,
 	sBackgroundBuild = SKIN.Element(shBackground);
 	sOutline = SKIN.Element(shGameUIOutline);
 	sClickable = SKIN.Element(shGameUIClickable);
-	mFillColour = sBackgroundBuild;
 
 	wxSizeEvent event(sMinSizeBuild);
 	Size(event);
@@ -420,18 +472,37 @@ void wxBuildUI::CreateDisabledBitmap()
 
 	for(wxInt32 i = 0; i < size; ++i)
 	{
-		// Use the standard luminance model, but make it darker (50% luma).
-		luma = static_cast<unsigned char>((p[0] * 0.15f) + (p[1] * 0.295) + (p[2] * 0.055f));
-		
-		if(0 < luma)
-		{
-			p[0] = p[1] = p[2] = luma;
-		}
-		else
+		// Keep the icon-transparent colour, and near-black backdrop, see-through
+		// so the diagonal hatch shows behind every piece. The model itself is
+		// half of standard luma, matching the 0.9.7 grey pieces.
+		const bool backdrop =
+			( (p[0] == r) && (p[1] == g) && (p[2] == b) ) ||
+			( (12 > p[0]) && (12 > p[1]) && (12 > p[2]) );
+		if(true == backdrop)
 		{
 			p[0] = r;
 			p[1] = g;
 			p[2] = b;
+		}
+		else
+		{
+			float shade = (p[0] * 0.299f) + (p[1] * 0.587f) + (p[2] * 0.114f);
+			shade *= 0.50f;
+			if(255.0f < shade)
+			{
+				shade = 255.0f;
+			}
+			luma = static_cast<unsigned char>(shade);
+			if(0 < luma)
+			{
+				p[0] = p[1] = p[2] = luma;
+			}
+			else
+			{
+				p[0] = r;
+				p[1] = g;
+				p[2] = b;
+			}
 		}
 
 		p += 3;
@@ -461,10 +532,24 @@ void wxBuildUI::RebuildBitmaps(const wxSize& windowSize)
 	bitmapSize.x = std::max(bitmapSize.x, 1);
 	bitmapSize.y = std::max(bitmapSize.y, 1);
 
+	// A non-square cell stretches the model. Always capture a square.
+	const wxInt32 side = std::min(bitmapSize.x, bitmapSize.y);
+	bitmapSize = wxSize(side, side);
+
+	// Grey the unaffordable icon from an uncoloured model, then capture the
+	// player-coloured model used when the piece can be built.
+	const ColorType color = mBuildBitmap->GetPlayerColor();
+	mBuildBitmap->SetPlayerColor(CR_WHITE);
 	mEnabledBitmap = mBuildBitmap->GetBitmap(bitmapSize);
 	CreateDisabledBitmap();
-	mBitmap->SetSize(bitmapSize);
-	mBitmap->SetFillColour(mFillColour);
+
+	if(CR_WHITE != color)
+	{
+		mBuildBitmap->SetPlayerColor(color);
+	}
+
+	mEnabledBitmap = mBuildBitmap->GetBitmap(bitmapSize);
+	mBitmap->SetSize(1, 1, bitmapSize.x, bitmapSize.y);
 	mBitmap->SetBitmaps(mEnabledBitmap, mDisabledBitmap);
 	Refresh();
 }
@@ -473,22 +558,17 @@ void wxBuildUI::Paint(wxMemoryDC &dc)
 {
 	wxSize size = GetSize();
 
-	if(true == mClickable)
-	{
-		dc.SetBrush(wxBrush(mFillColour, wxSOLID));
-		dc.SetPen(wxPen(sClickable, 1, wxSOLID));
-		dc.DrawRectangle(0, 0, size.x, size.y);
-	}
-	else
-	{
-		dc.SetBackground(wxBrush(*wxBLACK, wxSOLID));
-		dc.SetBackgroundMode(wxSOLID);
-		dc.SetBrush(wxBrush(*wxBLACK, wxSOLID));
-		dc.SetPen(wxPen(sOutline, 1, wxSOLID));
-		dc.DrawRectangle(0, 0, size.x, size.y);
+	dc.SetBrush(wxBrush(sBackgroundBuild, wxSOLID));
+	dc.SetPen(wxPen(mClickable ? sClickable : sOutline, 1, wxSOLID));
+	dc.DrawRectangle(0, 0, size.x, size.y);
 
-		wxBrush hatch(sOutline, wxBDIAGONAL_HATCH);
-		dc.SetBrush(hatch);
+	// Hatch marks a piece that cannot be built. The model itself carries the
+	// player colour when it can.
+	if(false == mClickable)
+	{
+		wxBrush brush(sOutline);
+		brush.SetStyle(wxBDIAGONAL_HATCH);
+		dc.SetBrush(brush);
 		dc.DrawRectangle(0, 0, size.x, size.y);
 
 		if(true == mDisabledBitmap.IsOk())
@@ -560,13 +640,11 @@ void wxBuildUI::OnUpdate(const DataObject &object)
 	{
 		const ColorType playerColor = game->playerGame(index).color();
 		mLastIndex = index;
-		mFillColour = ColorInfoData::UIColor(playerColor);
 		mBuildBitmap->SetPlayerColor(playerColor);
 		RebuildBitmaps(GetSize());
 		CallAfter([this]() { RebuildBitmaps(GetSize()); });
 	}
 
-	mBitmap->SetFillColour(mFillColour);
 	mBitmap->SetBitmaps(mEnabledBitmap, mDisabledBitmap);
 	mBitmap->Enable(mClickable);
 	mBitmap->Show(mClickable);

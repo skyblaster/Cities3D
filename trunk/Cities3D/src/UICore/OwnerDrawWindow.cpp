@@ -73,6 +73,20 @@ void wxOwnerDrawWindow::OnSize(wxSizeEvent &event)
 void wxOwnerDrawWindow::OnPaint(wxPaintEvent &)
 {
 	wxPaintDC dc(this);
+
+	// A size change can be missed when a sizer only updates the min and max
+	// size. Paint into a buffer that matches the window, or the icon is drawn
+	// into a corner of the cell.
+	const wxSize size = GetSize();
+	if( (0 < size.x) &&
+		(0 < size.y) &&
+		( (false == mMemBitmap.IsOk()) ||
+		  (mMemBitmap.GetWidth() != size.x) ||
+		  (mMemBitmap.GetHeight() != size.y) ))
+	{
+		CreateOffscreenBitmap(mMemBitmap, size.x, size.y);
+	}
+
 	if( (false == dc.IsOk()) ||
 		(false == mMemBitmap.IsOk()))
 	{

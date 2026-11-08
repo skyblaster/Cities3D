@@ -30,10 +30,18 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+namespace
+{
+	const wxInt32 sBuildIconPad = 2;
+	const wxInt32 sBuildIconMin = 50;
+}
 
 //---------------------------- PUBLIC           -----------------------------//
 wxBuildUIPanel::wxBuildUIPanel(wxWindow* parent, wxSettlersGLCanvas* canvas)
 : wxPanel(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0)
+, mMaxPerRow(0)
+, mRowCount(0)
+, mInResize(false)
 {
 	SetBackgroundColour(SKIN.Element(shBackground));
 
@@ -83,38 +91,120 @@ wxBuildUIPanel::wxBuildUIPanel(wxWindow* parent, wxSettlersGLCanvas* canvas)
 		// If it's a new row, use the next sizer.
 		wxSizer* sizer = sizers[index];
 		++index;
-		
+
+		wxInt32 iconsInRow = 0;
+		// Equal stretch on both ends and between icons. A proportion on the
+		// icon itself cannot do this: the icon's max size is its min size, so
+		// wx leaves the spare width in one block on the right.
+		sizer->AddStretchSpacer(1);
         for(; it3 != it3End; ++it3)
         {
 			wxBuildUI* ui = new wxBuildUI(this, it3->second, canvas);
+			mBuildUIs.push_back(ui);
+			++iconsInRow;
+
+			const wxSize iconSize(sBuildIconMin, sBuildIconMin);
+			ui->SetMinSize(iconSize);
+			ui->SetMaxSize(iconSize);
             
 			wxSize min = ui->GetMinSize();
 			if(true == calcX)
 			{
-				minSize.x += min.x + 2;
+				minSize.x += min.x + sBuildIconPad;
 			}
 			if(true == calcY)
 			{
-				minSize.y += min.y + 2;
+				minSize.y += min.y + sBuildIconPad;
 				calcY = false;
 			}
 
-			sizer->Add(ui, 0, wxEXPAND | wxALL | wxSHAPED, 2);
+			sizer->Add(ui, 0, wxALIGN_CENTER_VERTICAL | wxALL, sBuildIconPad);
+			sizer->AddStretchSpacer(1);
+		}
+
+		if(iconsInRow > mMaxPerRow)
+		{
+			mMaxPerRow = iconsInRow;
 		}
 
 		calcX = false;
 		calcY = true;
-		vert->Add(sizer, 1, wxEXPAND);
+		vert->Add(sizer, 0, wxEXPAND);
     }
 
+	mRowCount = static_cast<wxInt32>(index);
+
+	vert->AddStretchSpacer(1);
 	minSize += wxSize(2, 2);
 
 	horz->Add(vert, 1, wxEXPAND | wxTOP | wxLEFT | wxBOTTOM, 2);
 
 	SetMinSize(minSize);
 	SetSizer(horz);
+	Bind(wxEVT_SIZE, &wxBuildUIPanel::OnPanelSize, this);
+	CallAfter(&wxBuildUIPanel::ResizeIcons);
 }
 
 //---------------------------- PROTECTED        -----------------------------//
 
 //---------------------------- PRIVATE          -----------------------------//
+void wxBuildUIPanel::OnPanelSize(wxSizeEvent& event)
+{
+	ResizeIcons();
+	event.Skip();
+}
+
+void wxBuildUIPanel::ResizeIcons()
+{
+	if( (true == mInResize) ||
+		(0 >= mMaxPerRow) ||
+		(0 >= mRowCount) ||
+		(true == mBuildUIs.empty()))
+	{
+		return;
+	}
+
+	mInResize = true;
+
+	const wxSize client = GetClientSize();
+	const wxInt32 width = client.GetWidth();
+	const wxInt32 height = client.GetHeight();
+	const wxInt32 padX = 2 + (mMaxPerRow * (sBuildIconPad * 2));
+	const wxInt32 padY = 4 + (mRowCount * (sBuildIconPad * 2));
+	if( (padX >= width) ||
+		(padY >= height))
+	{
+		mInResize = false;
+		return;
+	}
+
+	// Fit a square in both directions. Sizing from width alone makes a very
+	// wide pane squash the icons, and the model is then drawn stretched.
+	const wxInt32 cellW = (width - padX) / mMaxPerRow;
+	const wxInt32 cellH = (height - padY) / mRowCount;
+	wxInt32 cell = std::min(cellW, cellH);
+	if(1 > cell)
+	{
+		cell = 1;
+	}
+
+	const wxSize iconSize(cell, cell);
+	for(size_t i = 0; i < mBuildUIs.size(); ++i)
+	{
+		wxBuildUI* ui = mBuildUIs[i];
+		if(NULL == ui)
+		{
+			continue;
+		}
+
+		ui->SetMinSize(iconSize);
+		ui->SetMaxSize(iconSize);
+	}
+
+	if(NULL != GetSizer())
+	{
+		GetSizer()->Layout();
+	}
+
+	mInResize = false;
+}

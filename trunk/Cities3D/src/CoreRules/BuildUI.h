@@ -288,8 +288,6 @@ private:
 	//
 	bool mClickable;
 
-	wxColour mFillColour;
-
 	wxBitmap mEnabledBitmap;
 	wxBitmap mDisabledBitmap;
 
