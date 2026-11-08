@@ -140,7 +140,7 @@ public:
 private:
 	void HighlightObject(const CornerObjectPtr &object, const wxInt32 tileNum)
 	{
-		if(false == object)
+		if(!object)
 		{
 			return;
 		}
