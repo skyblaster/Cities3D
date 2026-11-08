@@ -23,8 +23,13 @@
 	#pragma warning(disable:4996)
 #endif
 
-// Standard precompiled wxWidgets header
+// Standard precompiled wxWidgets header. On MSVC, wxprec.h pulls in wx/wx.h
+// when WX_PRECOMP is set. On GCC/Clang it does not, so include wx/wx.h
+// explicitly (upstream's recommended non-PCH pattern).
 #include <wx/wxprec.h>
+#ifndef WX_PRECOMP
+#include <wx/wx.h>
+#endif
 
 // Other wxWidgets headers
 #include <wx/aui/aui.h>
