@@ -19,12 +19,16 @@ command: Cities3D
 finish-args:
   - --share=ipc
   - --share=network
-  - --socket=fallback-x11
+  # wxWidgets/GTK still needs a real X11 DISPLAY. fallback-x11 skips X11 when a
+  # Wayland socket exists, which leaves DISPLAY unset and fails with:
+  #   Unable to initialize GTK+, is DISPLAY set properly?
+  - --socket=x11
   - --socket=wayland
   - --device=dri
   - --socket=pulseaudio
   - --filesystem=xdg-documents
   - --filesystem=xdg-download
+  - --env=GDK_BACKEND=x11
 
 # Do not inherit org.freedesktop.Platform.GL. The runtime already exposes GL via
 # --device=dri; inheriting it also mounts under /app and breaks launch with:
