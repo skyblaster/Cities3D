@@ -17,6 +17,9 @@
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
 #include <list>
+#ifdef new
+#undef new
+#endif
 #include <boost/tuple/tuple.hpp>
 
 //---------------------------- USER INCLUDES    -----------------------------//

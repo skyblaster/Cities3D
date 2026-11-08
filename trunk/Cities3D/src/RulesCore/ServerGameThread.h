@@ -17,6 +17,9 @@
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
 #include <deque>
+#ifdef new
+#undef new
+#endif
 #include <boost/shared_array.hpp>
 
 //---------------------------- USER INCLUDES    -----------------------------//
