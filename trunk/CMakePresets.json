@@ -33,12 +33,18 @@
     },
     {
       "name": "linux",
-      "displayName": "Linux (Ninja + GCC)",
+      "displayName": "Linux (Ninja + GCC, shared wx)",
       "generator": "Ninja",
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-linux-wxshared",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/../triplets"
+      },
+      "environment": {
+        "VCPKG_DEFAULT_TRIPLET": "x64-linux-wxshared",
+        "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/../triplets"
       },
       "condition": {
         "type": "equals",

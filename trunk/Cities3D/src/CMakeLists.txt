@@ -104,6 +104,26 @@ set_target_properties(Cities3D PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CITIES3D_DIST_DIR}"
     VS_DEBUGGER_WORKING_DIRECTORY "${CITIES3D_DIST_DIR}"
 )
+if(UNIX AND NOT APPLE)
+    set_target_properties(Cities3D PROPERTIES
+        BUILD_RPATH "$ORIGIN"
+        INSTALL_RPATH "$ORIGIN"
+    )
+    # Shared wxWidgets (x64-linux-wxshared) must sit next to Cities3D / *.so.
+    if(DEFINED VCPKG_TARGET_TRIPLET)
+        set(_cities3d_vcpkg_lib "${CMAKE_BINARY_DIR}/vcpkg_installed/${VCPKG_TARGET_TRIPLET}/lib")
+        if(EXISTS "${_cities3d_vcpkg_lib}")
+            file(GLOB _cities3d_wx_sos "${_cities3d_vcpkg_lib}/libwx_*.so*")
+            foreach(_wx_so IN LISTS _cities3d_wx_sos)
+                add_custom_command(TARGET Cities3D POST_BUILD
+                    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                        "${_wx_so}" "${CITIES3D_DIST_DIR}/"
+                    COMMENT "Copy ${_wx_so} next to Cities3D"
+                )
+            endforeach()
+        endif()
+    endif()
+endif()
 if(MSVC)
     # Plugin DLLs run hundreds of static registrars during LoadLibrary; the
     # default 1 MB stack is enough for an isolated LoadLibrary but not for

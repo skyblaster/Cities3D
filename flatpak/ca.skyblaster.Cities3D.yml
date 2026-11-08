@@ -59,7 +59,9 @@ modules:
       build-args:
         - --share=network
       env:
-        VCPKG_DEFAULT_TRIPLET: x64-linux
+        # Shared wx only — see triplets/x64-linux-wxshared.cmake.
+        VCPKG_DEFAULT_TRIPLET: x64-linux-wxshared
+        VCPKG_OVERLAY_TRIPLETS: triplets
         VCPKG_FORCE_SYSTEM_BINARIES: "1"
     build-commands:
       - |
@@ -69,9 +71,13 @@ modules:
           "${VCPKG_ROOT}/bootstrap-vcpkg.sh" -disableMetrics
         fi
         export VCPKG_ROOT
+        export VCPKG_DEFAULT_TRIPLET=x64-linux-wxshared
+        export VCPKG_OVERLAY_TRIPLETS="${PWD}/triplets"
         cmake -S trunk -B trunk/build/flatpak -G Ninja \
           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
+          -DVCPKG_TARGET_TRIPLET=x64-linux-wxshared \
+          -DVCPKG_OVERLAY_TRIPLETS="${PWD}/triplets" \
           -DOpenGL_GL_PREFERENCE=LEGACY
         cmake --build trunk/build/flatpak -j "$(nproc)"
       - install -d "${FLATPAK_DEST}/share/cities3d"
@@ -84,6 +90,12 @@ modules:
           if [ -f "${DIST}/${lib}.so" ]; then
             install -m755 "${DIST}/${lib}.so" "${FLATPAK_DEST}/share/cities3d/${lib}.so"
           fi
+        done
+        # One shared libwx for the executable, cores, and plugins.
+        shopt -s nullglob
+        for so in "${DIST}"/libwx_*.so* \
+                  trunk/build/flatpak/vcpkg_installed/x64-linux-wxshared/lib/libwx_*.so*; do
+          install -m755 "${so}" "${FLATPAK_DEST}/share/cities3d/$(basename "${so}")"
         done
         if [ -d "${DIST}/plugins" ]; then
           cp -a "${DIST}/plugins" "${FLATPAK_DEST}/share/cities3d/"

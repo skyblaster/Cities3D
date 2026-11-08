@@ -58,20 +58,30 @@ bool wxCities3DApp::OnInit()
 #endif	// MAPS_BUILD_MAPS
 
 	// Set our running instance so CitiesOnline knows if we're up or not.
+	std::fprintf(stderr, "cities3d: single-instance check\n");
+	std::fflush(stderr);
 	mpInstanceChecker.reset(new wxSingleInstanceChecker(swCities3D));
 
+	std::fprintf(stderr, "cities3d: controller receivers\n");
+	std::fflush(stderr);
 	Controller::get().AddReceiver(shEventAddCatalog, 
 		&wxCities3DApp::OnAddCatalog, this);
 	Controller::get().AddReceiver(shEventResetLocale, 
 		&wxCities3DApp::OnResetLocale, this);
 
 	//turn on all image handlers
+	std::fprintf(stderr, "cities3d: image handlers\n");
+	std::fflush(stderr);
 	::wxInitAllImageHandlers();
 	::wxHandleFatalExceptions(true);
 
 	// Cache the breadcrumb path while wx is healthy. OnFatalException must not
 	// call into FilePath::UserDataDir()/Mkdir — that re-enters DatabaseCore/wx
 	// from a signal handler and can SEGV again (see coredump __restore_rt).
+	// This is also the first call into DatabaseCore.so's FilePath; with static
+	// wx linked into both Cities3D and DatabaseCore.so it SEGVs here.
+	std::fprintf(stderr, "cities3d: FilePath::LastRuleBreadcrumb\n");
+	std::fflush(stderr);
 	mLastRuleBreadcrumb = FilePath::LastRuleBreadcrumb();
 	std::fprintf(stderr, "cities3d: breadcrumb=%s\n",
 		(const char *)mLastRuleBreadcrumb.mb_str(wxConvUTF8));

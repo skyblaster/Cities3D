@@ -56,6 +56,12 @@ function(cities3d_add_core name export_def extra_includes)
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
         PREFIX ""
     )
+    if(UNIX AND NOT APPLE)
+        set_target_properties(${name} PROPERTIES
+            BUILD_RPATH "$ORIGIN"
+            INSTALL_RPATH "$ORIGIN"
+        )
+    endif()
 endfunction()
 
 function(cities3d_add_plugin name)
@@ -93,6 +99,13 @@ function(cities3d_add_plugin name)
     if(NOT WIN32)
         set_target_properties(${name} PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${CITIES3D_PLUGIN_DIR_RELEASE}"
+        )
+    endif()
+    if(UNIX AND NOT APPLE)
+        # Plugins live in plugins/; libwx sits one directory up next to Cities3D.
+        set_target_properties(${name} PROPERTIES
+            BUILD_RPATH "$ORIGIN:$ORIGIN/.."
+            INSTALL_RPATH "$ORIGIN:$ORIGIN/.."
         )
     endif()
 endfunction()
