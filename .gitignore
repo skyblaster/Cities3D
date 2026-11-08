@@ -3,6 +3,14 @@ trunk/build/
 build/
 out/
 cmake-build-*/
+build-flatpak/
+.flatpak-builder/
+repo/
+*.flatpak
+
+# Linux shared libraries written next to game data
+trunk/Cities3D/distribute/*.so
+trunk/Cities3D/distribute/Cities3D
 
 # CMake/vcpkg dump binaries into the committed game-data tree (maps, skins,
 # locale, tex, sounds). Ignore generated outputs only — not the whole folder.

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>ca.skyblaster.Cities3D</id>
+  <name>Cities3D</name>
+  <summary>3D multiplayer settlers-style board game</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-2.0-or-later</project_license>
+  <description>
+    <p>
+      Cities3D is a 3D multiplayer board game in the settlers tradition,
+      with local hotseat and LAN play, expansion rule plugins, and OpenGL
+      rendering through wxWidgets.
+    </p>
+  </description>
+  <launchable type="desktop-id">ca.skyblaster.Cities3D.desktop</launchable>
+  <categories>
+    <category>Game</category>
+    <category>BoardGame</category>
+  </categories>
+  <releases>
+    <release version="0.10.0" date="2026-11-08"/>
+  </releases>
+  <content_rating type="oars-1.1"/>
+</component>

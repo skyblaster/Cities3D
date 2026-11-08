@@ -1,0 +1,71 @@
+# Cities3D Flatpak — build with flatpak-builder from the repository root:
+#   ./flatpak/build.sh
+# or:
+#   flatpak-builder --user --install --force-clean --install-deps-from=flathub \
+#     build-flatpak flatpak/ca.skyblaster.Cities3D.yml
+app-id: ca.skyblaster.Cities3D
+runtime: org.freedesktop.Platform
+runtime-version: "26.08"
+sdk: org.freedesktop.Sdk
+command: Cities3D
+
+finish-args:
+  - --share=ipc
+  - --share=network
+  - --socket=fallback-x11
+  - --socket=wayland
+  - --device=dri
+  - --socket=pulseaudio
+  - --filesystem=xdg-documents
+  - --filesystem=xdg-download
+
+inherit-extensions:
+  - org.freedesktop.Platform.GL
+
+modules:
+  - name: cities3d
+    buildsystem: simple
+    build-options:
+      env:
+        VCPKG_DEFAULT_TRIPLET: x64-linux
+        VCPKG_FORCE_SYSTEM_BINARIES: "1"
+    build-commands:
+      - |
+        set -euo pipefail
+        VCPKG_ROOT="${FLATPAK_BUILDER_BUILDDIR}/vcpkg"
+        if [ ! -x "${VCPKG_ROOT}/vcpkg" ]; then
+          git clone https://github.com/microsoft/vcpkg.git "${VCPKG_ROOT}"
+          "${VCPKG_ROOT}/bootstrap-vcpkg.sh" -disableMetrics
+        fi
+        export VCPKG_ROOT
+        cmake -S trunk -B trunk/build/flatpak -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
+          -DOpenGL_GL_PREFERENCE=LEGACY
+        cmake --build trunk/build/flatpak -j "$(nproc)"
+      - install -d "${FLATPAK_DEST}/bin" "${FLATPAK_DEST}/share/cities3d"
+      - |
+        set -euo pipefail
+        DIST="trunk/Cities3D/distribute"
+        # Binary + core shared libraries next to plugins/tex/skins.
+        install -m755 "${DIST}/Cities3D" "${FLATPAK_DEST}/share/cities3d/Cities3D"
+        for lib in DatabaseCore ModelCore RulesCore GLCore UICore; do
+          if [ -f "${DIST}/${lib}.so" ]; then
+            install -m755 "${DIST}/${lib}.so" "${FLATPAK_DEST}/share/cities3d/${lib}.so"
+          fi
+        done
+        if [ -d "${DIST}/plugins" ]; then
+          cp -a "${DIST}/plugins" "${FLATPAK_DEST}/share/cities3d/"
+        fi
+        for dir in tex skins maps locale sounds help; do
+          if [ -d "${DIST}/${dir}" ]; then
+            cp -a "${DIST}/${dir}" "${FLATPAK_DEST}/share/cities3d/"
+          fi
+        done
+        # Launcher keeps cwd on the data dir so relative plugin/tex paths work.
+        install -m755 flatpak/cities3d-launcher.sh "${FLATPAK_DEST}/bin/Cities3D"
+      - install -Dm644 flatpak/ca.skyblaster.Cities3D.desktop "${FLATPAK_DEST}/share/applications/ca.skyblaster.Cities3D.desktop"
+      - install -Dm644 flatpak/ca.skyblaster.Cities3D.metainfo.xml "${FLATPAK_DEST}/share/metainfo/ca.skyblaster.Cities3D.metainfo.xml"
+    sources:
+      - type: dir
+        path: ..
