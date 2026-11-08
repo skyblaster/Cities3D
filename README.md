@@ -71,8 +71,18 @@ cd ~/Cities3D   # or your checkout path
 
 `flatpak-builder` needs `--force-clean` whenever `build-flatpak/` already exists (otherwise you get `App dir 'build-flatpak' is not empty`). That flag only clears the staging app dir. The **module cache** lives in `.flatpak-builder/` and still produces `Cache hit for glu` / unchanged modules on later runs.
 
-- Packaging-only changes (icons, desktop file, install steps): `./flatpak/build.sh` — expects a cache hit for glu; `cities3d` rebuilds if the manifest/sources changed.
-- Wipe everything and recompile from scratch: `./flatpak/build.sh --full-rebuild`
+Partial rebuilds (this is what you want day to day):
+
+```sh
+git pull
+./flatpak/build.sh          # NOT --full-rebuild
+```
+
+Expect lines like `Cache hit for glu, skipping build` and `Cache hit for cities3d, skipping build` when C++ sources are unchanged. Desktop/icon/metainfo edits only rebuild the tiny `cities3d-metadata` module. Top-level finish-args / extension tweaks re-export the app without recompiling.
+
+- Packaging-only (icons, `.desktop`, metainfo, launcher): cache hit on `glu` + `cities3d`; rebuild `cities3d-metadata` only.
+- C++ / CMake / `vcpkg.json` changes: rebuild `cities3d` (vcpkg may still reuse downloaded ports).
+- Wipe everything: `./flatpak/build.sh --full-rebuild`
 
 Or run `flatpak-builder` yourself:
 
@@ -97,8 +107,8 @@ If the build dies immediately with `bwrap: Can't bind mount /etc/resolv.conf`, s
 1. Builds Mesa **GLU** into `/app` (the Freedesktop SDK has OpenGL but not `glu.pc` / `libGLU`, which vcpkg’s GLEW port requires).
 2. Downloads vcpkg at the commit pinned in `trunk/vcpkg.json` (`builtin-baseline`) during the source-fetch phase.
 3. Bootstraps vcpkg, then configures `trunk/` with Ninja + the vcpkg toolchain (Release).
-4. Builds Cities3D and the rule plugins.
-5. Installs the executable, shared libraries, plugins, and game data under `/app/share/cities3d`, with a launcher at `/app/bin/Cities3D`.
+4. Builds Cities3D and the rule plugins; installs binaries and game data under `/app/share/cities3d`.
+5. Installs the launcher, desktop file, metainfo, and icons (`cities3d-metadata` module).
 
 ## Run
 

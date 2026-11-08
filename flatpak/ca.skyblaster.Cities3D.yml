@@ -7,6 +7,9 @@
 # Module builds are sandboxed without network by default. vcpkg is declared as a
 # git source (downloaded before the sandbox) and the module gets --share=network
 # so cmake/vcpkg can still fetch port archives during configure.
+#
+# Caching: glu and cities3d are separate from cities3d-metadata. Packaging-only
+# edits (desktop/icons/metainfo/launcher) rebuild only the tiny metadata module.
 app-id: ca.skyblaster.Cities3D
 runtime: org.freedesktop.Platform
 runtime-version: "26.08"
@@ -23,8 +26,8 @@ finish-args:
   - --filesystem=xdg-documents
   - --filesystem=xdg-download
 
-# Do not inherit org.freedesktop.Platform.GL here. The runtime already exposes
-# GL via --device=dri; inheriting it also mounts under /app and breaks launch:
+# Do not inherit org.freedesktop.Platform.GL. The runtime already exposes GL via
+# --device=dri; inheriting it also mounts under /app and breaks launch with:
 #   bwrap: Can't mkdir parents for /app/lib/.../GL: Read-only file system
 
 # Drop build-only metadata after all modules finish. Keep libGLU.so for GLEW.
@@ -49,7 +52,6 @@ modules:
       env:
         VCPKG_DEFAULT_TRIPLET: x64-linux
         VCPKG_FORCE_SYSTEM_BINARIES: "1"
-
     build-commands:
       - |
         set -euo pipefail
@@ -63,7 +65,7 @@ modules:
           -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
           -DOpenGL_GL_PREFERENCE=LEGACY
         cmake --build trunk/build/flatpak -j "$(nproc)"
-      - install -d "${FLATPAK_DEST}/bin" "${FLATPAK_DEST}/share/cities3d"
+      - install -d "${FLATPAK_DEST}/share/cities3d"
       - |
         set -euo pipefail
         DIST="trunk/Cities3D/distribute"
@@ -82,19 +84,6 @@ modules:
             cp -a "${DIST}/${dir}" "${FLATPAK_DEST}/share/cities3d/"
           fi
         done
-        # Launcher keeps cwd on the data dir so relative plugin/tex paths work.
-        install -m755 flatpak/cities3d-launcher.sh "${FLATPAK_DEST}/bin/Cities3D"
-      - install -Dm644 flatpak/ca.skyblaster.Cities3D.desktop "${FLATPAK_DEST}/share/applications/ca.skyblaster.Cities3D.desktop"
-      - install -Dm644 flatpak/ca.skyblaster.Cities3D.metainfo.xml "${FLATPAK_DEST}/share/metainfo/ca.skyblaster.Cities3D.metainfo.xml"
-      - |
-        set -euo pipefail
-        # AppStream compose requires a themed icon matching Icon= in the desktop file.
-        for size in 32 48 64 128 256; do
-          install -Dm644 \
-            "flatpak/icons/${size}/apps/ca.skyblaster.Cities3D.png" \
-            "${FLATPAK_DEST}/share/icons/hicolor/${size}x${size}/apps/ca.skyblaster.Cities3D.png"
-        done
-
     sources:
       # Pin to the builtin-baseline in trunk/vcpkg.json so port versions match.
       - type: git
@@ -103,3 +92,24 @@ modules:
         dest: vcpkg
       - type: dir
         path: ..
+
+  # Desktop integration only — keep this module tiny so packaging tweaks do not
+  # invalidate the cities3d compile cache.
+  - name: cities3d-metadata
+    buildsystem: simple
+    build-commands:
+      - install -d "${FLATPAK_DEST}/bin"
+      - install -m755 flatpak/cities3d-launcher.sh "${FLATPAK_DEST}/bin/Cities3D"
+      - install -Dm644 flatpak/ca.skyblaster.Cities3D.desktop "${FLATPAK_DEST}/share/applications/ca.skyblaster.Cities3D.desktop"
+      - install -Dm644 flatpak/ca.skyblaster.Cities3D.metainfo.xml "${FLATPAK_DEST}/share/metainfo/ca.skyblaster.Cities3D.metainfo.xml"
+      - |
+        set -euo pipefail
+        for size in 32 48 64 128 256; do
+          install -Dm644 \
+            "flatpak/icons/${size}/apps/ca.skyblaster.Cities3D.png" \
+            "${FLATPAK_DEST}/share/icons/hicolor/${size}x${size}/apps/ca.skyblaster.Cities3D.png"
+        done
+    sources:
+      - type: dir
+        path: ../flatpak
+        dest: flatpak
