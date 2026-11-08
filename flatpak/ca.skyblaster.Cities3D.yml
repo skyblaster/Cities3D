@@ -3,6 +3,10 @@
 # or:
 #   flatpak-builder --user --install --force-clean --install-deps-from=flathub \
 #     build-flatpak flatpak/ca.skyblaster.Cities3D.yml
+#
+# Module builds are sandboxed without network by default. vcpkg is declared as a
+# git source (downloaded before the sandbox) and the module gets --share=network
+# so cmake/vcpkg can still fetch port archives during configure.
 app-id: ca.skyblaster.Cities3D
 runtime: org.freedesktop.Platform
 runtime-version: "26.08"
@@ -26,15 +30,17 @@ modules:
   - name: cities3d
     buildsystem: simple
     build-options:
+      # Allow DNS/HTTPS inside the build sandbox (vcpkg bootstrap + port downloads).
+      build-args:
+        - --share=network
       env:
         VCPKG_DEFAULT_TRIPLET: x64-linux
         VCPKG_FORCE_SYSTEM_BINARIES: "1"
     build-commands:
       - |
         set -euo pipefail
-        VCPKG_ROOT="${FLATPAK_BUILDER_BUILDDIR}/vcpkg"
+        VCPKG_ROOT="${PWD}/vcpkg"
         if [ ! -x "${VCPKG_ROOT}/vcpkg" ]; then
-          git clone https://github.com/microsoft/vcpkg.git "${VCPKG_ROOT}"
           "${VCPKG_ROOT}/bootstrap-vcpkg.sh" -disableMetrics
         fi
         export VCPKG_ROOT
@@ -67,5 +73,10 @@ modules:
       - install -Dm644 flatpak/ca.skyblaster.Cities3D.desktop "${FLATPAK_DEST}/share/applications/ca.skyblaster.Cities3D.desktop"
       - install -Dm644 flatpak/ca.skyblaster.Cities3D.metainfo.xml "${FLATPAK_DEST}/share/metainfo/ca.skyblaster.Cities3D.metainfo.xml"
     sources:
+      # Pin to the builtin-baseline in trunk/vcpkg.json so port versions match.
+      - type: git
+        url: https://github.com/microsoft/vcpkg.git
+        commit: 0c2a9ace1964b818b15f7ae50ba1c42404918a7b
+        dest: vcpkg
       - type: dir
         path: ..

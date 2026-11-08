@@ -68,12 +68,14 @@ flatpak-builder --user --install --force-clean \
   flatpak/ca.skyblaster.Cities3D.yml
 ```
 
-The first build downloads the SDK, bootstraps vcpkg, and compiles wxWidgets/GTK and the rest. Expect a long run and several gigabytes of disk under `.flatpak-builder/` and `build-flatpak/`.
+The first build downloads the SDK, fetches the pinned vcpkg commit, bootstraps vcpkg, and compiles wxWidgets/GTK and the rest. Expect a long run and several gigabytes of disk under `.flatpak-builder/` and `build-flatpak/`.
+
+`flatpak-builder` sandboxes each module **without network** unless the manifest opts in. This manifest grants `--share=network` for the `cities3d` module so vcpkg can download port archives. If you still see `Could not resolve host: github.com`, check DNS from inside Distrobox (`getent hosts github.com`) before rebuilding.
 
 ### What the manifest does
 
-1. Bootstraps a full-history vcpkg checkout (required by the baseline in `trunk/vcpkg.json`).
-2. Configures `trunk/` with Ninja + the vcpkg toolchain (Release).
+1. Downloads vcpkg at the commit pinned in `trunk/vcpkg.json` (`builtin-baseline`) during the source-fetch phase.
+2. Bootstraps vcpkg, then configures `trunk/` with Ninja + the vcpkg toolchain (Release).
 3. Builds Cities3D and the rule plugins.
 4. Installs the executable, shared libraries, plugins, and game data under `/app/share/cities3d`, with a launcher at `/app/bin/Cities3D`.
 
