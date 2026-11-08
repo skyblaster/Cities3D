@@ -19,6 +19,9 @@
 #include <list>
 #include <wx/image.h>
 #include <wx/hashmap.h>
+#ifdef new
+#undef new
+#endif
 #include <boost/scoped_array.hpp>
 
 //---------------------------- USER INCLUDES    -----------------------------//
