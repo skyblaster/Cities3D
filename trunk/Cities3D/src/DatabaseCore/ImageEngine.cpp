@@ -73,9 +73,19 @@ wxImage ImageEngine::Colorize(const HashString &image, const HashString &mask,
 {
 	// Get the original image and the mask image.
 	wxImage original = GetImage(shBuild, image).Copy();
+	if(false == original.IsOk())
+	{
+		wxLogError(wxString::Format(
+			wxT("Colorize: missing or invalid image %s."), image.cwx_str()));
+		return wxImage();
+	}
 
 	wxInt32 w = original.GetWidth();
 	wxInt32 h = original.GetHeight();
+	if( (0 >= w) || (0 >= h) )
+	{
+		return wxImage();
+	}
 
 	bool is_masked = (shNoMask != mask);
 
@@ -83,8 +93,15 @@ wxImage ImageEngine::Colorize(const HashString &image, const HashString &mask,
 	if(true == is_masked)
 	{
 		masked = GetImage(shBuild, mask).Copy();
-		wxASSERT(w == masked.GetWidth());
-		wxASSERT(h == masked.GetHeight());
+		if( (false == masked.IsOk()) ||
+			(w != masked.GetWidth()) ||
+			(h != masked.GetHeight()) )
+		{
+			wxLogError(wxString::Format(
+				wxT("Colorize: missing or invalid mask %s for image %s."),
+				mask.cwx_str(), image.cwx_str()));
+			return wxImage();
+		}
 	}	
 	
 	// Store off the background color.
@@ -101,18 +118,30 @@ wxImage ImageEngine::Colorize(const HashString &image, const HashString &mask,
 
 	// Create the outgoing image at the full size.
 	wxImage final(w, h);
+	if(false == final.IsOk())
+	{
+		return wxImage();
+	}
 
 	// Get data pointers to all three.
 	wxUint8 *o = original.GetData();
 	wxUint8 *f = final.GetData();
 	wxUint8 *m = NULL;
+	if( (NULL == o) || (NULL == f) )
+	{
+		return wxImage();
+	}
 	
 	if(true == is_masked)
 	{
 		m = masked.GetData();
+		if(NULL == m)
+		{
+			return wxImage();
+		}
 	}	
 
-	size_t pixels = w * h * 3;
+	size_t pixels = static_cast<size_t>(w) * static_cast<size_t>(h) * 3;
 	wxUint8 *end = o + pixels;
 
 	// Iterate through the pixels, copying as needed into the final image.
@@ -320,17 +349,28 @@ void ImageEngine::ReadImages(const wxInt32 size, wxImage pList[],
 	{
 		file = FilePath::Tex(filename);
 	}
+
+	if(true == file.IsEmpty())
+	{
+		wxLogError(wxString::Format(
+			wxT("Could not find %s in the %s search path."),
+			filename.c_str(),
+			skin ? wxT("skin") : wxT("tex")));
+		return;
+	}
 	
 	wxFile in;
-	in.Open(file);
-	wxFileInputStream x(in);
-	wxDataInputStream fileIn(x);
-
-	//open the right texture set
-	if(false == in.IsOpened())
+	if(false == in.Open(file))
 	{
 		wxLogError(wxString::Format(wxT("Could not open %s."), file.c_str()));
-		
+		return;
+	}
+
+	wxFileInputStream x(in);
+	wxDataInputStream fileIn(x);
+	if( (false == x.IsOk()) || (false == in.IsOpened()) )
+	{
+		wxLogError(wxString::Format(wxT("Could not read %s."), file.c_str()));
 		return;
 	}
 

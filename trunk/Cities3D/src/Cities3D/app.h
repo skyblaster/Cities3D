@@ -186,6 +186,14 @@ private:
 	// The single instance checker.
 	//
 	boost::scoped_ptr<wxSingleInstanceChecker> mpInstanceChecker;
+
+	//-----------------------------------------------------------------------//
+	// Object: mLastRuleBreadcrumb
+	//
+	// Absolute path to cities3d-last-rule.txt, cached during OnInit so the
+	// fatal-exception handler does not call FilePath helpers.
+	//
+	wxString mLastRuleBreadcrumb;
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//

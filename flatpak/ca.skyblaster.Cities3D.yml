@@ -52,6 +52,9 @@ modules:
   - name: cities3d
     buildsystem: simple
     build-options:
+      # Keep symbols so flatpak --devel gdb / coredumpctl can name frames.
+      strip: false
+      no-debuginfo: true
       # Allow DNS/HTTPS inside the build sandbox (vcpkg bootstrap + port downloads).
       build-args:
         - --share=network
@@ -67,7 +70,7 @@ modules:
         fi
         export VCPKG_ROOT
         cmake -S trunk -B trunk/build/flatpak -G Ninja \
-          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
           -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
           -DOpenGL_GL_PREFERENCE=LEGACY
         cmake --build trunk/build/flatpak -j "$(nproc)"
@@ -85,7 +88,8 @@ modules:
         if [ -d "${DIST}/plugins" ]; then
           cp -a "${DIST}/plugins" "${FLATPAK_DEST}/share/cities3d/"
         fi
-        for dir in tex skins maps locale sounds help; do
+        # data/ holds maps.db + mapkey.db (FilePath::Data).
+        for dir in tex skins maps locale sounds help data; do
           if [ -d "${DIST}/${dir}" ]; then
             cp -a "${DIST}/${dir}" "${FLATPAK_DEST}/share/cities3d/"
           fi

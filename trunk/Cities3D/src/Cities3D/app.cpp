@@ -31,6 +31,7 @@
 #include "IKeyMapEngine.h"
 #include <wx/ffile.h>
 #include <wx/msgdlg.h>
+#include <cstdio>
 
 #ifndef __WIN32__
 #include "cities3d.xpm"
@@ -48,6 +49,9 @@ IMPLEMENT_APP(wxCities3DApp)
 //---------------------------- PUBLIC           -----------------------------//
 bool wxCities3DApp::OnInit()
 {
+	std::fprintf(stderr, "cities3d: OnInit begin\n");
+	std::fflush(stderr);
+
 	// If we're writing out maps, do it now.
 #if MAPS_BUILD_MAPS
 	OfficialMapDatabase::get().WriteMaps();
@@ -64,6 +68,14 @@ bool wxCities3DApp::OnInit()
 	//turn on all image handlers
 	::wxInitAllImageHandlers();
 	::wxHandleFatalExceptions(true);
+
+	// Cache the breadcrumb path while wx is healthy. OnFatalException must not
+	// call into FilePath::UserDataDir()/Mkdir — that re-enters DatabaseCore/wx
+	// from a signal handler and can SEGV again (see coredump __restore_rt).
+	mLastRuleBreadcrumb = FilePath::LastRuleBreadcrumb();
+	std::fprintf(stderr, "cities3d: breadcrumb=%s\n",
+		(const char *)mLastRuleBreadcrumb.mb_str(wxConvUTF8));
+	std::fflush(stderr);
 
 	// See if they have a default language selected.
 	wxString str = CONFIG.read<wxString>(swConfigSectionGeneral, swLanguage, swEmpty);
@@ -84,6 +96,8 @@ bool wxCities3DApp::OnInit()
 	}
 
 #ifdef __WXGTK__
+	std::fprintf(stderr, "cities3d: loading gtkrc\n");
+	std::fflush(stderr);
 	const wxString nat_theme_path = FilePath::Skin(swGtkrc);
 	if(false == (SetNativeTheme(nat_theme_path)))
 	{
@@ -92,17 +106,29 @@ bool wxCities3DApp::OnInit()
 #endif // __WXGTK__
 
 	// Set the locale.
+	std::fprintf(stderr, "cities3d: resetting locale\n");
+	std::fflush(stderr);
 	OnResetLocale();
 	
 	// Splash screen.
+	std::fprintf(stderr, "cities3d: creating splash\n");
+	std::fflush(stderr);
 	boost::scoped_ptr<wxSplashDialog> dialog(new wxSplashDialog);
 	dialog->Create(NULL);
+	std::fprintf(stderr, "cities3d: splash created\n");
+	std::fflush(stderr);
 
 	// Start up the game engine while we load.
+	std::fprintf(stderr, "cities3d: starting engine\n");
+	std::fflush(stderr);
 	GameEngine::get().StartEngine();
+	std::fprintf(stderr, "cities3d: engine started\n");
+	std::fflush(stderr);
 
 	wxBOOL max = CONFIG.read(swConfigSectionUI, swMainFrameMaximized, FALSE);
 
+	std::fprintf(stderr, "cities3d: creating main frame\n");
+	std::fflush(stderr);
 	mFrame = new wxSettlersFrame(NULL, wxPoint(50, 50), wxSize(800, 600));
 	mFrame->CentreOnScreen();
 	SetTopWindow(mFrame);
@@ -128,6 +154,8 @@ bool wxCities3DApp::OnInit()
 	// startup signal.
 	Controller::get().Transmit(shEventStartup, 0);
 
+	std::fprintf(stderr, "cities3d: OnInit complete\n");
+	std::fflush(stderr);
     return true;
 
 }
@@ -135,18 +163,22 @@ bool wxCities3DApp::OnInit()
 void wxCities3DApp::OnFatalException()
 {
 	wxString last = wxT("(unknown)");
-	wxFFile breadcrumb(FilePath::LastRuleBreadcrumb(), wxT("r"));
-	if(true == breadcrumb.IsOpened())
+	// Use only the path cached in OnInit — do not call FilePath helpers here.
+	if(false == mLastRuleBreadcrumb.IsEmpty())
 	{
-		breadcrumb.ReadAll(&last);
+		wxFFile breadcrumb(mLastRuleBreadcrumb, wxT("r"));
+		if(true == breadcrumb.IsOpened())
+		{
+			breadcrumb.ReadAll(&last);
+		}
 	}
 
-	wxMessageBox(
-		wxString::Format(
-			wxT("Cities3D hit a fatal exception.\nLast rule: %s"),
-			last),
-		wxT("Cities3D"),
-		wxOK | wxICON_ERROR);
+	// Prefer stderr inside Flatpak/gdb; avoid wxMessageBox here because it
+	// re-enters GTK/fontconfig from a fatal signal path and can SEGV again.
+	std::fprintf(stderr,
+		"cities3d: fatal exception; last rule: %s\n",
+		(const char *)last.mb_str(wxConvUTF8));
+	std::fflush(stderr);
 }
 
 int wxCities3DApp::OnExit()
