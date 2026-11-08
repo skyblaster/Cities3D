@@ -63,6 +63,10 @@ void BuildPopup::CreatePopup(wxWindow* window, wxSizer* sizer) const
 
 	if(false == keyText.IsEmpty())
 	{
+		// Size this line to the shortcut, not the title. A road or city only
+		// has two cards, so the card row is narrower than "Command+R" and the
+		// shortcut was clipped. Three and four cards are already wider.
+		dc.GetTextExtent(keyText, &x, &y);
 		text = new wxBaseStaticText(window, -1, keyText, 
 			shDefaultText, shPopupFont, wxSize(x + 2, y + 2), wxALIGN_CENTRE);
 		sizer->Add(text, 1, wxEXPAND | wxALL, 4);
