@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Cities3D
+GenericName=Board game
+Comment=3D Settlers of Catan style multiplayer game
+Exec=Cities3D
+Icon=ca.skyblaster.Cities3D
+Terminal=false
+Categories=Game;BoardGame;
+Keywords=settlers;catan;board;
+StartupNotify=true
