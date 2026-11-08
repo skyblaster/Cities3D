@@ -73,6 +73,12 @@ namespace
 //---------------------------- PUBLIC           -----------------------------//
 wxImage &Image::Colorize(wxImage &image, wxColour overlay)
 {
+	if(false == image.IsOk())
+	{
+		sImage = wxImage();
+		return sImage;
+	}
+
 	wxInt32 r, g, b;
 	r = overlay.Red();
 	g = overlay.Green();
@@ -83,6 +89,11 @@ wxImage &Image::Colorize(wxImage &image, wxColour overlay)
 
 	wxUint8 *p, *data;
 	data = image.GetData();
+	if(NULL == data)
+	{
+		sImage = wxImage();
+		return sImage;
+	}
 
 	for(p = data; p < data + size; p += 3)
 	{
@@ -98,6 +109,12 @@ wxImage &Image::Colorize(wxImage &image, wxColour overlay)
 
 wxImage &Image::Borderize(wxImage &image)
 {
+	if(false == image.IsOk())
+	{
+		sImage = wxImage();
+		return sImage;
+	}
+
 	wxInt32 w, h;
 	w = image.GetWidth() * 3;
 	h = image.GetHeight();
@@ -107,6 +124,11 @@ wxImage &Image::Borderize(wxImage &image)
 
 	wxUint8 *p, *data;
 	data = image.GetData();
+	if(NULL == data)
+	{
+		sImage = wxImage();
+		return sImage;
+	}
 
 	bool nextRow = false;
 	for(p = data; p < data + size; p += 3)
@@ -135,6 +157,12 @@ wxImage &Image::Borderize(wxImage &image)
 
 wxImage &Image::Taberize(const wxImage &image, const wxInt32 width)
 {
+	if( (false == image.IsOk()) || (0 >= width) )
+	{
+		sImage = wxImage();
+		return sImage;
+	}
+
 	wxInt32 w, h;
 	w = image.GetWidth();
 	h = image.GetHeight();
@@ -142,13 +170,28 @@ wxImage &Image::Taberize(const wxImage &image, const wxInt32 width)
 	//get original image data
 	wxUint8 *p, *data;
 	data = image.GetData();
+	if(NULL == data)
+	{
+		sImage = wxImage();
+		return sImage;
+	}
 
 	//create a new image with the target dimensions
 	wxImage destImage(width, h);
+	if(false == destImage.IsOk())
+	{
+		sImage = wxImage();
+		return sImage;
+	}
 
 	//get target image data
 	wxUint8 *t, *target;
 	target = destImage.GetData();
+	if(NULL == target)
+	{
+		sImage = wxImage();
+		return sImage;
+	}
 
 	wxInt32 size;
 	size = width * h * 3;

@@ -106,8 +106,8 @@ If the build dies immediately with `bwrap: Can't bind mount /etc/resolv.conf`, s
 
 1. Builds Mesa **GLU** into `/app` (the Freedesktop SDK has OpenGL but not `glu.pc` / `libGLU`, which vcpkg’s GLEW port requires).
 2. Downloads vcpkg at the commit pinned in `trunk/vcpkg.json` (`builtin-baseline`) during the source-fetch phase.
-3. Bootstraps vcpkg, then configures `trunk/` with Ninja + the vcpkg toolchain (Release).
-4. Builds Cities3D and the rule plugins; installs binaries and game data under `/app/share/cities3d`.
+3. Bootstraps vcpkg, then configures `trunk/` with Ninja + the vcpkg toolchain (`RelWithDebInfo`, unstripped).
+4. Builds Cities3D and the rule plugins; installs binaries and game data (including `data/maps.db`) under `/app/share/cities3d`.
 5. Installs the launcher, desktop file, metainfo, and icons (`cities3d-metadata` module).
 
 ## Run
@@ -117,6 +117,18 @@ Prefer running from your **host** desktop session (not only inside Distrobox), s
 ```sh
 flatpak run ca.skyblaster.Cities3D
 ```
+
+Startup prints `cities3d: ...` lines on stderr. If it still dies with exit 139, the last line shows how far `OnInit` / splash got. Rebuild after pulling this branch (`./flatpak/build.sh`) so symbols stay in `/app/share/cities3d/*.so`, then:
+
+```sh
+flatpak run --command=sh --devel \
+  --nosocket=wayland --socket=x11 --device=dri --env=GDK_BACKEND=x11 \
+  ca.skyblaster.Cities3D
+# inside the sandbox:
+gdb -batch -ex run -ex bt --args /app/share/cities3d/Cities3D
+```
+
+Or on the host after a crash: `coredumpctl info -1` (frames should no longer be `n/a`).
 
 LAN play needs network access; the manifest already grants `--share=network`, DRI, PulseAudio, and an explicit X11 socket (wxWidgets/GTK still expects X11 even when Wayland is present).
 
@@ -128,7 +140,7 @@ flatpak run --socket=x11 --env=GDK_BACKEND=x11 ca.skyblaster.Cities3D
 flatpak override --user --socket=x11 --env=GDK_BACKEND=x11 ca.skyblaster.Cities3D
 ```
 
-The launcher uses a writable `$XDG_DATA_HOME/cities3d` cwd (assets symlinked from `/app`). The `cities3d-last-rule.txt` breadcrumb is written under the wx user data dir (`~/.Cities3D/data`, persisted via `--persist=.Cities3D`), not into read-only `/app`.
+The launcher uses a writable `$XDG_DATA_HOME/Cities3D` cwd (matches `wxStandardPaths::GetUserDataDir()`, assets symlinked from `/app`). The `cities3d-last-rule.txt` breadcrumb is written under that user data `data/` subdirectory (and `~/.Cities3D/` via `--persist=.Cities3D` for wxConfig), not into read-only `/app`.
 
 
 ## Export a bundle (optional)

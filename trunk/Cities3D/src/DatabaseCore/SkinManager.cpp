@@ -111,7 +111,18 @@ const wxFont &SkinManager::Font(const HashString &key) const
 	wxLogDebug(wxString::Format(wxT("Unable to find font %s in SkinManager"), 
 		key.cwx_str()));
 
-	return mFontHash[shDefaultFont];
+	// Prefer the skin default when present. Never insert into the hash from a
+	// missing lookup — operator[] would default-construct an invalid wxFont
+	// and later UI code can SEGV inside wx/GTK font plumbing.
+	it = mFontHash.find(shDefaultFont);
+	if(mFontHash.end() != it)
+	{
+		return it->second;
+	}
+
+	static const wxFont sFallback(
+		8, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL);
+	return sFallback;
 }
 
 const wxColour SkinManager::Element(const HashString &key) const

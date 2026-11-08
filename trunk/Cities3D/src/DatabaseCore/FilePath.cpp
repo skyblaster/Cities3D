@@ -339,10 +339,22 @@ wxString FilePath::Data(const DataFileType type)
 	it = sDataFileMap.find(type);
 	if (sDataFileMap.end() != it)
 	{
+		// Prefer a real file next to the executable (Flatpak installs under
+		// /app/share/cities3d/data) before trusting GetDataDir(), which often
+		// resolves to a non-existent /app/share/Cities3D path.
+		wxFileName exeData(STDPATHS.GetExecutablePath());
+		exeData.SetFullName(swEmpty);
+		exeData.AppendDir(swData);
+		exeData.SetFullName(it->second);
+		if (exeData.FileExists())
+		{
+			return exeData.GetFullPath();
+		}
+
 	    wxFileName fn(STDPATHS.GetDataDir(), swEmpty);
 	    fn.AppendDir(swData);
-	    wxString file = fn.GetFullPath() + it->second;
-	    return file;
+	    fn.SetFullName(it->second);
+	    return fn.GetFullPath();
 	}
 	
 	it = sUserDataFileMap.find(type);

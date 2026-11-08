@@ -22,6 +22,7 @@
 #include "GameEngine.h"
 #include "Controller.h"
 #include "BaseStaticText.h"
+#include <cstdio>
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -43,12 +44,21 @@ namespace
 void wxSplashDialog::Create(wxWindow *parent)
 {
 	// Load up the splash image.
+	std::fprintf(stderr, "cities3d: splash ReadImages(uisplash.tex)\n");
+	std::fflush(stderr);
 	sSplash.reset(new wxImage[1]);
 	IMAGE.ReadImages(1, sSplash.get(), swUISpashTex);
+	std::fprintf(stderr, "cities3d: splash image ok=%d size=%dx%d\n",
+		sSplash[0].IsOk() ? 1 : 0,
+		sSplash[0].IsOk() ? sSplash[0].GetWidth() : 0,
+		sSplash[0].IsOk() ? sSplash[0].GetHeight() : 0);
+	std::fflush(stderr);
 
 	sWidth = sSplash[0].IsOk() ? sSplash[0].GetWidth() : 0;
 	wxSize size(sWidth, sSplash[0].IsOk() ? sSplash[0].GetHeight() : 0);
 
+	std::fprintf(stderr, "cities3d: splash wxDialog::Create\n");
+	std::fflush(stderr);
 	wxDialog::Create(parent, -1, swEmpty, wxDefaultPosition, wxDefaultSize, 0);
 
 	SetBackgroundColour(wxColour(0, 0, 0));
@@ -64,7 +74,11 @@ void wxSplashDialog::Create(wxWindow *parent)
 
 	// Add the load text.
     static const wxString stFindingPlugins = _("Finding plugins...");
+	std::fprintf(stderr, "cities3d: splash BaseStaticText (loads SkinManager)\n");
+	std::fflush(stderr);
 	spText = new wxBaseStaticText(this, 0, stFindingPlugins);
+	std::fprintf(stderr, "cities3d: splash BaseStaticText done\n");
+	std::fflush(stderr);
 	sizer->Add(spText, 0, wxEXPAND | wxLEFT | wxBOTTOM, 2);
 
 	SetSizer(sizer);
