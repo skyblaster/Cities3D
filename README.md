@@ -63,10 +63,13 @@ Or run `flatpak-builder` yourself:
 
 ```sh
 flatpak-builder --user --install --force-clean \
+  --disable-rofiles-fuse \
   --install-deps-from=flathub \
   build-flatpak \
   flatpak/ca.skyblaster.Cities3D.yml
 ```
+
+`--disable-rofiles-fuse` is required in Distrobox: `rofiles-fuse` needs `/dev/fuse`, which rootless Podman does not expose by default, and fails with `fusermount3: ... Permission denied` / `Failure spawning rofiles-fuse`.
 
 The first build downloads the SDK, fetches the pinned vcpkg commit, bootstraps vcpkg, and compiles wxWidgets/GTK and the rest. Expect a long run and several gigabytes of disk under `.flatpak-builder/` and `build-flatpak/`.
 
