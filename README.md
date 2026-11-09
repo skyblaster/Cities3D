@@ -89,14 +89,15 @@ Expect lines like `Cache hit for glu, skipping build` and `Cache hit for cities3
 Or run `flatpak-builder` yourself:
 
 ```sh
+printf '%s\n' "$(nproc)" > flatpak/cities3d-build-jobs
 flatpak-builder --user --install --force-clean \
   --disable-rofiles-fuse \
   --install-deps-from=flathub \
   --jobs="$(nproc)" --ccache \
-  --env=CITIES3D_BUILD_JOBS="$(nproc)" \
   build-flatpak \
   flatpak/ca.skyblaster.Cities3D.yml
 ```
+
 
 `--disable-rofiles-fuse` is required in Distrobox: `rofiles-fuse` needs `/dev/fuse`, which rootless Podman does not expose by default, and fails with `fusermount3: ... Permission denied` / `Failure spawning rofiles-fuse`.
 

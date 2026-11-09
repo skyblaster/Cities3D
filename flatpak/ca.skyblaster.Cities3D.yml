@@ -71,9 +71,10 @@ modules:
     build-commands:
       - |
         set -euo pipefail
-        # Parallelism for vcpkg (during cmake configure) and ninja. Prefer the
-        # host-chosen CITIES3D_BUILD_JOBS from build.sh; otherwise nproc, capped
-        # by MemAvailable so RelWithDebInfo bulkbuilds do not thrash (~1.8 GiB each).
+        # Parallelism for vcpkg (during cmake configure) and ninja.
+        # Prefer flatpak/cities3d-build-jobs from build.sh (no --env needed).
+        # Otherwise nproc, capped by MemAvailable (~1.8 GiB per RelWithDebInfo
+        # bulkbuild) so parallel compiles do not thrash.
         cpus="$(nproc)"
         mem_kb="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)"
         if [ "${mem_kb}" -gt 0 ]; then
@@ -84,13 +85,18 @@ modules:
         else
           mem_jobs="${cpus}"
         fi
-        JOBS="${CITIES3D_BUILD_JOBS:-}"
-        if [ -z "${JOBS}" ]; then
-          JOBS="${cpus}"
-          if [ "${JOBS}" -gt "${mem_jobs}" ]; then
-            JOBS="${mem_jobs}"
-          fi
+        JOBS=""
+        if [ -f flatpak/cities3d-build-jobs ]; then
+          JOBS="$(tr -d '[:space:]' < flatpak/cities3d-build-jobs || true)"
         fi
+        case "${JOBS}" in
+          ''|*[!0-9]*|0)
+            JOBS="${cpus}"
+            if [ "${JOBS}" -gt "${mem_jobs}" ]; then
+              JOBS="${mem_jobs}"
+            fi
+            ;;
+        esac
         echo "cities3d: build jobs=${JOBS} (nproc=${cpus}, mem-cap=${mem_jobs}, MemAvailable_kB=${mem_kb})"
         export CMAKE_BUILD_PARALLEL_LEVEL="${JOBS}"
         export VCPKG_MAX_CONCURRENCY="${JOBS}"
