@@ -114,8 +114,31 @@ modules:
           ls -laR "${OVERLAY_PORTS}" >&2 || true
           exit 1
         fi
-        if [ ! -x "${VCPKG_ROOT}/vcpkg" ]; then
-          "${VCPKG_ROOT}/bootstrap-vcpkg.sh" -disableMetrics
+        # Prefer the vcpkg-tool binary declared as a Flatpak source (downloaded
+        # during fetch, cached under .flatpak-builder/). Bootstrap only as a
+        # fallback — GitHub release 504s have flaked out curl --retry 3.
+        if [ -f "${VCPKG_ROOT}/vcpkg" ] && [ ! -x "${VCPKG_ROOT}/vcpkg" ]; then
+          chmod +x "${VCPKG_ROOT}/vcpkg"
+        fi
+        if [ -x "${VCPKG_ROOT}/vcpkg" ]; then
+          echo "cities3d: using prefetched vcpkg tool"
+          touch "${VCPKG_ROOT}/vcpkg.disable-metrics"
+          "${VCPKG_ROOT}/vcpkg" version --disable-metrics || true
+        else
+          echo "cities3d: prefetched vcpkg missing; bootstrapping with retries"
+          ok=0
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if "${VCPKG_ROOT}/bootstrap-vcpkg.sh" -disableMetrics; then
+              ok=1
+              break
+            fi
+            echo "cities3d: bootstrap attempt ${attempt} failed; sleeping $((attempt * 5))s" >&2
+            sleep $((attempt * 5))
+          done
+          if [ "${ok}" -ne 1 ]; then
+            echo "ERROR: bootstrap-vcpkg.sh failed after retries (vcpkg-glibc download?)" >&2
+            exit 1
+          fi
         fi
         export VCPKG_ROOT
         export VCPKG_DEFAULT_TRIPLET="${TRIPLET}"
@@ -241,6 +264,14 @@ modules:
         url: https://github.com/microsoft/vcpkg.git
         commit: 0c2a9ace1964b818b15f7ae50ba1c42404918a7b
         dest: vcpkg
+      # Prefetch the matching vcpkg-tool binary (see scripts/vcpkg-tool-metadata.txt
+      # at that commit). Avoids in-sandbox bootstrap downloads that hit GitHub
+      # release 504s. Update URL + sha256 when bumping the vcpkg commit above.
+      - type: file
+        url: https://github.com/microsoft/vcpkg-tool/releases/download/2026-09-26/vcpkg-glibc
+        sha256: 3521ddb09dc4bd0faa5ce7572c46c8e4420167a918fe5087f9f11bd1c27fa38b
+        dest: vcpkg
+        dest-filename: vcpkg
       - type: dir
         path: ..
         # Basename match: skip host build trees that can pin the wrong triplet.
