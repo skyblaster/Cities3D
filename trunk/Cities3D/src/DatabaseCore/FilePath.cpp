@@ -230,18 +230,34 @@ wxArrayString FilePath::EnumPlugins()
 					wxLogDebug(wxT("ignored non-plugin %s in %s"), file.c_str(),
 						dir.GetName().c_str());
 				}
-				else if(list.Index(file) == wxNOT_FOUND)
-				{
-					wxLogDebug(wxT("found %s in %s"), file.c_str(), 
-						dir.GetName().c_str());
-					wxFileName filepath(dir.GetName(), file);
-					wxString path(filepath.GetFullPath());
-					list.Add(path);
-				}
 				else
 				{
-					wxLogDebug(wxT("ignored %s in %s"), file.c_str(), 
-						dir.GetName().c_str());
+					// Deduplicate by module name across plugin dirs. list holds
+					// full paths, so Index(file) never matched and Flatpak's
+					// ~/.Cities3D/plugins symlink + exe-adjacent plugins/
+					// loaded every Rules.so twice (duplicate keymap errors).
+					bool already = false;
+					for(size_t j = 0; j < list.GetCount(); ++j)
+					{
+						if(wxFileName(list[j]).GetName() == moduleName)
+						{
+							already = true;
+							break;
+						}
+					}
+					if(false == already)
+					{
+						wxLogDebug(wxT("found %s in %s"), file.c_str(),
+							dir.GetName().c_str());
+						wxFileName filepath(dir.GetName(), file);
+						wxString path(filepath.GetFullPath());
+						list.Add(path);
+					}
+					else
+					{
+						wxLogDebug(wxT("ignored duplicate %s in %s"), file.c_str(),
+							dir.GetName().c_str());
+					}
 				}
 				next = dir.GetNext(&file);
 			}
