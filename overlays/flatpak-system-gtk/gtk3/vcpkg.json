@@ -1,0 +1,6 @@
+{
+  "name": "gtk3",
+  "version": "3.24.43",
+  "description": "Empty overlay port: use Flatpak SDK / system GTK3 (avoids static GLib/GTK linked into shared libwx).",
+  "dependencies": []
+}

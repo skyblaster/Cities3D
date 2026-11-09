@@ -50,7 +50,7 @@ IMPLEMENT_APP(wxCities3DApp)
 bool wxCities3DApp::OnInit()
 {
 	// Unique stamp so Flatpak runs can confirm they are not an older build.
-	std::fprintf(stderr, "cities3d: build=wxshared-2\n");
+	std::fprintf(stderr, "cities3d: build=wxshared-sysgtk-1\n");
 	std::fprintf(stderr, "cities3d: OnInit begin\n");
 	std::fflush(stderr);
 

@@ -1,0 +1,6 @@
+{
+  "name": "cairo",
+  "version": "1.18.2",
+  "description": "Empty overlay port: use Flatpak SDK / system Cairo with SDK GTK (avoids dual graphics stacks in libwx).",
+  "dependencies": []
+}
