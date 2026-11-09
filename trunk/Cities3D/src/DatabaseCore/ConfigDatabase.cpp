@@ -26,6 +26,8 @@
 
 //---------------------------- STATICS          -----------------------------//
 
+IMPLEMENT_SINGLETON(ConfigDatabase)
+
 //---------------------------- PUBLIC           -----------------------------//
 
 //---------------------------- PROTECTED        -----------------------------//
@@ -46,4 +48,3 @@ ConfigDatabase::ConfigDatabase()
 }
 
 
-IMPLEMENT_SINGLETON(ConfigDatabase)

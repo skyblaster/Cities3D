@@ -33,6 +33,8 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+
+IMPLEMENT_SINGLETON(Synchronizer)
 namespace
 {
 	// Half a second seems reasonable.
@@ -152,4 +154,3 @@ void Synchronizer::Synchronize()
 	}
 }
 
-IMPLEMENT_SINGLETON(Synchronizer)

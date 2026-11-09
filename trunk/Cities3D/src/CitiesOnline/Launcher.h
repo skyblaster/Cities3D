@@ -138,5 +138,8 @@ private:
 	friend class Singleton<Launcher>;
 };
 
+DECLARE_SINGLETON(DLL_EXPORT, Launcher);
+
+
 //---------------------------- PROTOTYPES       -----------------------------//
 

@@ -21,6 +21,12 @@
 
 //---------------------------- DEFINES          -----------------------------//
 
+// Declare in the singleton's header (after the class). Required so bulkbuild
+// TUs that call Type::get() before Type.cpp is #included do not instantiate
+// the primary template first ("specialization after instantiation").
+#define DECLARE_SINGLETON(ExportSpec, Type) \
+	template<> ExportSpec Type &Singleton<Type>::get()
+
 // Define once in the .cpp that owns Type (the shared library that exports it).
 // DLL_EXPORT keeps one process-wide instance visible to plugins under
 // -fvisibility=hidden. An inline Meyers singleton in this header would give
@@ -66,6 +72,9 @@
 //         //so that this class can be instantiated.
 //         friend class Singleton<MySingleton>;
 //     };
+//
+//     // In MySingleton.h (after the class):
+//     DECLARE_SINGLETON(MY_EXPORT_SPEC, MySingleton);
 //
 //     // In MySingleton.cpp (the exporting shared library):
 //     IMPLEMENT_SINGLETON(MySingleton)

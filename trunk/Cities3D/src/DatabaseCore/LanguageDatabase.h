@@ -96,5 +96,8 @@ private:
 
 	friend class Singleton<LanguageDatabase>;
 };
+
+DECLARE_SINGLETON(DATABASE_EXPORT_SPEC, LanguageDatabase);
+
 //---------------------------- PROTOTYPES       -----------------------------//
 

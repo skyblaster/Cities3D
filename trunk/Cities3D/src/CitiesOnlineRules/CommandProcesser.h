@@ -71,6 +71,9 @@ private:
     StringPairArray mUISettings;
 };
 
+
+DECLARE_SINGLETON(DLL_EXPORT, CommandProcesser);
+
 //---------------------------- PROTOTYPES       -----------------------------//
 
 //---------------------------- DEFINES          -----------------------------//

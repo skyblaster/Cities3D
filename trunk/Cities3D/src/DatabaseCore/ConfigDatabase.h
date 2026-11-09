@@ -181,6 +181,9 @@ private:
 	friend class Singleton<ConfigDatabase>;
 };
 
+DECLARE_SINGLETON(DATABASE_EXPORT_SPEC, ConfigDatabase);
+
+
 //---------------------------- PROTOTYPES       -----------------------------//
 
 //explicit specializations to return specific data types

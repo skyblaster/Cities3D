@@ -413,5 +413,8 @@ private:
 	friend class Singleton<GameEngine>;
 };
 
+DECLARE_SINGLETON(RULES_EXPORT_SPEC, GameEngine);
+
+
 //---------------------------- PROTOTYPES       -----------------------------//
 

@@ -28,6 +28,8 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+
+IMPLEMENT_SINGLETON(SkinManager)
 namespace
 {
 	WX_DECLARE_STRING_HASH_MAP(wxColour, ColorHash);
@@ -340,4 +342,3 @@ void SkinManager::ReadSizes(wxXmlNode * const parent)
 	}
 }
 
-IMPLEMENT_SINGLETON(SkinManager)

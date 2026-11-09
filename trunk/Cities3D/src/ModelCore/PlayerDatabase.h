@@ -149,4 +149,7 @@ private:
 	friend class Singleton<PlayerDatabase>;
 };
 
+DECLARE_SINGLETON(MODEL_EXPORT_SPEC, PlayerDatabase);
+
+
 //---------------------------- PROTOTYPES       -----------------------------//

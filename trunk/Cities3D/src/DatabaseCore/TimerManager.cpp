@@ -26,6 +26,8 @@
 
 //---------------------------- STATICS          -----------------------------//
 
+IMPLEMENT_SINGLETON(TimerManager)
+
 //---------------------------- PUBLIC           -----------------------------//
 void TimerManager::Stop()
 {
@@ -101,4 +103,3 @@ void TimerManager::OnPeriodicTimer(wxTimerEvent &event)
 	}
 }
 
-IMPLEMENT_SINGLETON(TimerManager)

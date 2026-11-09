@@ -48,6 +48,8 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+
+IMPLEMENT_SINGLETON(GameEngine)
 namespace
 {
 	// The Game Version.
@@ -408,4 +410,3 @@ void GameEngine::OnResetGame(wxInt32)
 	Access::SetGame(mpImpl->mpGame);
 }
 
-IMPLEMENT_SINGLETON(GameEngine)

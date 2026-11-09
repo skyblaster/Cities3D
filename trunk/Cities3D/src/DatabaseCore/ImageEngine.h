@@ -249,6 +249,9 @@ private:
 	friend class Singleton<ImageEngine>;
 };
 
+DECLARE_SINGLETON(DATABASE_EXPORT_SPEC, ImageEngine);
+
+
 //---------------------------- PROTOTYPES       -----------------------------//
 // This macro is basically a copy of the ImageEngine macro without ruleset
 // information since skins don't use rulesets.

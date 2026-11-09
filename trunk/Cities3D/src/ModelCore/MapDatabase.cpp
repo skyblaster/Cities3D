@@ -28,6 +28,8 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+
+IMPLEMENT_SINGLETON(MapDatabase)
 namespace
 {
 	//offsets into the map database file
@@ -192,4 +194,3 @@ void MapDatabase::InitializeDatabase()
 
 
 
-IMPLEMENT_SINGLETON(MapDatabase)

@@ -160,5 +160,8 @@ private:
 	friend class Singleton<RNG>;
 };
 
+DECLARE_SINGLETON(DATABASE_EXPORT_SPEC, RNG);
+
+
 //---------------------------- PROTOTYPES       -----------------------------//
 
