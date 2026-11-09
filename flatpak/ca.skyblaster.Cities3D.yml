@@ -59,9 +59,10 @@ modules:
       build-args:
         - --share=network
       env:
-        # Shared wx only — see triplets/x64-linux-wxshared.cmake.
+        # Shared wx + system GTK/GLib — see triplets/ and overlays/flatpak-system-gtk/.
         VCPKG_DEFAULT_TRIPLET: x64-linux-wxshared
         VCPKG_OVERLAY_TRIPLETS: triplets
+        VCPKG_OVERLAY_PORTS: overlays/flatpak-system-gtk
         VCPKG_FORCE_SYSTEM_BINARIES: "1"
     build-commands:
       - |
@@ -69,9 +70,15 @@ modules:
         VCPKG_ROOT="${PWD}/vcpkg"
         TRIPLET=x64-linux-wxshared
         OVERLAY_TRIPLETS="${PWD}/triplets"
+        OVERLAY_PORTS="${PWD}/overlays/flatpak-system-gtk"
         if [ ! -f "${OVERLAY_TRIPLETS}/${TRIPLET}.cmake" ]; then
           echo "ERROR: missing overlay triplet ${OVERLAY_TRIPLETS}/${TRIPLET}.cmake" >&2
           ls -la "${OVERLAY_TRIPLETS}" >&2 || true
+          exit 1
+        fi
+        if [ ! -f "${OVERLAY_PORTS}/gtk3/portfile.cmake" ] || [ ! -f "${OVERLAY_PORTS}/cairo/portfile.cmake" ]; then
+          echo "ERROR: missing system-GTK overlay ports under ${OVERLAY_PORTS}" >&2
+          ls -laR "${OVERLAY_PORTS}" >&2 || true
           exit 1
         fi
         if [ ! -x "${VCPKG_ROOT}/vcpkg" ]; then
@@ -80,6 +87,7 @@ modules:
         export VCPKG_ROOT
         export VCPKG_DEFAULT_TRIPLET="${TRIPLET}"
         export VCPKG_OVERLAY_TRIPLETS="${OVERLAY_TRIPLETS}"
+        export VCPKG_OVERLAY_PORTS="${OVERLAY_PORTS}"
         # Never reuse a host/cached CMake tree that may still be on static x64-linux.
         rm -rf trunk/build/flatpak
         cmake -S trunk -B trunk/build/flatpak -G Ninja \
@@ -87,6 +95,7 @@ modules:
           -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
           -DVCPKG_TARGET_TRIPLET="${TRIPLET}" \
           -DVCPKG_OVERLAY_TRIPLETS="${OVERLAY_TRIPLETS}" \
+          -DVCPKG_OVERLAY_PORTS="${OVERLAY_PORTS}" \
           -DOpenGL_GL_PREFERENCE=LEGACY
         cmake --build trunk/build/flatpak -j "$(nproc)"
         DIST="trunk/Cities3D/distribute"
@@ -99,6 +108,28 @@ modules:
         if ! compgen -G "${WX_LIB_DIR}/libwx_*.so*" > /dev/null; then
           echo "ERROR: no shared libwx_*.so under ${WX_LIB_DIR} (static wx would SEGV)" >&2
           ls -la "${WX_LIB_DIR}"/libwx_* >&2 || true
+          exit 1
+        fi
+        # Shared libwx must NEEDED the SDK GTK/GLib — not embed static copies.
+        WX_CORE="$(ls -1 "${WX_LIB_DIR}"/libwx_gtk3u_core-*.so.* 2>/dev/null | head -n1 || true)"
+        if [ -z "${WX_CORE}" ]; then
+          echo "ERROR: missing libwx_gtk3u_core shared library" >&2
+          ls -la "${WX_LIB_DIR}"/libwx_* >&2 || true
+          exit 1
+        fi
+        echo "cities3d: ldd $(basename "${WX_CORE}")"
+        ldd "${WX_CORE}" || true
+        if ! ldd "${WX_CORE}" | grep -q 'libgtk-3\.so'; then
+          echo "ERROR: ${WX_CORE} does not link shared libgtk-3 (static GTK embeds GLib and aborts)" >&2
+          exit 1
+        fi
+        if ! ldd "${WX_CORE}" | grep -q 'libglib-2\.0\.so'; then
+          echo "ERROR: ${WX_CORE} does not link shared libglib-2.0" >&2
+          exit 1
+        fi
+        if compgen -G "${WX_LIB_DIR}/libglib-2.0.so*" > /dev/null; then
+          echo "ERROR: vcpkg still installed libglib under ${WX_LIB_DIR}; refusing dual-GLib" >&2
+          ls -la "${WX_LIB_DIR}"/libglib* >&2 || true
           exit 1
         fi
         for lib in DatabaseCore ModelCore RulesCore GLCore UICore Cities3D; do
@@ -116,7 +147,7 @@ modules:
             exit 1
           fi
         done
-        echo "cities3d: verified shared libwx linkage for cores + Cities3D"
+        echo "cities3d: verified shared libwx + system GTK/GLib linkage"
       - install -d "${FLATPAK_DEST}/share/cities3d"
       - |
         set -euo pipefail

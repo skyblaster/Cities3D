@@ -117,13 +117,13 @@ git pull
 ./flatpak/build.sh --full-rebuild
 ```
 
-A good build must print `cities3d: verified shared libwx linkage` during the Flatpak module build, and at runtime the first stderr lines must include `cities3d: build=wxshared-2` then `cities3d: single-instance check`. If you only see `OnInit begin` / immediate fatal exception, the Flatpak is still an older binary — pull and `--full-rebuild` again.
+A good build must print `cities3d: verified shared libwx + system GTK/GLib linkage`, and at runtime the first stderr line must be `cities3d: build=wxshared-sysgtk-1`. If you see a GLib-GObject `g_type_register_static` abort during startup, the Flatpak still has libwx with embedded static GLib — pull and `--full-rebuild`.
 
-Confirm shared wx is inside the installed app:
+Confirm shared wx uses the runtime GTK/GLib (not a bundled libglib):
 
 ```sh
 flatpak run --command=sh ca.skyblaster.Cities3D -c \
-  'ls /app/share/cities3d/libwx_*.so* && ldd /app/share/cities3d/DatabaseCore.so | grep libwx'
+  'ldd /app/share/cities3d/libwx_gtk3u_core-*.so* | grep -E "libgtk-3|libglib"; ls /app/share/cities3d/libglib* 2>/dev/null || echo "no bundled libglib (good)"'
 ```
 
 ## Run

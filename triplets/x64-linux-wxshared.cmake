@@ -3,6 +3,10 @@
 # static libwx gets linked into each of them (and into the main binary). That
 # duplicates wx global state and SEGVs on the first FilePath/wx call from a
 # core .so after wxApp has already started in the executable.
+#
+# Flatpak builds also apply overlays/flatpak-system-gtk so shared libwx links
+# against the Freedesktop SDK GTK/GLib instead of embedding vcpkg's static
+# copies (which abort at startup with dual-GLib g_type_register_static).
 set(VCPKG_TARGET_ARCHITECTURE x64)
 set(VCPKG_CRT_LINKAGE dynamic)
 set(VCPKG_LIBRARY_LINKAGE static)
