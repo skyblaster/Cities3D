@@ -47,3 +47,5 @@ Controller::~Controller()
 }
 
 
+
+IMPLEMENT_SINGLETON(Controller)

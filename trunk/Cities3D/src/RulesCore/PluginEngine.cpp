@@ -547,13 +547,26 @@ void PluginEngine::FindPlugins()
 	//ProvideRuleSets functionality
 
 	wxArrayString pluginList = FilePath::EnumPlugins();
-	
+	std::fprintf(stderr, "cities3d: EnumPlugins count=%zu\n",
+		static_cast<size_t>(pluginList.GetCount()));
+	std::fflush(stderr);
+	if(0 == pluginList.GetCount())
+	{
+		std::fprintf(stderr,
+			"cities3d: ERROR: no *Rules plugins found under plugins/\n");
+		std::fflush(stderr);
+	}
+
 	for(size_t i = 0; i < pluginList.GetCount(); ++i)
 	{
 		wxFileName filepath(pluginList[i]);
 		wxString path(filepath.GetFullPath());
 		//remove suffix (dll, so, sym, etc)
 		wxString module(filepath.GetName());
+
+		std::fprintf(stderr, "cities3d: loading plugin %s\n",
+			(const char *)path.mb_str(wxConvUTF8));
+		std::fflush(stderr);
 
 		// Since we're loading a module, signal that the module's language 
 		// locale should be added.
@@ -588,7 +601,16 @@ void PluginEngine::FindPlugins()
 			}
 
 			//see if we've got it
-			if(NULL != func)
+			if(NULL == func)
+			{
+				std::fprintf(stderr,
+					"cities3d: plugin missing ProvideRuleSets: %s\n",
+					(const char *)path.mb_str(wxConvUTF8));
+				std::fflush(stderr);
+				wxLogError(wxT("Plugin missing ProvideRuleSets: %s"),
+					path.c_str());
+			}
+			else
 			{
 				// Keep the module mapped. Unloading after discovery runs
 				// static destructors while wxWidgets is live and leaves

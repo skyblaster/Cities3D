@@ -70,3 +70,5 @@ void CommandProcesser::ProcessCommand(const wxString& command, bool inStartup)
 //---------------------------- PROTECTED        -----------------------------//
 
 //---------------------------- PRIVATE          -----------------------------//
+
+IMPLEMENT_SINGLETON(CommandProcesser)

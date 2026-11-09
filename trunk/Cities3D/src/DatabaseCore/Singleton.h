@@ -21,6 +21,18 @@
 
 //---------------------------- DEFINES          -----------------------------//
 
+// Define once in the .cpp that owns Type (the shared library that exports it).
+// DLL_EXPORT keeps one process-wide instance visible to plugins under
+// -fvisibility=hidden. An inline Meyers singleton in this header would give
+// each .so its own copy, so plugin UI registration never reaches the app.
+#define IMPLEMENT_SINGLETON(Type) \
+	template<> \
+	DLL_EXPORT Type &Singleton<Type>::get() \
+	{ \
+		static Type theSingleton; \
+		return theSingleton; \
+	}
+
 //---------------------------- TYPEDEFS         -----------------------------//
 
 //---------------------------- CLASSES          -----------------------------//
@@ -31,6 +43,9 @@
 // A template class that provides an implementation of the
 // Singleton pattern.  Any class may derive from Singleton to
 // become a Singleton.  This pattern should not be abused.
+//
+// Singletons are globally visible across all modules (plugins).
+// Use <LocalSingleton> for per-plugin state (e.g. RuleSetDatabase).
 //
 // Project:
 //     <DatabaseCore>
@@ -51,6 +66,9 @@
 //         //so that this class can be instantiated.
 //         friend class Singleton<MySingleton>;
 //     };
+//
+//     // In MySingleton.cpp (the exporting shared library):
+//     IMPLEMENT_SINGLETON(MySingleton)
 // ·
 // (end)
 //
@@ -68,17 +86,13 @@ public:
 	//-----------------------------------------------------------------------//
 	// Function: get
 	//
-	// The one and only one method of accessing a Singleton. The get method has 
-	// a static instance of the Singleton class.
+	// The one and only one method of accessing a Singleton. Defined out of
+	// line via IMPLEMENT_SINGLETON(T) in the exporting shared library.
 	//
 	// Returns:
 	//     The Singleton object.
 	//
-	static T &get()
-	{
-		static T theSingleton;
-		return theSingleton;
-	}
+	static T &get();
 
 	//-----------------------------------------------------------------------//
 	// Section: Protected

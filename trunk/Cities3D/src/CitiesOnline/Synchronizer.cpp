@@ -151,3 +151,5 @@ void Synchronizer::Synchronize()
 		wxTheCitiesOnlineApp->InGame(inGame);
 	}
 }
+
+IMPLEMENT_SINGLETON(Synchronizer)

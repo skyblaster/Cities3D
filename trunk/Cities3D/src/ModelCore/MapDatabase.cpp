@@ -191,3 +191,5 @@ void MapDatabase::InitializeDatabase()
 }
 
 
+
+IMPLEMENT_SINGLETON(MapDatabase)

@@ -44,18 +44,12 @@ BOOL APIENTRY DllMain(HANDLE, DWORD, LPVOID)
 extern "C" {
 #endif
 
-#ifdef __WIN32__
-__declspec(dllexport)
-#endif
-const RuleSetMap& ProvideRuleSets()
+DLL_EXPORT const RuleSetMap& ProvideRuleSets()
 {
 	return RuleSetDatabase::get().map();
 }
 
-#ifdef __WIN32__
-__declspec(dllexport)
-#endif
-void ProvideModuleInfo(wxString& module, wxInt32& priority)
+DLL_EXPORT void ProvideModuleInfo(wxString& module, wxInt32& priority)
 {
 	module = swTexEditor;
 	priority = 5;

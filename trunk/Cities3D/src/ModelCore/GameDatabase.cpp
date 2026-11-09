@@ -358,3 +358,5 @@ void GameDatabase::InitializeDatabase()
 	}
 }
 
+
+IMPLEMENT_SINGLETON(GameDatabase)
