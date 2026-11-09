@@ -41,12 +41,7 @@ if(CITIES3D_USE_MINIAUDIO)
 endif()
 
 cities3d_add_core(GLCore GL_EXPORT "${CITIES3D_SRC_DIR}/RulesCore")
-target_link_libraries(GLCore PUBLIC RulesCore OpenGL::GL GLEW::GLEW wx::gl)
-if(TARGET OpenGL::GLU)
-    target_link_libraries(GLCore PUBLIC OpenGL::GLU)
-elseif(WIN32)
-    target_link_libraries(GLCore PUBLIC glu32)
-endif()
+target_link_libraries(GLCore PUBLIC RulesCore OpenGL::GL GLEW::GLEW wx::gl ${CITIES3D_GLU_LIB})
 target_compile_definitions(GLCore PUBLIC GLEW_NO_GLU)
 target_include_directories(GLCore PUBLIC ${OPENGL_INCLUDE_DIR})
 
@@ -54,12 +49,7 @@ cities3d_add_core(UICore UI_EXPORT "${CITIES3D_SRC_DIR}/RulesCore")
 target_link_libraries(UICore PUBLIC DatabaseCore ModelCore RulesCore ${CITIES3D_WX_LIBS})
 
 cities3d_add_plugin(CoreRules)
-set(CITIES3D_GL_LIBS OpenGL::GL)
-if(TARGET OpenGL::GLU)
-    list(APPEND CITIES3D_GL_LIBS OpenGL::GLU)
-elseif(WIN32)
-    list(APPEND CITIES3D_GL_LIBS glu32)
-endif()
+set(CITIES3D_GL_LIBS OpenGL::GL ${CITIES3D_GLU_LIB})
 
 target_link_libraries(CoreRules PRIVATE DatabaseCore ModelCore RulesCore GLCore UICore json_spirit ${CITIES3D_GL_LIBS} ${CITIES3D_WX_LIBS})
 if(MSVC)
@@ -76,10 +66,10 @@ cities3d_add_plugin(CitiesRules)
 target_link_libraries(CitiesRules PRIVATE DatabaseCore ModelCore RulesCore GLCore UICore ${CITIES3D_GL_LIBS} ${CITIES3D_WX_LIBS})
 
 cities3d_add_plugin(VolcanoRules)
-target_link_libraries(VolcanoRules PRIVATE DatabaseCore ModelCore RulesCore GLCore UICore ${CITIES3D_WX_LIBS})
+target_link_libraries(VolcanoRules PRIVATE DatabaseCore ModelCore RulesCore GLCore UICore ${CITIES3D_GL_LIBS} ${CITIES3D_WX_LIBS})
 
 cities3d_add_plugin(NetworkRules)
-target_link_libraries(NetworkRules PRIVATE DatabaseCore ModelCore RulesCore GLCore UICore ${CITIES3D_WX_LIBS})
+target_link_libraries(NetworkRules PRIVATE DatabaseCore ModelCore RulesCore GLCore UICore ${CITIES3D_GL_LIBS} ${CITIES3D_WX_LIBS})
 
 add_executable(Cities3D WIN32
     "${CITIES3D_SRC_DIR}/Cities3D/Cities3D.bulkbuild.cpp"

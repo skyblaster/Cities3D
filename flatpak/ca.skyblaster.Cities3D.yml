@@ -147,7 +147,12 @@ modules:
             exit 1
           fi
         done
-        echo "cities3d: verified shared libwx + system GTK/GLib linkage"
+        if ! ldd "${DIST}/GLCore.so" | grep -q 'libGLU\.so'; then
+          echo "ERROR: GLCore.so does not link libGLU (plugins need gluDisk)" >&2
+          ldd "${DIST}/GLCore.so" >&2 || true
+          exit 1
+        fi
+        echo "cities3d: verified shared libwx + system GTK/GLib + libGLU linkage"
       - install -d "${FLATPAK_DEST}/share/cities3d"
       - |
         set -euo pipefail
@@ -173,6 +178,21 @@ modules:
           exit 1
         fi
         echo "cities3d: installed ${wx_installed} libwx shared objects"
+        # Mesa GLU from the glu module lives in /app/lib; also place it next to
+        # GLCore so $ORIGIN / launcher LD_LIBRARY_PATH always resolve gluDisk.
+        glu_installed=0
+        for so in /app/lib/libGLU.so* "${FLATPAK_DEST}/lib"/libGLU.so*; do
+          if [ -e "${so}" ]; then
+            install -m755 "${so}" "${FLATPAK_DEST}/share/cities3d/$(basename "${so}")"
+            glu_installed=$((glu_installed + 1))
+          fi
+        done
+        if [ "${glu_installed}" -eq 0 ]; then
+          echo "ERROR: libGLU.so* not found to install next to GLCore" >&2
+          ls -la /app/lib/libGLU* >&2 || true
+          exit 1
+        fi
+        echo "cities3d: installed ${glu_installed} libGLU shared objects"
         if [ -d "${DIST}/plugins" ]; then
           cp -a "${DIST}/plugins" "${FLATPAK_DEST}/share/cities3d/"
         fi
