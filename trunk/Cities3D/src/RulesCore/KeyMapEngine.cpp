@@ -262,12 +262,12 @@ void KeyMapEngine::ProcessRuleSet(const RuleSetPtr& ruleset)
 		}
         tempMap[keymap.defaultEvent] = keymap;
 
-		// Keep track of all entries for the UI.
+		// Keep track of all entries for the UI. Same name from a second
+		// ProcessRuleSet (e.g. duplicate plugin path) is a no-op.
 		EventMap::const_iterator itE = mEventMap.find(keymap.name);
 		if(mEventMap.end() != itE)
 		{
-			wxLogError(wxString::Format(wxT("Programmer Error: Duplicate keymap entries for %s."),
-				keymap.name));
+			continue;
 		}
 
 		mEventMap[keymap.name] = keymap;
