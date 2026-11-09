@@ -19,6 +19,7 @@
 #ifdef __WIN32__
 #include <GL/wglew.h>
 #endif
+#include <cstdio>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "CoreGLCanvas.h"
@@ -178,8 +179,46 @@ void wxCoreGLCanvas::SetCurrent()
 		GLenum err = glewInit();
 		if(GLEW_OK != err)
 		{
-			wxLogError(
-				wxT("No OpenGL extensions are available on this hardware."));
+			// GLEW built for GLX reports NO_GLX_DISPLAY when the current
+			// context is EGL (wxGTK default since 3.1.5). Core GL entry
+			// points from glewContextInit are still valid; ignore that
+			// specific code so hotseat is not blocked by a false popup.
+			const bool ignoreNoGlx =
+#ifdef GLEW_ERROR_NO_GLX_DISPLAY
+				(GLEW_ERROR_NO_GLX_DISPLAY == err);
+#else
+				false;
+#endif
+			const char* glewMsg = reinterpret_cast<const char*>(
+				glewGetErrorString(err));
+			std::fprintf(stderr, "cities3d: glewInit err=%u (%s)%s\n",
+				static_cast<unsigned>(err),
+				glewMsg ? glewMsg : "?",
+				ignoreNoGlx ? " (ignored)" : "");
+			std::fflush(stderr);
+			if(false == ignoreNoGlx)
+			{
+				wxLogError(
+					wxT("No OpenGL extensions are available on this hardware."));
+			}
+		}
+		else
+		{
+			std::fprintf(stderr, "cities3d: glewInit ok\n");
+			std::fflush(stderr);
+		}
+		{
+			const char* vendor = reinterpret_cast<const char*>(
+				glGetString(GL_VENDOR));
+			const char* renderer = reinterpret_cast<const char*>(
+				glGetString(GL_RENDERER));
+			const char* version = reinterpret_cast<const char*>(
+				glGetString(GL_VERSION));
+			std::fprintf(stderr, "cities3d: GL vendor=%s renderer=%s version=%s\n",
+				vendor ? vendor : "?",
+				renderer ? renderer : "?",
+				version ? version : "?");
+			std::fflush(stderr);
 		}
 #ifdef __WIN32__
 		if(WGLEW_EXT_swap_control)

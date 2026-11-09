@@ -111,7 +111,7 @@ If the build dies immediately with `bwrap: Can't bind mount /etc/resolv.conf`, s
 
 1. Builds Mesa **GLU** into `/app` (the Freedesktop SDK has OpenGL but not `glu.pc` / `libGLU`, which vcpkg’s GLEW port requires).
 2. Downloads vcpkg at the commit pinned in `trunk/vcpkg.json` (`builtin-baseline`) and the matching `vcpkg-glibc` release binary during the source-fetch phase (so the module does not depend on a live GitHub release download inside the sandbox).
-3. Uses that prefetched tool (or bootstraps with retries if it is missing), then configures `trunk/` with Ninja + the vcpkg toolchain (`RelWithDebInfo`, unstripped) using the `x64-linux-wxshared` overlay triplet (shared `libwx`, other ports static). Static wx duplicated into each `.so` crashes on the first `FilePath` call.
+3. Uses that prefetched tool (or bootstraps with retries if it is missing), then configures `trunk/` with Ninja + the vcpkg toolchain (`RelWithDebInfo`, unstripped) using the `x64-linux-wxshared` overlay triplet (shared `libwx` with `wxUSE_GLCANVAS_EGL=OFF` so the canvas stays on GLX and matches vcpkg GLEW; other ports static). Static wx duplicated into each `.so` crashes on the first `FilePath` call. wx’s default EGL canvas makes `glewInit` report “No OpenGL extensions…” even when the board still draws.
 4. Builds Cities3D and the rule plugins; installs binaries, `libwx_*.so*`, and game data (including `data/maps.db`) under `/app/share/cities3d`.
 5. Installs the launcher, desktop file, metainfo, and icons (`cities3d-metadata` module).
 
@@ -122,7 +122,7 @@ git pull
 ./flatpak/build.sh --full-rebuild
 ```
 
-A good build must print `cities3d: verified shared libwx + system GTK/GLib linkage`, and at runtime the first stderr line must be `cities3d: build=wxshared-sysgtk-1`. If you see a GLib-GObject `g_type_register_static` abort during startup, the Flatpak still has libwx with embedded static GLib — pull and `--full-rebuild`.
+A good build must print `cities3d: verified shared libwx + system GTK/GLib linkage`, and at runtime the first stderr line must be `cities3d: build=wxshared-sysgtk-glx-1`. After starting a hotseat game you should also see `cities3d: glewInit ok` (not a “No OpenGL extensions” dialog). If you see a GLib-GObject `g_type_register_static` abort during startup, the Flatpak still has libwx with embedded static GLib — pull and `--full-rebuild`.
 
 Confirm shared wx uses the runtime GTK/GLib (not a bundled libglib):
 
