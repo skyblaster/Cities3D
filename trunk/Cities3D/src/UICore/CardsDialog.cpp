@@ -25,8 +25,10 @@
 #include "FittedStaticText.h"
 #include "Controller.h"
 #include "ImageEngine.h"
+#include "ImageCenteredBitmap.h"
 #include "DataObject.h"
 #include "IRuleEngine.h"
+#include <cstdio>
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -44,10 +46,10 @@ namespace
 
 	wxCardListCtrl *spCardList = NULL;
 	wxBaseButton* spButton = NULL;
-	wxStaticBitmap *spBitmap = NULL;
+	wxImageCenteredBitmap *spCardBitmap = NULL;
 	wxBaseStaticBox *spBox = NULL;
 	wxFittedStaticText *spText = NULL;
-	wxImage sBlankImage;
+	wxSize sCardImageSize;
 
 	class Sizer_CardsDialog : public ISizer
 	{
@@ -84,13 +86,31 @@ namespace
 			wxASSERT(0 < spCardList->GetItemCount());
 			const HashString& card = spCardList->GetCardName(0);
 
-			// Grab the image at its normal size.
+			// Grab the image at its normal size. Paint via owner-draw
+			// (wxImageCenteredBitmap) — wxStaticBitmap::SetBitmap on wxGTK3
+			// often left a blank rectangle after the initial empty bitmap.
 			wxImage image = IMAGE.GetImage(shPlayerCards, card);
-			wxSize size(image.GetWidth(), image.GetHeight());
-			sBlankImage = wxImage(image.GetWidth(), image.GetHeight());
+			if( (false == image.IsOk()) ||
+				(0 >= image.GetWidth()) ||
+				(0 >= image.GetHeight()))
+			{
+				std::fprintf(stderr,
+					"cities3d: PlayerCards image missing for %s\n",
+					card.c_str());
+				std::fflush(stderr);
+				sCardImageSize = wxSize(162, 171);
+			}
+			else
+			{
+				sCardImageSize = wxSize(image.GetWidth(), image.GetHeight());
+				std::fprintf(stderr,
+					"cities3d: PlayerCards %s %dx%d\n",
+					card.c_str(), sCardImageSize.x, sCardImageSize.y);
+				std::fflush(stderr);
+			}
 
-			spBitmap = new wxStaticBitmap(mpWindow, 0, wxBitmap(sBlankImage), 
-				wxDefaultPosition, size);
+			spCardBitmap = new wxImageCenteredBitmap(mpWindow, sCardImageSize,
+				sCardImageSize, shPlayerCards, card);
 
 			wxBoxSizer* vert2 = new wxBoxSizer(wxVERTICAL);
 			wxBoxSizer* horzBox = new wxBoxSizer(wxHORIZONTAL);
@@ -99,9 +119,9 @@ namespace
 				wxDefaultSize, shDefaultText, shCardHeaderFont);
 			wxStaticBoxSizer* boxSizer = new wxStaticBoxSizer(spBox, wxVERTICAL);
 			spText = new wxFittedStaticText(mpWindow, 0, swEmpty, shDefaultText, 
-				shInfoFont, wxSize(size.GetWidth(), 0), wxST_NO_AUTORESIZE | 
-				wxALIGN_CENTER);
-			boxSizer->Add(spBitmap, 0, wxEXPAND | wxSHAPED | wxALL, 2);
+				shInfoFont, wxSize(sCardImageSize.GetWidth(), 0),
+				wxST_NO_AUTORESIZE | wxALIGN_CENTER);
+			boxSizer->Add(spCardBitmap, 0, wxEXPAND | wxSHAPED | wxALL, 2);
 			boxSizer->Add(spText, 0, wxEXPAND | wxALL, 2);
 			horzBox->Add(boxSizer, 1, wxEXPAND | wxRIGHT | wxTOP | wxBOTTOM, 4);
 
@@ -162,8 +182,6 @@ void wxCardsDialog::ResetImage(const HashString& card)
 	wxString displayText;
 	wxString description;
 
-	wxImage image = sBlankImage;
-
 	if(false == card.empty())
 	{
 		wxInt32 index = spCardList->GetSelectedItem();
@@ -174,14 +192,31 @@ void wxCardsDialog::ResetImage(const HashString& card)
 		RULE.Decide(shLogicCardText, input, output);
 		description = output.read<wxString>();
         description += sw10Spaces;
-		
-		image = IMAGE.GetImage(shPlayerCards, card);
 
-		sBlankImage = wxImage(image.GetWidth(), image.GetHeight());
+		wxImage image = IMAGE.GetImage(shPlayerCards, card);
+		if( (true == image.IsOk()) &&
+			(0 < image.GetWidth()) &&
+			(0 < image.GetHeight()))
+		{
+			sCardImageSize = wxSize(image.GetWidth(), image.GetHeight());
+		}
+		else
+		{
+			std::fprintf(stderr,
+				"cities3d: PlayerCards image missing for %s\n",
+				card.c_str());
+			std::fflush(stderr);
+		}
+
+		spCardBitmap->SetSize(sCardImageSize);
+		spCardBitmap->SetMinSize(sCardImageSize);
+		spCardBitmap->SetBitmapImage(card);
+		spCardBitmap->Show(true);
 	}
-
-	spBitmap->SetSize(wxSize(image.GetWidth(), image.GetHeight()));
-	spBitmap->SetBitmap(wxBitmap(image));
+	else
+	{
+		spCardBitmap->Show(false);
+	}
 
 	spBox->Freeze();
 	spBox->SetLabel(displayText);
@@ -193,7 +228,7 @@ void wxCardsDialog::ResetImage(const HashString& card)
 	spText->Destroy();
 	spText = new wxFittedStaticText(this, 0, description, 
 		shDefaultText, shInfoFont, 
-		wxSize(spBitmap->GetSize().GetWidth(), 0), wxST_NO_AUTORESIZE | 
+		wxSize(sCardImageSize.GetWidth(), 0), wxST_NO_AUTORESIZE | 
 		wxALIGN_CENTER);
 	sizer->Add(spText, 0, wxEXPAND | wxALL, 2);
 	
