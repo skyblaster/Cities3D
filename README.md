@@ -101,17 +101,17 @@ flatpak-builder --user --install --force-clean \
 
 `--disable-rofiles-fuse` is required in Distrobox: `rofiles-fuse` needs `/dev/fuse`, which rootless Podman does not expose by default, and fails with `fusermount3: ... Permission denied` / `Failure spawning rofiles-fuse`.
 
-The first build downloads the SDK, fetches the pinned vcpkg commit, bootstraps vcpkg, and compiles wxWidgets/GTK and the rest. Expect a long run and several gigabytes of disk under `.flatpak-builder/` and `build-flatpak/`.
+The first build downloads the SDK, fetches the pinned vcpkg commit plus the matching `vcpkg-glibc` tool binary, and compiles wxWidgets/GTK and the rest. Expect a long run and several gigabytes of disk under `.flatpak-builder/` and `build-flatpak/`.
 
-`flatpak-builder` sandboxes each module **without network** unless the manifest opts in. This manifest grants `--share=network` for the `cities3d` module so vcpkg can download port archives. If you still see `Could not resolve host: github.com`, check DNS from inside Distrobox (`getent hosts github.com`) before rebuilding.
+`flatpak-builder` sandboxes each module **without network** unless the manifest opts in. This manifest grants `--share=network` for the `cities3d` module so vcpkg can download port archives. If you still see `Could not resolve host: github.com`, check DNS from inside Distrobox (`getent hosts github.com`) before rebuilding. A `Downloading vcpkg-glibc...` / HTTP 504 failure means the prefetched tool binary is missing from the manifest — bump the `vcpkg-tool` file source when changing the vcpkg commit, or re-run the build (bootstrap retries as a fallback).
 
 If the build dies immediately with `bwrap: Can't bind mount /etc/resolv.conf`, stop and re-enter the Distrobox (or recreate it with `--unshare-netns` as above). That is a Distrobox/host DNS mount issue, not a Cities3D compile failure.
 
 ### What the manifest does
 
 1. Builds Mesa **GLU** into `/app` (the Freedesktop SDK has OpenGL but not `glu.pc` / `libGLU`, which vcpkg’s GLEW port requires).
-2. Downloads vcpkg at the commit pinned in `trunk/vcpkg.json` (`builtin-baseline`) during the source-fetch phase.
-3. Bootstraps vcpkg, then configures `trunk/` with Ninja + the vcpkg toolchain (`RelWithDebInfo`, unstripped) using the `x64-linux-wxshared` overlay triplet (shared `libwx`, other ports static). Static wx duplicated into each `.so` crashes on the first `FilePath` call.
+2. Downloads vcpkg at the commit pinned in `trunk/vcpkg.json` (`builtin-baseline`) and the matching `vcpkg-glibc` release binary during the source-fetch phase (so the module does not depend on a live GitHub release download inside the sandbox).
+3. Uses that prefetched tool (or bootstraps with retries if it is missing), then configures `trunk/` with Ninja + the vcpkg toolchain (`RelWithDebInfo`, unstripped) using the `x64-linux-wxshared` overlay triplet (shared `libwx`, other ports static). Static wx duplicated into each `.so` crashes on the first `FilePath` call.
 4. Builds Cities3D and the rule plugins; installs binaries, `libwx_*.so*`, and game data (including `data/maps.db`) under `/app/share/cities3d`.
 5. Installs the launcher, desktop file, metainfo, and icons (`cities3d-metadata` module).
 
