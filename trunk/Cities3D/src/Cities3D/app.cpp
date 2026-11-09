@@ -21,6 +21,8 @@
 #include "app.h"
 #include "SettlersFrame.h"
 #include "GameEngine.h"
+#include "IPluginEngine.h"
+#include "IUIEngine.h"
 #include "ImageEngine.h"
 #include "ConfigDatabase.h"
 #include "SelectLanguageDialog.h"
@@ -50,7 +52,7 @@ IMPLEMENT_APP(wxCities3DApp)
 bool wxCities3DApp::OnInit()
 {
 	// Unique stamp so Flatpak runs can confirm they are not an older build.
-	std::fprintf(stderr, "cities3d: build=wxshared-sysgtk-singleton-2\n");
+	std::fprintf(stderr, "cities3d: build=wxshared-sysgtk-singleton-3\n");
 	std::fprintf(stderr, "cities3d: OnInit begin\n");
 	std::fflush(stderr);
 
