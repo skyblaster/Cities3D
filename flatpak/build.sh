@@ -7,27 +7,50 @@
 #
 # True from-scratch rebuild (also delete the module cache):
 #   ./flatpak/build.sh --full-rebuild
+#
+# Parallelism (i5-1245U = 12 threads; override if needed):
+#   ./flatpak/build.sh --jobs 12
+#   JOBS=8 ./flatpak/build.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "${ROOT}"
 
 FULL_REBUILD=0
-for arg in "$@"; do
-  case "${arg}" in
+JOBS="${JOBS:-}"
+USE_CCACHE=1
+args=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
     --full-rebuild) FULL_REBUILD=1 ;;
+    --jobs)
+      shift
+      JOBS="${1:-}"
+      if [[ -z "${JOBS}" ]]; then
+        echo "ERROR: --jobs requires a number" >&2
+        exit 1
+      fi
+      ;;
+    --jobs=*)
+      JOBS="${1#--jobs=}"
+      ;;
+    --no-ccache) USE_CCACHE=0 ;;
     -h|--help)
-      echo "Usage: $0 [--full-rebuild]"
+      echo "Usage: $0 [--full-rebuild] [--jobs N] [--no-ccache]"
       echo "  (default)  --force-clean app dir; reuse .flatpak-builder module cache"
       echo "  --full-rebuild  also delete .flatpak-builder/ before building"
+      echo "  --jobs N        parallel jobs for flatpak-builder / cmake / vcpkg"
+      echo "                  (default: nproc; or set JOBS=N)"
+      echo "  --no-ccache     disable flatpak-builder ccache"
       exit 0
       ;;
     *)
-      echo "Unknown option: ${arg}" >&2
-      echo "Usage: $0 [--full-rebuild]" >&2
+      echo "Unknown option: $1" >&2
+      echo "Usage: $0 [--full-rebuild] [--jobs N] [--no-ccache]" >&2
       exit 1
       ;;
   esac
+  shift
 done
 
 if ! command -v flatpak-builder >/dev/null 2>&1; then
@@ -48,16 +71,38 @@ if grep -q ' /etc/resolv.conf .*//deleted' /proc/self/mountinfo 2>/dev/null \
   exit 1
 fi
 
+if [[ -z "${JOBS}" ]]; then
+  JOBS="$(nproc)"
+fi
+if ! [[ "${JOBS}" =~ ^[1-9][0-9]*$ ]]; then
+  echo "ERROR: jobs must be a positive integer (got: ${JOBS})" >&2
+  exit 1
+fi
+
+cpus="$(nproc)"
+mem_kb="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)"
+echo "cities3d: host nproc=${cpus} MemAvailable_kB=${mem_kb} → flatpak-builder --jobs=${JOBS}"
+
 if [[ "${FULL_REBUILD}" == "1" ]]; then
   echo "Full rebuild: removing .flatpak-builder/ and build-flatpak/."
   rm -rf .flatpak-builder build-flatpak
 fi
 
+args=(
+  --user --install --force-clean
+  --disable-rofiles-fuse
+  --install-deps-from=flathub
+  --jobs="${JOBS}"
+)
+if [[ "${USE_CCACHE}" == "1" ]]; then
+  args+=(--ccache)
+fi
+# Visible inside the cities3d module sandbox for vcpkg + cmake --build.
+args+=(--env=CITIES3D_BUILD_JOBS="${JOBS}")
+
 # --force-clean clears build-flatpak/ (required when that dir already exists).
 # Module artifacts stay cached under .flatpak-builder/ unless --full-rebuild.
 # Distrobox / rootless Podman usually cannot run rofiles-fuse.
-exec flatpak-builder --user --install --force-clean \
-  --disable-rofiles-fuse \
-  --install-deps-from=flathub \
+exec flatpak-builder "${args[@]}" \
   build-flatpak \
   flatpak/ca.skyblaster.Cities3D.yml

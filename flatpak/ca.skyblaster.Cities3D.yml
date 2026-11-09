@@ -44,6 +44,10 @@ cleanup:
   - /lib/*.la
   - /share/pkgconfig
 
+# Speeds rebuilds when flatpak-builder is invoked with --ccache (build.sh default).
+build-options:
+  ccache: true
+
 modules:
   # Freedesktop SDK has OpenGL but not GLU. vcpkg's glew port requires glu.pc.
   # Keep pkg-config files until the final cleanup so the cities3d module can see them.
@@ -67,6 +71,29 @@ modules:
     build-commands:
       - |
         set -euo pipefail
+        # Parallelism for vcpkg (during cmake configure) and ninja. Prefer the
+        # host-chosen CITIES3D_BUILD_JOBS from build.sh; otherwise nproc, capped
+        # by MemAvailable so RelWithDebInfo bulkbuilds do not thrash (~1.8 GiB each).
+        cpus="$(nproc)"
+        mem_kb="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)"
+        if [ "${mem_kb}" -gt 0 ]; then
+          mem_jobs=$((mem_kb / 1800000))
+          if [ "${mem_jobs}" -lt 1 ]; then
+            mem_jobs=1
+          fi
+        else
+          mem_jobs="${cpus}"
+        fi
+        JOBS="${CITIES3D_BUILD_JOBS:-}"
+        if [ -z "${JOBS}" ]; then
+          JOBS="${cpus}"
+          if [ "${JOBS}" -gt "${mem_jobs}" ]; then
+            JOBS="${mem_jobs}"
+          fi
+        fi
+        echo "cities3d: build jobs=${JOBS} (nproc=${cpus}, mem-cap=${mem_jobs}, MemAvailable_kB=${mem_kb})"
+        export CMAKE_BUILD_PARALLEL_LEVEL="${JOBS}"
+        export VCPKG_MAX_CONCURRENCY="${JOBS}"
         VCPKG_ROOT="${PWD}/vcpkg"
         TRIPLET=x64-linux-wxshared
         OVERLAY_TRIPLETS="${PWD}/triplets"
@@ -97,7 +124,7 @@ modules:
           -DVCPKG_OVERLAY_TRIPLETS="${OVERLAY_TRIPLETS}" \
           -DVCPKG_OVERLAY_PORTS="${OVERLAY_PORTS}" \
           -DOpenGL_GL_PREFERENCE=LEGACY
-        cmake --build trunk/build/flatpak -j "$(nproc)"
+        cmake --build trunk/build/flatpak -j "${JOBS}"
         DIST="trunk/Cities3D/distribute"
         WX_LIB_DIR="trunk/build/flatpak/vcpkg_installed/${TRIPLET}/lib"
         if [ ! -d "${WX_LIB_DIR}" ]; then

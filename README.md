@@ -69,6 +69,8 @@ cd ~/Cities3D   # or your checkout path
 ./flatpak/build.sh
 ```
 
+On a laptop like an Intel Core i5-1245U (10 cores / 12 threads), `build.sh` passes `--jobs=$(nproc)` into `flatpak-builder` and exports `CITIES3D_BUILD_JOBS` so **vcpkg** (wxWidgets during cmake configure) and **ninja** use the same width. Inside the module it also caps jobs by `MemAvailable` (~1.8 GiB per RelWithDebInfo bulkbuild) so parallel compiles do not thrash. Override with `./flatpak/build.sh --jobs 8` or `JOBS=8 ./flatpak/build.sh`. Look for `cities3d: build jobs=…` early in the cities3d module log. `--ccache` is on by default (disable with `--no-ccache`).
+
 `flatpak-builder` needs `--force-clean` whenever `build-flatpak/` already exists (otherwise you get `App dir 'build-flatpak' is not empty`). That flag only clears the staging app dir. The **module cache** lives in `.flatpak-builder/` and still produces `Cache hit for glu` / unchanged modules on later runs.
 
 Partial rebuilds (this is what you want day to day):
@@ -90,6 +92,8 @@ Or run `flatpak-builder` yourself:
 flatpak-builder --user --install --force-clean \
   --disable-rofiles-fuse \
   --install-deps-from=flathub \
+  --jobs="$(nproc)" --ccache \
+  --env=CITIES3D_BUILD_JOBS="$(nproc)" \
   build-flatpak \
   flatpak/ca.skyblaster.Cities3D.yml
 ```
