@@ -309,10 +309,16 @@ void wxImageStrip::Size(wxSizeEvent &event)
 	// size.
 	wxSize currentSize = event.GetSize();
 
-	// If we get a (-1, -1), force size to the normal card size.
-	bool forceSize = (currentSize == wxSize(-1, -1));
-	wxSize oldMinSize = mMinImageSize;
-	
+	// (-1, -1) means "lock to the preferred card size" (mCurrentImageSize at
+	// construction — normally the native tex size). Build popups use this so
+	// cost cards are not crushed by the half-size floor used in trade UI.
+	//
+	// The old path restored the half-size floor and then set currentSize to a
+	// *single* card while minSize was the full strip, so mSizeRatio collapsed
+	// to ~0.45 and 29x42 art became ~9x13 specks under the shortcut text.
+	const bool forceSize = (currentSize == wxSize(-1, -1));
+	const wxSize oldMinSize = mMinImageSize;
+
 	if(true == forceSize)
 	{
 		mMinImageSize = mCurrentImageSize;
@@ -326,6 +332,10 @@ void wxImageStrip::Size(wxSizeEvent &event)
 	CalcluateMinSize(minSize);
 	if( (0 >= minSize.x) || (0 >= minSize.y) )
 	{
+		if(true == forceSize)
+		{
+			mMinImageSize = oldMinSize;
+		}
 		return;
 	}
 	SetMinSize(minSize);
@@ -337,8 +347,9 @@ void wxImageStrip::Size(wxSizeEvent &event)
 
 	if(true == forceSize)
 	{
-		mMinImageSize = oldMinSize;
-		currentSize = mCurrentImageSize;
+		// Keep the preferred (native) card size as the floor and size the
+		// strip to that layout — mSizeRatio stays 1.0.
+		currentSize = minSize;
 	}
 
 	// Since we need to preserve aspect ratio, resize the bitmaps only by

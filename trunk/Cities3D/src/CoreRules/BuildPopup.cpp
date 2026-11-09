@@ -79,7 +79,11 @@ void BuildPopup::CreatePopup(wxWindow* window, wxSizer* sizer) const
 	const ResourceMap& resources = output.read<ResourceMap>();
 	if(false == resources.empty())
 	{
-		wxImageStrip *images = new wxImageStrip(window, -1, resources.size(), 10);
+		// Trade strips use ratio 0.5 for density. Popup cost rows need the
+		// full card art (and readable counters), so use ratio 1.0 and the
+		// native-size force path in wxImageStrip::Size.
+		wxImageStrip *images = new wxImageStrip(window, -1, resources.size(),
+			14, shResources, shTimber, 1.0f);
 		images->SetFlags(wxImageStrip::FlagAlignCenter);
 		images->SetPixelSpacing(3);
 		
