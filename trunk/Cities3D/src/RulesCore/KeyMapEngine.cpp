@@ -15,9 +15,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
-#ifdef __WXGTK__
-#include <X11/Xlib.h>
-#endif
+#include <wx/accel.h>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "KeyMapEngine.h"
@@ -29,14 +27,6 @@
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
 #define new DEBUG_NEW
-#endif
-
-#ifdef __WIN32__
-#include <wx/accel.h>
-#endif
-
-#ifdef __WXGTK__
-extern KeySym wxCharCodeWXToX(int id);
 #endif
 
 //---------------------------- STATICS          -----------------------------//
@@ -60,22 +50,16 @@ namespace
 			return;
 		}
 
-#ifdef __WIN32__
+		// Use the public accelerator API. Do not call wxCharCodeWXToX — that
+		// is a private X11 helper and is not exported from shared libwx, so
+		// RulesCore.so fails to link Cities3D under the wxshared triplet.
 		wxAcceleratorEntry entry(wxACCEL_NORMAL, code);
-		text += entry.ToString();
-#endif
-
-#ifdef __WXGTK__
-		KeySym keySym = wxCharCodeWXToX(code);
-		char *symStr = XKeysymToString(keySym);
-		if(NULL != symStr)
+		wxString str = entry.ToString();
+		if(false == str.IsEmpty())
 		{
-			// FIXME: need translation, this currently is the raw key name
-			wxString symStrWx = wxString(symStr, wxConvLibc);
-			symStrWx.Replace(wxT("_"), wxT("-"));
-			text += symStrWx;
+			str.Replace(wxT("_"), wxT("-"));
+			text += str;
 		}
-#endif
 	}
 }
 
