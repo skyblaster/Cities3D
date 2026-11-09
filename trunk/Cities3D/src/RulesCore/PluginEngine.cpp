@@ -15,6 +15,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <cstdio>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "PluginEngine.h"
@@ -561,7 +562,18 @@ void PluginEngine::FindPlugins()
 		//now try loading the file, baby
 		DynamicLibraryPtr lib(new wxDynamicLibrary);
 		
-		if(true == lib->Load(path, wxDL_NOW | wxDL_GLOBAL))
+		if(false == lib->Load(path, wxDL_NOW | wxDL_GLOBAL))
+		{
+			// wx already logs the OS error (e.g. undefined symbol: gluDisk).
+			// Mirror it on stderr so Flatpak runs without a log window still
+			// show why the main menu is empty / black.
+			std::fprintf(stderr, "cities3d: plugin load FAILED: %s\n",
+				(const char *)path.mb_str(wxConvUTF8));
+			std::fflush(stderr);
+			wxLogError(wxT("Plugin load failed: %s"), path.c_str());
+			continue;
+		}
+
 		{
 			ProvideRuleSetPtr func;
 
@@ -665,6 +677,17 @@ void PluginEngine::FindPlugins()
 				}
 			}
 		}
+	}
+
+	std::fprintf(stderr, "cities3d: plugins loaded: %zu\n",
+		static_cast<size_t>(mRulePlugins.size()));
+	std::fflush(stderr);
+	if(0 == mRulePlugins.size())
+	{
+		std::fprintf(stderr,
+			"cities3d: ERROR: no rules plugins loaded — main menu will be empty\n");
+		std::fflush(stderr);
+		wxLogError(wxT("No rules plugins loaded. The main menu will be empty."));
 	}
 }
 

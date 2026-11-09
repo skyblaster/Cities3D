@@ -50,7 +50,7 @@ IMPLEMENT_APP(wxCities3DApp)
 bool wxCities3DApp::OnInit()
 {
 	// Unique stamp so Flatpak runs can confirm they are not an older build.
-	std::fprintf(stderr, "cities3d: build=wxshared-sysgtk-glu-1\n");
+	std::fprintf(stderr, "cities3d: build=wxshared-sysgtk-glu-2\n");
 	std::fprintf(stderr, "cities3d: OnInit begin\n");
 	std::fflush(stderr);
 
@@ -136,6 +136,12 @@ bool wxCities3DApp::OnInit()
 	GameEngine::get().StartEngine();
 	std::fprintf(stderr, "cities3d: engine started\n");
 	std::fflush(stderr);
+	if(false == PLUGIN.IsLoaded(wxT("CoreRules")))
+	{
+		std::fprintf(stderr,
+			"cities3d: ERROR: CoreRules plugin missing — UI menu will be blank\n");
+		std::fflush(stderr);
+	}
 
 	wxBOOL max = CONFIG.read(swConfigSectionUI, swMainFrameMaximized, FALSE);
 
@@ -165,6 +171,20 @@ bool wxCities3DApp::OnInit()
 	// Now that we have started the engine and created the frame, send the
 	// startup signal.
 	Controller::get().Transmit(shEventStartup, 0);
+
+	if(false == PLUGIN.IsLoaded(wxT("CoreRules")))
+	{
+		wxMessageBox(
+			wxT("No CoreRules plugin loaded.\n\n")
+			wxT("The main window stays black because the menu comes from ")
+			wxT("plugins under /app/share/cities3d/plugins.\n\n")
+			wxT("Typical Flatpak cause: GLCore.so missing libGLU ")
+			wxT("(undefined symbol: gluDisk).\n\n")
+			wxT("Rebuild with the GLU fix, then run:\n")
+			wxT("  ldd /app/share/cities3d/GLCore.so | grep GLU"),
+			wxT("Cities Online"),
+			wxOK | wxICON_ERROR);
+	}
 
 	std::fprintf(stderr, "cities3d: OnInit complete\n");
 	std::fflush(stderr);
