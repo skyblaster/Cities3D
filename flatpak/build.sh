@@ -97,8 +97,11 @@ args=(
 if [[ "${USE_CCACHE}" == "1" ]]; then
   args+=(--ccache)
 fi
-# Visible inside the cities3d module sandbox for vcpkg + cmake --build.
-args+=(--env=CITIES3D_BUILD_JOBS="${JOBS}")
+
+# Older flatpak-builder has no --env=. The cities3d module copies the repo
+# (type: dir), so drop the job count into a file the build script can read.
+printf '%s\n' "${JOBS}" > "${ROOT}/flatpak/cities3d-build-jobs"
+echo "cities3d: wrote flatpak/cities3d-build-jobs=${JOBS}"
 
 # --force-clean clears build-flatpak/ (required when that dir already exists).
 # Module artifacts stay cached under .flatpak-builder/ unless --full-rebuild.

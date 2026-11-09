@@ -7,6 +7,7 @@ build-flatpak/
 .flatpak-builder/
 repo/
 *.flatpak
+flatpak/cities3d-build-jobs
 
 # Linux shared libraries written next to game data
 trunk/Cities3D/distribute/*.so
