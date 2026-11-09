@@ -111,6 +111,21 @@ wxIconWindow::wxIconWindow(wxWindow* parent)
 		vert->Add(exit);
 	}
 
+	// Empty menu usually means every plugins/*.so failed to dlopen (e.g.
+	// undefined gluDisk). Make that obvious instead of a blank black window.
+	if( (NULL == play) && (NULL == settings) && (NULL == actions) &&
+		(NULL == editors) && (NULL == exit) )
+	{
+		wxStaticText* empty = new wxStaticText(this, -1,
+			wxT("No plugins loaded.\n")
+			wxT("Check the terminal for \"plugin load FAILED\" / gluDisk / libGLU.\n")
+			wxT("Rebuild with the Flatpak GLU fix, then verify:\n")
+			wxT("  ldd /app/share/cities3d/GLCore.so | grep GLU"));
+		empty->SetBackgroundColour(this->GetBackgroundColour());
+		empty->SetForegroundColour(wxColour(220, 220, 220));
+		vert->Add(empty, 0, wxEXPAND | wxTOP | wxBOTTOM, 8);
+	}
+
 	wxStaticText *text = new wxStaticText(this, -1, swCitiesOnline + swSpace +
 		GAMEVERSION);
 	text->SetBackgroundColour(this->GetBackgroundColour());
