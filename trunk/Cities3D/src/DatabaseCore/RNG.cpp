@@ -172,3 +172,5 @@ const wxUint32 RNG::next() const
 
 	return mPool[mIndex++];
 }
+
+IMPLEMENT_SINGLETON(RNG)

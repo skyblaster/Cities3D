@@ -339,3 +339,5 @@ void SkinManager::ReadSizes(wxXmlNode * const parent)
 		}
 	}
 }
+
+IMPLEMENT_SINGLETON(SkinManager)

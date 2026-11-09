@@ -45,3 +45,5 @@ ConfigDatabase::ConfigDatabase()
 	wxConfigBase::Set(config);
 }
 
+
+IMPLEMENT_SINGLETON(ConfigDatabase)

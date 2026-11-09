@@ -50,7 +50,7 @@ IMPLEMENT_APP(wxCities3DApp)
 bool wxCities3DApp::OnInit()
 {
 	// Unique stamp so Flatpak runs can confirm they are not an older build.
-	std::fprintf(stderr, "cities3d: build=wxshared-sysgtk-glu-2\n");
+	std::fprintf(stderr, "cities3d: build=wxshared-sysgtk-singleton-1\n");
 	std::fprintf(stderr, "cities3d: OnInit begin\n");
 	std::fflush(stderr);
 
@@ -135,6 +135,8 @@ bool wxCities3DApp::OnInit()
 	std::fflush(stderr);
 	GameEngine::get().StartEngine();
 	std::fprintf(stderr, "cities3d: engine started\n");
+	std::fprintf(stderr, "cities3d: main menu categories=%zu\n",
+		static_cast<size_t>(GUI.GetMainMenuItems().size()));
 	std::fflush(stderr);
 	if(false == PLUGIN.IsLoaded(wxT("CoreRules")))
 	{

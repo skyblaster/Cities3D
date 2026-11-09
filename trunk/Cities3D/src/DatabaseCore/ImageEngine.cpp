@@ -440,3 +440,5 @@ void ImageEngine::LoadOnDemand(const wxString &filename, wxInt32 size,
 		sIgnoreCache = false;
 	}
 }
+
+IMPLEMENT_SINGLETON(ImageEngine)

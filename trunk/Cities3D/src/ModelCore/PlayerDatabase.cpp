@@ -157,3 +157,5 @@ void PlayerDatabase::InitializeDatabase(void)
 }
 
 
+
+IMPLEMENT_SINGLETON(PlayerDatabase)

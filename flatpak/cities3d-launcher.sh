@@ -6,12 +6,13 @@
 #     otherwise resolve back into read-only /app for path probes)
 # Crash breadcrumbs now go to FilePath::UserDataDir() in C++, not cwd.
 #
-# wxStandardPaths::GetUserDataDir() uses the app name "Cities3D" (capital C),
-# so keep DATA_ROOT in sync with that path.
+# wxStandardPaths::GetUserDataDir() is ~/.Cities3D on Linux (and Flatpak
+# --persist=.Cities3D). Keep DATA_ROOT on that path so launcher symlinks and
+# FilePath::EnumPlugins/EnumDataDirs search the same tree.
 set -e
 
 APP_ROOT="/app/share/cities3d"
-DATA_ROOT="${XDG_DATA_HOME:-${HOME}/.local/share}/Cities3D"
+DATA_ROOT="${HOME}/.Cities3D"
 
 mkdir -p "${DATA_ROOT}"
 

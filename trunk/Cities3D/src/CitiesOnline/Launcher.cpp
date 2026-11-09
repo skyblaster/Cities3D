@@ -536,3 +536,5 @@ Launcher::DecryptionSuccess Launcher::DecryptUrl(const wxString& url,
 
 	return ret;
 }
+
+IMPLEMENT_SINGLETON(Launcher)

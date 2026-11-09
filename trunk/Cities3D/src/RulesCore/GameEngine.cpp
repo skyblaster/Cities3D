@@ -407,3 +407,5 @@ void GameEngine::OnResetGame(wxInt32)
 	//set the game data for all Access derived objects
 	Access::SetGame(mpImpl->mpGame);
 }
+
+IMPLEMENT_SINGLETON(GameEngine)

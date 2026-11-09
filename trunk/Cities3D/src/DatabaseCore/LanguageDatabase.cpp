@@ -53,3 +53,5 @@ LanguageDatabase::LanguageDatabase()
 		}
 	}
 }
+
+IMPLEMENT_SINGLETON(LanguageDatabase)

@@ -100,3 +100,5 @@ void TimerManager::OnPeriodicTimer(wxTimerEvent &event)
 		}
 	}
 }
+
+IMPLEMENT_SINGLETON(TimerManager)

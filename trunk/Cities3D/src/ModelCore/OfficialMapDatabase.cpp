@@ -72,3 +72,5 @@ void OfficialMapDatabase::WriteMaps()
 
 //---------------------------- PRIVATE          -----------------------------//
 
+
+IMPLEMENT_SINGLETON(OfficialMapDatabase)

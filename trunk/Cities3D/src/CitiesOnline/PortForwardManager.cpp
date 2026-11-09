@@ -82,3 +82,5 @@ PortForwardManager::PortForwardManager()
 , mpPortForwardThread(NULL)
 {
 }
+
+IMPLEMENT_SINGLETON(PortForwardManager)

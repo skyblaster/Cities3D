@@ -935,3 +935,5 @@ void PopupManager::OnTogglePopups(wxInt32)
 		sCurrentWindow = NULL;
 	}
 }
+
+IMPLEMENT_SINGLETON(PopupManager)
