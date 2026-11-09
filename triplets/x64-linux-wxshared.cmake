@@ -14,4 +14,10 @@ set(VCPKG_CMAKE_SYSTEM_NAME Linux)
 
 if(PORT STREQUAL "wxwidgets")
     set(VCPKG_LIBRARY_LINKAGE dynamic)
+    # wx 3.1.5+ defaults wxGLCanvas to EGL when libEGL is present. vcpkg's GLEW
+    # is built for GLX only, so glewInit then returns GLEW_ERROR_NO_GLX_DISPLAY
+    # ("No OpenGL extensions are available on this hardware") even though the
+    # board still draws. Cities3D Flatpak forces GDK_BACKEND=x11, so keep the
+    # GLX canvas and match GLEW.
+    list(APPEND VCPKG_CMAKE_CONFIGURE_OPTIONS "-DwxUSE_GLCANVAS_EGL=OFF")
 endif()
