@@ -21,6 +21,7 @@ for item in plugins tex skins maps locale sounds help data; do
   fi
 done
 
-export LD_LIBRARY_PATH="${APP_ROOT}${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
+# APP_ROOT has libwx/libGLU copies; /app/lib keeps the glu module install.
+export LD_LIBRARY_PATH="${APP_ROOT}:/app/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
 cd "${DATA_ROOT}"
 exec "${APP_ROOT}/Cities3D" "$@"
