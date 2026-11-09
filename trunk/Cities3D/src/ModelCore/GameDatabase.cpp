@@ -29,6 +29,8 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+
+IMPLEMENT_SINGLETON(GameDatabase)
 namespace
 {
 }
@@ -359,4 +361,3 @@ void GameDatabase::InitializeDatabase()
 }
 
 
-IMPLEMENT_SINGLETON(GameDatabase)

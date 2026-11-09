@@ -195,4 +195,7 @@ private:
 	friend class Singleton<SkinManager>;
 };
 
+DECLARE_SINGLETON(DATABASE_EXPORT_SPEC, SkinManager);
+
+
 //---------------------------- PROTOTYPES       -----------------------------//

@@ -27,6 +27,8 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+
+IMPLEMENT_SINGLETON(PlayerDatabase)
 namespace
 {
 	//current array of players
@@ -158,4 +160,3 @@ void PlayerDatabase::InitializeDatabase(void)
 
 
 
-IMPLEMENT_SINGLETON(PlayerDatabase)

@@ -294,5 +294,8 @@ private:
 
 	friend class Singleton<Controller>;
 };
+
+DECLARE_SINGLETON(MODEL_EXPORT_SPEC, Controller);
+
 //---------------------------- PROTOTYPES       -----------------------------//
 

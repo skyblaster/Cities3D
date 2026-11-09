@@ -27,6 +27,8 @@
 
 //---------------------------- STATICS          -----------------------------//
 
+IMPLEMENT_SINGLETON(LanguageDatabase)
+
 //---------------------------- PUBLIC           -----------------------------//
 
 //---------------------------- PROTECTED        -----------------------------//
@@ -54,4 +56,3 @@ LanguageDatabase::LanguageDatabase()
 	}
 }
 
-IMPLEMENT_SINGLETON(LanguageDatabase)

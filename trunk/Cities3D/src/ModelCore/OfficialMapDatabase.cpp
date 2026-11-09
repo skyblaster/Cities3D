@@ -28,6 +28,8 @@
 
 //---------------------------- STATICS          -----------------------------//
 
+IMPLEMENT_SINGLETON(OfficialMapDatabase)
+
 //---------------------------- PUBLIC           -----------------------------//
 void OfficialMapDatabase::AddMap(const Map &map)
 {
@@ -73,4 +75,3 @@ void OfficialMapDatabase::WriteMaps()
 //---------------------------- PRIVATE          -----------------------------//
 
 
-IMPLEMENT_SINGLETON(OfficialMapDatabase)

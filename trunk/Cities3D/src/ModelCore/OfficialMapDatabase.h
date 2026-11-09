@@ -44,6 +44,9 @@ private:
 	friend class Singleton<OfficialMapDatabase>;
 };
 
+DECLARE_SINGLETON(MODEL_EXPORT_SPEC, OfficialMapDatabase);
+
+
 //---------------------------- PROTOTYPES       -----------------------------//
 #if MAPS_BUILD_MAPS
 #include "Map.h"

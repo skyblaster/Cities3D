@@ -359,5 +359,8 @@ private:
 	friend class Singleton<TimerManager>;
 };
 
+DECLARE_SINGLETON(DATABASE_EXPORT_SPEC, TimerManager);
+
+
 //---------------------------- PROTOTYPES       -----------------------------//
 

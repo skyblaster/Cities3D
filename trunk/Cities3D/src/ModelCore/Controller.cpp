@@ -26,6 +26,8 @@
 
 //---------------------------- STATICS          -----------------------------//
 
+IMPLEMENT_SINGLETON(Controller)
+
 //---------------------------- PUBLIC           -----------------------------//
 
 //---------------------------- PROTECTED        -----------------------------//
@@ -48,4 +50,3 @@ Controller::~Controller()
 
 
 
-IMPLEMENT_SINGLETON(Controller)

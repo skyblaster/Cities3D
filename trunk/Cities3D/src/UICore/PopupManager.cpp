@@ -34,6 +34,8 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+
+IMPLEMENT_SINGLETON(PopupManager)
 namespace
 {
 	wxColour sOutline_PopupManager;
@@ -936,4 +938,3 @@ void PopupManager::OnTogglePopups(wxInt32)
 	}
 }
 
-IMPLEMENT_SINGLETON(PopupManager)

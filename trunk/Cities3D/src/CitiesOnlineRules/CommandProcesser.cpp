@@ -29,6 +29,8 @@
 
 //---------------------------- STATICS          -----------------------------//
 
+IMPLEMENT_SINGLETON(CommandProcesser)
+
 //---------------------------- PUBLIC           -----------------------------//
 void CommandProcesser::RegisterCommand(const wxString& key, 
 	const CommandPtr& command)
@@ -71,4 +73,3 @@ void CommandProcesser::ProcessCommand(const wxString& command, bool inStartup)
 
 //---------------------------- PRIVATE          -----------------------------//
 
-IMPLEMENT_SINGLETON(CommandProcesser)

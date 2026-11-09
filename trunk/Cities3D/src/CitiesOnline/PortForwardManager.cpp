@@ -27,6 +27,8 @@
 
 //---------------------------- STATICS          -----------------------------//
 
+IMPLEMENT_SINGLETON(PortForwardManager)
+
 //---------------------------- PUBLIC           -----------------------------//
 long PortForwardManager::GetPort() const
 {
@@ -83,4 +85,3 @@ PortForwardManager::PortForwardManager()
 {
 }
 
-IMPLEMENT_SINGLETON(PortForwardManager)

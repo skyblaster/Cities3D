@@ -55,5 +55,8 @@ private:
 
 	friend class Singleton<Synchronizer>;
 };
+
+DECLARE_SINGLETON(DLL_EXPORT, Synchronizer);
+
 //---------------------------- PROTOTYPES       -----------------------------//
 

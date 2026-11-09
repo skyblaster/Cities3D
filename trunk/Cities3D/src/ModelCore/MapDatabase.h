@@ -200,4 +200,7 @@ private:
 	friend class Singleton<MapDatabase>;
 };
 
+DECLARE_SINGLETON(MODEL_EXPORT_SPEC, MapDatabase);
+
+
 //---------------------------- PROTOTYPES       -----------------------------//

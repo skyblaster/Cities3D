@@ -66,5 +66,8 @@ private:
 	friend class wxPortForwardThread;
 	friend class Singleton<PortForwardManager>;
 };
+
+DECLARE_SINGLETON(DLL_EXPORT, PortForwardManager);
+
 //---------------------------- PROTOTYPES       -----------------------------//
 

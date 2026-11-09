@@ -25,6 +25,8 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+
+IMPLEMENT_SINGLETON(RNG)
 namespace
 {
 	const wxUint32 POOL_SIZE = 512;
@@ -173,4 +175,3 @@ const wxUint32 RNG::next() const
 	return mPool[mIndex++];
 }
 
-IMPLEMENT_SINGLETON(RNG)

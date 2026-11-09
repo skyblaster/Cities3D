@@ -31,6 +31,8 @@
 #endif
 
 //---------------------------- STATICS          -----------------------------//
+
+IMPLEMENT_SINGLETON(ImageEngine)
 namespace
 {
 	typedef boost::scoped_array<wxImage> ImageArray;
@@ -441,4 +443,3 @@ void ImageEngine::LoadOnDemand(const wxString &filename, wxInt32 size,
 	}
 }
 
-IMPLEMENT_SINGLETON(ImageEngine)

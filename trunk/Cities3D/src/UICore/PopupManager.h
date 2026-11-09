@@ -78,5 +78,8 @@ private:
 	friend class Singleton<PopupManager>;
 };
 
+DECLARE_SINGLETON(UI_EXPORT_SPEC, PopupManager);
+
+
 //---------------------------- PROTOTYPES       -----------------------------//
 
