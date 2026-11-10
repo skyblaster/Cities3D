@@ -76,7 +76,9 @@ void DataObject::save(wxDataOutputStream &output) const
 		//sanity
 		if(!serializer)
 		{
-			wxLogError(wxT("Programmer Error: No AnySerializer during save."));
+			wxLogError(wxT("Programmer Error: No AnySerializer during save "
+				"for type %s."),
+				HashString(it->first.type().name()).cwx_str());
 			
 			boost::throw_exception(bad_serializer());
 		}

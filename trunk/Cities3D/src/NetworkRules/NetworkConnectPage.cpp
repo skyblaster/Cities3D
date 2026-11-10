@@ -244,7 +244,8 @@ wxNetworkConnectPage::wxNetworkConnectPage(wxWindow* parent)
 	if(true == sHost)
 	{
 		RULE.Execute(shNetworkRuleStoreIP, 
-			DataObject(mAddress.IPAddress(), mAddress.Service()));
+			DataObject(mAddress.IPAddress(), 
+				static_cast<wxInt32>(mAddress.Service())));
 
 		spHostRadio->SetValue(true);
 	}
@@ -404,7 +405,8 @@ void wxNetworkConnectPage::OnHostRadio(wxCommandEvent &)
 		mAddress.Service(7176);			
 
 		RULE.Execute(shNetworkRuleStoreIP, 
-				DataObject(mAddress.IPAddress(), mAddress.Service()));
+				DataObject(mAddress.IPAddress(), 
+					static_cast<wxInt32>(mAddress.Service())));
 
 		EnableActions(mAddress);
 
@@ -514,7 +516,8 @@ void wxNetworkConnectPage::OnSettingsButton(wxCommandEvent &)
 		mAddress = dialog.GetAddress();
 
 		RULE.Execute(shNetworkRuleStoreIP, 
-			DataObject(mAddress.IPAddress(), mAddress.Service()));
+			DataObject(mAddress.IPAddress(), 
+				static_cast<wxInt32>(mAddress.Service())));
 
 		EnableActions(mAddress);
 	}

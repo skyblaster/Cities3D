@@ -53,7 +53,8 @@ public:
 	//-----------------------------------------------------------------------//
 	// Function: Stop
 	//
-	// Cleans up the AnyEngine.
+	// Called when the <GameEngine> restarts. Serializer registrations are
+	// left intact because plugins stay mapped for the process lifetime.
 	//
 	void Stop();
 
