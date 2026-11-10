@@ -340,11 +340,11 @@ void wxFrameworkGLCanvas::OnMouseMove(wxMouseEvent &event)
 		//set mouse pointer
 		if(-1 == mSelection)
 		{
-			SetCursor(wxCursor(wxCURSOR_ARROW));
+			SetCursor(Cities3DArrowCursor());
 		}
 		else
 		{
-			SetCursor(wxCursor(wxCURSOR_HAND));
+			SetCursor(Cities3DHandCursor());
 		}
 
 		if(mSelection != sLastSelection)
@@ -383,7 +383,7 @@ void wxFrameworkGLCanvas::OnLButtonDown(wxMouseEvent &event)
 		
 		mFinalHit = false;
 
-		SetCursor(wxCursor(wxCURSOR_ARROW));
+		SetCursor(Cities3DArrowCursor());
 	}
 }
 
