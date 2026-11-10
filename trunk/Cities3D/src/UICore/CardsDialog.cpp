@@ -25,7 +25,7 @@
 #include "FittedStaticText.h"
 #include "Controller.h"
 #include "ImageEngine.h"
-#include "ImageCenteredBitmap.h"
+#include "SkinManager.h"
 #include "DataObject.h"
 #include "IRuleEngine.h"
 #include <cstdio>
@@ -44,12 +44,99 @@ namespace
 		ID_CARD_LIST				,
 	};
 
+	// Paints PlayerCards art directly. wxStaticBitmap::SetBitmap and
+	// wxImageCenteredBitmap (DrawBitmap with mask) both left a black hole for
+	// these PNGs on wxGTK3 even when ImageEngine loaded them successfully.
+	class wxCardImagePanel : public wxPanel
+	{
+	public:
+		wxCardImagePanel(wxWindow* parent, const wxSize& size)
+		: wxPanel(parent, wxID_ANY, wxDefaultPosition, size,
+			wxBORDER_NONE | wxFULL_REPAINT_ON_RESIZE)
+		{
+			SetBackgroundStyle(wxBG_STYLE_PAINT);
+			SetMinSize(size);
+			SetBackgroundColour(SKIN.Element(shBackground));
+		}
+
+		void SetCardImage(const wxImage& image)
+		{
+			if( (true == image.IsOk()) &&
+				(0 < image.GetWidth()) &&
+				(0 < image.GetHeight()))
+			{
+				mImage = image.Copy();
+				const wxSize size(mImage.GetWidth(), mImage.GetHeight());
+				SetMinSize(size);
+				SetSize(size);
+				std::fprintf(stderr,
+					"cities3d: card panel set %dx%d ok=%d\n",
+					size.x, size.y, mImage.IsOk() ? 1 : 0);
+			}
+			else
+			{
+				mImage = wxImage();
+				std::fprintf(stderr, "cities3d: card panel cleared (bad image)\n");
+			}
+			std::fflush(stderr);
+			Refresh();
+			Update();
+		}
+
+	private:
+		void OnPaint(wxPaintEvent&)
+		{
+			wxPaintDC dc(this);
+			const wxSize size = GetClientSize();
+			const wxColour bg = GetBackgroundColour();
+			dc.SetBrush(wxBrush(bg));
+			dc.SetPen(wxPen(bg));
+			dc.DrawRectangle(0, 0, size.x, size.y);
+
+			if(false == mImage.IsOk())
+			{
+				return;
+			}
+
+			wxImage draw = mImage;
+			if( (size.x > 0) &&
+				(size.y > 0) &&
+				( (draw.GetWidth() != size.x) ||
+				  (draw.GetHeight() != size.y) ))
+			{
+				draw = mImage.Scale(size.x, size.y, wxIMAGE_QUALITY_HIGH);
+			}
+
+			wxBitmap bitmap(draw);
+			if(false == bitmap.IsOk())
+			{
+				std::fprintf(stderr,
+					"cities3d: card panel wxBitmap failed from %dx%d image\n",
+					draw.GetWidth(), draw.GetHeight());
+				std::fflush(stderr);
+				return;
+			}
+
+			// No mask — these PNGs are opaque RGB; useMask=true made them
+			// vanish against the dark skin background on wxGTK3.
+			dc.DrawBitmap(bitmap, 0, 0, false);
+		}
+
+		wxImage mImage;
+
+		DECLARE_EVENT_TABLE()
+	};
+
+	BEGIN_EVENT_TABLE(wxCardImagePanel, wxPanel)
+		EVT_PAINT(wxCardImagePanel::OnPaint)
+	END_EVENT_TABLE()
+
 	wxCardListCtrl *spCardList = NULL;
 	wxBaseButton* spButton = NULL;
-	wxImageCenteredBitmap *spCardBitmap = NULL;
+	wxCardImagePanel *spCardBitmap = NULL;
 	wxBaseStaticBox *spBox = NULL;
 	wxFittedStaticText *spText = NULL;
-	wxSize sCardImageSize;
+	wxSize sCardImageSize(162, 171);
 
 	class Sizer_CardsDialog : public ISizer
 	{
@@ -82,13 +169,9 @@ namespace
 			vert1->Add(spCardList, 1, wxEXPAND | wxRIGHT | wxLEFT | wxTOP, 4);
 			vert1->Add(horz1, 0, wxEXPAND | wxALL, 2);
 
-			// Get the minimum size needed for our bitmap window.
 			wxASSERT(0 < spCardList->GetItemCount());
 			const HashString& card = spCardList->GetCardName(0);
 
-			// Grab the image at its normal size. Paint via owner-draw
-			// (wxImageCenteredBitmap) — wxStaticBitmap::SetBitmap on wxGTK3
-			// often left a blank rectangle after the initial empty bitmap.
 			wxImage image = IMAGE.GetImage(shPlayerCards, card);
 			if( (false == image.IsOk()) ||
 				(0 >= image.GetWidth()) ||
@@ -98,7 +181,6 @@ namespace
 					"cities3d: PlayerCards image missing for %s\n",
 					card.c_str());
 				std::fflush(stderr);
-				sCardImageSize = wxSize(162, 171);
 			}
 			else
 			{
@@ -109,8 +191,11 @@ namespace
 				std::fflush(stderr);
 			}
 
-			spCardBitmap = new wxImageCenteredBitmap(mpWindow, sCardImageSize,
-				sCardImageSize, shPlayerCards, card);
+			spCardBitmap = new wxCardImagePanel(mpWindow, sCardImageSize);
+			if(true == image.IsOk())
+			{
+				spCardBitmap->SetCardImage(image);
+			}
 
 			wxBoxSizer* vert2 = new wxBoxSizer(wxVERTICAL);
 			wxBoxSizer* horzBox = new wxBoxSizer(wxHORIZONTAL);
@@ -121,9 +206,11 @@ namespace
 			spText = new wxFittedStaticText(mpWindow, 0, swEmpty, shDefaultText, 
 				shInfoFont, wxSize(sCardImageSize.GetWidth(), 0),
 				wxST_NO_AUTORESIZE | wxALIGN_CENTER);
-			boxSizer->Add(spCardBitmap, 0, wxEXPAND | wxSHAPED | wxALL, 2);
+			// Fixed size — do not wxEXPAND|wxSHAPED or the panel grows into a
+			// black frame around an unloaded / unscaled bitmap.
+			boxSizer->Add(spCardBitmap, 0, wxALIGN_CENTER | wxALL, 2);
 			boxSizer->Add(spText, 0, wxEXPAND | wxALL, 2);
-			horzBox->Add(boxSizer, 1, wxEXPAND | wxRIGHT | wxTOP | wxBOTTOM, 4);
+			horzBox->Add(boxSizer, 0, wxEXPAND | wxRIGHT | wxTOP | wxBOTTOM, 4);
 
 			vert2->Add(horzBox, 0, wxEXPAND);
 			vert2->AddStretchSpacer();
@@ -199,6 +286,8 @@ void wxCardsDialog::ResetImage(const HashString& card)
 			(0 < image.GetHeight()))
 		{
 			sCardImageSize = wxSize(image.GetWidth(), image.GetHeight());
+			spCardBitmap->SetCardImage(image);
+			spCardBitmap->Show(true);
 		}
 		else
 		{
@@ -206,15 +295,13 @@ void wxCardsDialog::ResetImage(const HashString& card)
 				"cities3d: PlayerCards image missing for %s\n",
 				card.c_str());
 			std::fflush(stderr);
+			spCardBitmap->SetCardImage(wxImage());
+			spCardBitmap->Show(false);
 		}
-
-		spCardBitmap->SetSize(sCardImageSize);
-		spCardBitmap->SetMinSize(sCardImageSize);
-		spCardBitmap->SetBitmapImage(card);
-		spCardBitmap->Show(true);
 	}
 	else
 	{
+		spCardBitmap->SetCardImage(wxImage());
 		spCardBitmap->Show(false);
 	}
 
@@ -245,6 +332,7 @@ void wxCardsDialog::ResetImage(const HashString& card)
 	}
 
 	sizer->Layout();
+	spCardBitmap->Refresh();
 }
 
 void wxCardsDialog::Close()
