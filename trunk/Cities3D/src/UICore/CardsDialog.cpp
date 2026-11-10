@@ -29,6 +29,7 @@
 #include "DataObject.h"
 #include "IRuleEngine.h"
 #include <cstdio>
+#include <cstring>
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -44,98 +45,146 @@ namespace
 		ID_CARD_LIST				,
 	};
 
-	// Paints PlayerCards art directly. wxStaticBitmap::SetBitmap and
-	// wxImageCenteredBitmap (DrawBitmap with mask) both left a black hole for
-	// these PNGs on wxGTK3 even when ImageEngine loaded them successfully.
+	// Own-draw panel with an explicit best size. Without DoGetBestClientSize,
+	// wxGTK3 sizers often laid this out at 0x0 so paints never became visible
+	// even after ImageEngine returned a valid 162x171 PlayerCards image.
 	class wxCardImagePanel : public wxPanel
 	{
 	public:
 		wxCardImagePanel(wxWindow* parent, const wxSize& size)
 		: wxPanel(parent, wxID_ANY, wxDefaultPosition, size,
 			wxBORDER_NONE | wxFULL_REPAINT_ON_RESIZE)
+		, mBestSize(size)
 		{
-			SetBackgroundStyle(wxBG_STYLE_PAINT);
-			SetMinSize(size);
 			SetBackgroundColour(SKIN.Element(shBackground));
+			SetMinSize(size);
+			SetMaxSize(size);
 		}
 
 		void SetCardImage(const wxImage& image)
 		{
+			mBitmap = wxBitmap();
 			if( (true == image.IsOk()) &&
 				(0 < image.GetWidth()) &&
 				(0 < image.GetHeight()))
 			{
-				mImage = image.Copy();
-				const wxSize size(mImage.GetWidth(), mImage.GetHeight());
-				SetMinSize(size);
-				SetSize(size);
+				wxImage draw = image.Copy();
+				if(true == draw.HasMask())
+				{
+					draw.SetMask(false);
+				}
+				if(true == draw.HasAlpha())
+				{
+					draw.ClearAlpha();
+				}
+
+				// RGB-only copy so GTK cannot invent a mask/alpha hole.
+				wxImage rgb(draw.GetWidth(), draw.GetHeight(), false);
+				if( (true == rgb.IsOk()) &&
+					(NULL != rgb.GetData()) &&
+					(NULL != draw.GetData()))
+				{
+					std::memcpy(rgb.GetData(), draw.GetData(),
+						static_cast<size_t>(draw.GetWidth()) *
+						static_cast<size_t>(draw.GetHeight()) * 3);
+					mBitmap = wxBitmap(rgb);
+				}
+				if(false == mBitmap.IsOk())
+				{
+					mBitmap = wxBitmap(draw);
+				}
+
+				mBestSize = wxSize(image.GetWidth(), image.GetHeight());
+				SetMinSize(mBestSize);
+				SetMaxSize(mBestSize);
+				InvalidateBestSize();
+				SetClientSize(mBestSize);
 				std::fprintf(stderr,
-					"cities3d: card panel set %dx%d ok=%d\n",
-					size.x, size.y, mImage.IsOk() ? 1 : 0);
+					"cities3d: card panel set %dx%d bitmap=%d client=%dx%d\n",
+					mBestSize.x, mBestSize.y, mBitmap.IsOk() ? 1 : 0,
+					GetClientSize().x, GetClientSize().y);
 			}
 			else
 			{
-				mImage = wxImage();
+				mBestSize = wxSize(162, 171);
+				SetMinSize(mBestSize);
+				SetMaxSize(wxDefaultSize);
+				InvalidateBestSize();
 				std::fprintf(stderr, "cities3d: card panel cleared (bad image)\n");
 			}
 			std::fflush(stderr);
-			Refresh();
+
+			wxWindow* parent = GetParent();
+			if(NULL != parent)
+			{
+				parent->InvalidateBestSize();
+				parent->Layout();
+			}
+			wxWindow* top = wxGetTopLevelParent(this);
+			if( (NULL != top) && (top != parent) )
+			{
+				top->Layout();
+			}
+
+			Refresh(true);
 			Update();
+		}
+
+	protected:
+		virtual wxSize DoGetBestClientSize() const
+		{
+			return mBestSize;
 		}
 
 	private:
 		void OnPaint(wxPaintEvent&)
 		{
 			wxPaintDC dc(this);
-			const wxSize size = GetClientSize();
+			wxSize size = GetClientSize();
 			const wxColour bg = GetBackgroundColour();
 			dc.SetBrush(wxBrush(bg));
 			dc.SetPen(wxPen(bg));
 			dc.DrawRectangle(0, 0, size.x, size.y);
 
-			if(false == mImage.IsOk())
-			{
-				return;
-			}
-
-			wxImage draw = mImage.Copy();
-			if( (size.x > 0) &&
-				(size.y > 0) &&
-				( (draw.GetWidth() != size.x) ||
-				  (draw.GetHeight() != size.y) ))
-			{
-				draw = mImage.Scale(size.x, size.y, wxIMAGE_QUALITY_HIGH);
-			}
-
-			// Drop mask/alpha so GTK cannot treat opaque card RGB as
-			// fully transparent when composing the paint.
-			if(true == draw.HasMask())
-			{
-				draw.SetMask(false);
-			}
-			if(true == draw.HasAlpha())
-			{
-				draw.ClearAlpha();
-			}
-
-			wxBitmap bitmap(draw, 24);
-			if(false == bitmap.IsOk())
-			{
-				bitmap = wxBitmap(draw);
-			}
-			if(false == bitmap.IsOk())
+			if(false == mBitmap.IsOk())
 			{
 				std::fprintf(stderr,
-					"cities3d: card panel wxBitmap failed from %dx%d image\n",
-					draw.GetWidth(), draw.GetHeight());
+					"cities3d: card paint skip (no bitmap) client=%dx%d\n",
+					size.x, size.y);
 				std::fflush(stderr);
 				return;
 			}
 
-			dc.DrawBitmap(bitmap, 0, 0, false);
+			if( (1 > size.x) || (1 > size.y) )
+			{
+				SetClientSize(mBestSize);
+				size = GetClientSize();
+				std::fprintf(stderr,
+					"cities3d: card paint forced client=%dx%d\n",
+					size.x, size.y);
+				std::fflush(stderr);
+			}
+			else
+			{
+				static int sPaintLogs = 0;
+				if(3 > sPaintLogs)
+				{
+					++sPaintLogs;
+					std::fprintf(stderr,
+						"cities3d: card paint client=%dx%d bitmap=%dx%d\n",
+						size.x, size.y,
+						mBitmap.GetWidth(), mBitmap.GetHeight());
+					std::fflush(stderr);
+				}
+			}
+
+			const int x = (size.x - mBitmap.GetWidth()) / 2;
+			const int y = (size.y - mBitmap.GetHeight()) / 2;
+			dc.DrawBitmap(mBitmap, x > 0 ? x : 0, y > 0 ? y : 0, false);
 		}
 
-		wxImage mImage;
+		wxBitmap mBitmap;
+		wxSize mBestSize;
 
 		DECLARE_EVENT_TABLE()
 	};
@@ -219,9 +268,9 @@ namespace
 			spText = new wxFittedStaticText(mpWindow, 0, swEmpty, shDefaultText, 
 				shInfoFont, wxSize(sCardImageSize.GetWidth(), 0),
 				wxST_NO_AUTORESIZE | wxALIGN_CENTER);
-			// Fixed size — do not wxEXPAND|wxSHAPED or the panel grows into a
-			// black frame around an unloaded / unscaled bitmap.
-			boxSizer->Add(spCardBitmap, 0, wxALIGN_CENTER | wxALL, 2);
+			// FixedMinSize so GTK cannot shrink the panel to 0x0.
+			boxSizer->Add(spCardBitmap,
+				wxSizerFlags(0).Centre().Border(wxALL, 2).FixedMinSize());
 			boxSizer->Add(spText, 0, wxEXPAND | wxALL, 2);
 			horzBox->Add(boxSizer, 0, wxEXPAND | wxRIGHT | wxTOP | wxBOTTOM, 4);
 
