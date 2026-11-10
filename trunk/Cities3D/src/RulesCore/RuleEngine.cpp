@@ -63,6 +63,36 @@ void RuleEngine::Stop()
 	ClearUndoStack();
 
 	mWorkingUndoList.clear();
+
+	// Rule/Logic objects are shared with RuleSetDatabase and survive across
+	// RestartEngine (plugins stay mapped). AddMixins only copies into an
+	// empty BaseMixin hash, so a Hotseat session that filled
+	// RuleGenerateSystemMessage with Hotseat→RuleGenerateSystemMessageHotseat
+	// would keep that mapping after switching to LAN — and then fail with
+	// "Unable to find rule: RuleGenerateSystemMessageHotseat". Clear the
+	// copied mixins before dropping the engine hashes.
+	{
+		RuleHash::iterator it, itEnd = mRuleHash.end();
+		for(it = mRuleHash.begin(); it != itEnd; ++it)
+		{
+			BaseMixin *mixin = dynamic_cast<BaseMixin *>(it->second.get());
+			if(NULL != mixin)
+			{
+				mixin->mStringHash.clear();
+			}
+		}
+
+		LogicHash::iterator itL, itLEnd = mLogicHash.end();
+		for(itL = mLogicHash.begin(); itL != itLEnd; ++itL)
+		{
+			BaseMixin *mixin = dynamic_cast<BaseMixin *>(itL->second.get());
+			if(NULL != mixin)
+			{
+				mixin->mStringHash.clear();
+			}
+		}
+	}
+
 	mRuleHash.clear();
 	mLogicHash.clear();
 	mMixinHash.clear();
