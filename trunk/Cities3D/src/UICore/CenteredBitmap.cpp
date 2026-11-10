@@ -94,6 +94,8 @@ void wxCenteredBitmap::Paint(wxMemoryDC &dc)
 
 	if(true == mDisplay)
 	{
-		dc.DrawBitmap(mDrawBitmap, x, y, true);
+		// useMask=true blanked opaque Game/PlayerCards PNGs on wxGTK3
+		// against the dark skin (see CardsDialog wxCardImagePanel).
+		dc.DrawBitmap(mDrawBitmap, x, y, false);
 	}
 }

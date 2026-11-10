@@ -98,7 +98,7 @@ namespace
 				return;
 			}
 
-			wxImage draw = mImage;
+			wxImage draw = mImage.Copy();
 			if( (size.x > 0) &&
 				(size.y > 0) &&
 				( (draw.GetWidth() != size.x) ||
@@ -107,7 +107,22 @@ namespace
 				draw = mImage.Scale(size.x, size.y, wxIMAGE_QUALITY_HIGH);
 			}
 
-			wxBitmap bitmap(draw);
+			// Drop mask/alpha so GTK cannot treat opaque card RGB as
+			// fully transparent when composing the paint.
+			if(true == draw.HasMask())
+			{
+				draw.SetMask(false);
+			}
+			if(true == draw.HasAlpha())
+			{
+				draw.ClearAlpha();
+			}
+
+			wxBitmap bitmap(draw, 24);
+			if(false == bitmap.IsOk())
+			{
+				bitmap = wxBitmap(draw);
+			}
 			if(false == bitmap.IsOk())
 			{
 				std::fprintf(stderr,
@@ -117,8 +132,6 @@ namespace
 				return;
 			}
 
-			// No mask — these PNGs are opaque RGB; useMask=true made them
-			// vanish against the dark skin background on wxGTK3.
 			dc.DrawBitmap(bitmap, 0, 0, false);
 		}
 
