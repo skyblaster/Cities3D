@@ -273,7 +273,9 @@ wxCardsDialog::~wxCardsDialog()
 //---------------------------- PRIVATE          -----------------------------//
 BEGIN_EVENT_TABLE(wxCardsDialog, wxBaseCloseableDialog)
 	EVT_LIST_ITEM_SELECTED(ID_CARD_LIST, wxCardsDialog::OnCardSelected)
-	EVT_LIST_ITEM_DESELECTED(ID_CARD_LIST, wxCardsDialog::OnCardSelected)
+	// Do not handle DESELECTED: SetSelectedItem/PopulateList fire deselection
+	// with GetSelectedItem()==-1 (or empty card), which cleared a just-loaded
+	// PlayerCards preview on wxGTK (see cardimg-3 logs: set ok then cleared).
 	EVT_BUTTON(ID_PLAY_CARD_BUTTON, wxCardsDialog::OnPlayCardButton)
 END_EVENT_TABLE()
 
@@ -314,8 +316,12 @@ void wxCardsDialog::ResetImage(const HashString& card)
 	}
 	else
 	{
-		spCardBitmap->SetCardImage(wxImage());
-		spCardBitmap->Show(false);
+		// Keep the last good preview; empty selection is transient during
+		// list rebuilds and must not wipe PlayerCards art.
+		std::fprintf(stderr,
+			"cities3d: card preview keep (empty selection)\n");
+		std::fflush(stderr);
+		return;
 	}
 
 	spBox->Freeze();
@@ -362,21 +368,22 @@ void wxCardsDialog::OnImageUpdate(bool)
 void wxCardsDialog::OnCardSelected(wxListEvent &)
 {
 	wxInt32 index = spCardList->GetSelectedItem();
-	HashString card;
+	if(-1 == index)
+	{
+		spButton->Enable(false);
+		return;
+	}
+
+	HashString card = spCardList->GetCardName(index);
 
 	bool enable = false;
-	if(-1 != index)
+	// See if the card can be played.
+	if(TRUE == spCardList->GetItemData(index))
 	{
-		card = spCardList->GetCardName(index);
-
-		// See if the card can be played.
-		if(TRUE == spCardList->GetItemData(index))
-		{
-			// They have to be the current player as well.
-			DataObject input(mIndex), output;
-			RULE.Decide(shLogicIsThisPlayer, input, output);
-			enable = output.read<bool>();
-		}
+		// They have to be the current player as well.
+		DataObject input(mIndex), output;
+		RULE.Decide(shLogicIsThisPlayer, input, output);
+		enable = output.read<bool>();
 	}
 
 	spButton->Enable(enable);
