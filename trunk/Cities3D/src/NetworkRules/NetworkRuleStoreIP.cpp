@@ -53,7 +53,7 @@ public:
 		wxASSERT(2 <= object.numItems());
 
 		const wxString& ip = object.read<wxString>();
-		wxInt32 port = object.read<unsigned short>(1);
+		wxInt32 port = object.read<wxInt32>(1);
 
 		gameData<HashString>(shHostIP) = HashString(ip);
 		gameData<wxInt32>(shHostPort) = port;

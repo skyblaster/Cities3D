@@ -36,8 +36,12 @@ namespace
 //---------------------------- PUBLIC           -----------------------------//
 void AnyEngine::Stop()
 {
-	sAnyTypeHash.clear();
-	sAnyTypeIDHash.clear();
+	// Serializers are registered by plugin static constructors (CoreRules).
+	// PluginEngine keeps those DLLs mapped for the process lifetime, so the
+	// constructors do not run again after an engine restart. Clearing the
+	// hashes here left every DataObject save without a serializer (LAN rules
+	// hit this first via NET.SendRule). Leave registrations in place; plugin
+	// static destructors still call RemoveAnySerializer at process exit.
 }
 
 void AnyEngine::AddAnySerializer(const IAnySerializerPtr &serializer)
@@ -59,15 +63,31 @@ void AnyEngine::RemoveAnySerializer(const IAnySerializerPtr &serializer)
 const IAnySerializerPtr &AnyEngine::FindAnySerializerByType(
 	const HashString &type) const
 {
-	wxASSERT(sAnyTypeHash[type]);
+	static const IAnySerializerPtr sEmpty;
 
-	return sAnyTypeHash[type];
+	AnyHash::const_iterator it = sAnyTypeHash.find(type);
+	if(sAnyTypeHash.end() == it)
+	{
+		wxASSERT_MSG(false, wxT("Missing AnySerializer for type."));
+		return sEmpty;
+	}
+
+	wxASSERT(it->second);
+	return it->second;
 }
 
 const IAnySerializerPtr &AnyEngine::FindAnySerializerByTypeID(
 	const HashString &typeID) const
 {
-	return sAnyTypeIDHash[typeID];
+	static const IAnySerializerPtr sEmpty;
+
+	AnyHash::const_iterator it = sAnyTypeIDHash.find(typeID);
+	if(sAnyTypeIDHash.end() == it)
+	{
+		return sEmpty;
+	}
+
+	return it->second;
 }
 
 //---------------------------- PROTECTED        -----------------------------//
