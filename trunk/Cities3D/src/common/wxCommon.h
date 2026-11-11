@@ -79,4 +79,27 @@
 //---------------------------- CLASSES          -----------------------------//
 
 //---------------------------- PROTOTYPES       -----------------------------//
+// Stock wxCURSOR_ARROW on wxGTK/X11 (especially Flatpak) often resolves to the
+// tiny core X font cursor, which looks smaller and "backwards" next to the OS
+// pointer. Prefer an unset/themed cursor on GTK; keep stock cursors on MSW.
+inline wxCursor Cities3DArrowCursor()
+{
+#if defined(__WXGTK__)
+	return wxNullCursor;
+#else
+	return wxCursor(wxCURSOR_ARROW);
+#endif
+}
+
+inline wxCursor Cities3DHandCursor()
+{
+#if defined(__WXGTK__)
+	wxCursor themed(wxT("pointer"));
+	if(true == themed.IsOk())
+	{
+		return themed;
+	}
+#endif
+	return wxCursor(wxCURSOR_HAND);
+}
 
