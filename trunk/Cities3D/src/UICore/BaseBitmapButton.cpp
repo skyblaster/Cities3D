@@ -43,7 +43,7 @@ wxBaseBitmapButton::wxBaseBitmapButton(wxWindow* parent, wxWindowID id,
 	OnSkin();
 	mFillColour = sBackground_BaseBitmapButton;
 
-	SetCursor(Cities3DHandCursor());
+	SetCursor(wxCursor(wxCURSOR_HAND));
 
 	Controller::get().AddReceiver(shEventSkin, &wxBaseBitmapButton::OnSkin, 
 		this);

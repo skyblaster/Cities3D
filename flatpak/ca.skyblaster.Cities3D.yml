@@ -28,10 +28,6 @@ finish-args:
   - --socket=pulseaudio
   - --filesystem=xdg-documents
   - --filesystem=xdg-download
-  # Host cursor themes (X11/XWayland). Without these, wxGTK stock arrows fall
-  # back to the tiny core X font cursor inside the sandbox.
-  - --filesystem=xdg-data/icons:ro
-  - --filesystem=/usr/share/icons:ro
   - --env=GDK_BACKEND=x11
   # wxConfig uses ~/.Cities3D/; persist it into the Flatpak app data dir.
   - --persist=.Cities3D

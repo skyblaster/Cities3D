@@ -24,22 +24,5 @@ done
 
 # APP_ROOT has libwx/libGLU copies; /app/lib keeps the glu module install.
 export LD_LIBRARY_PATH="${APP_ROOT}:/app/lib${LD_LIBRARY_PATH:+:${LD_LIBRARY_PATH}}"
-
-# Prefer host/runtime cursor themes over the core X font cursor.
-cursor_paths=""
-for dir in \
-  "${XDG_DATA_HOME:-${HOME}/.local/share}/icons" \
-  /usr/share/icons \
-  /run/host/user-share/icons \
-  /run/host/share/icons
-do
-  if [ -d "${dir}" ]; then
-    cursor_paths="${cursor_paths}:${dir}"
-  fi
-done
-if [ -n "${cursor_paths}" ]; then
-  export XCURSOR_PATH="${cursor_paths#:}${XCURSOR_PATH:+:${XCURSOR_PATH}}"
-fi
-
 cd "${DATA_ROOT}"
 exec "${APP_ROOT}/Cities3D" "$@"

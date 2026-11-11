@@ -18,7 +18,6 @@
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
 
 //---------------------------- USER INCLUDES    -----------------------------//
-#include "wxCommon.h"
 
 //---------------------------- DEFINES          -----------------------------//
 
@@ -76,7 +75,7 @@ public:
 	//
 	~wxWaitCursor()
 	{
-		mWindow->SetCursor(Cities3DArrowCursor());
+		mWindow->SetCursor(wxCursor(wxCURSOR_ARROW));
 	}
 
 	//-----------------------------------------------------------------------//

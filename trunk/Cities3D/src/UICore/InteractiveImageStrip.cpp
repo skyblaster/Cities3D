@@ -103,11 +103,11 @@ void wxInteractiveImageStrip::OnMouseMove(wxMouseEvent &event)
 				(true == res.empty()) ||
 				(EmptyResource == res))
 			{
-				SetCursor(Cities3DArrowCursor());
+				SetCursor(wxCursor(wxCURSOR_ARROW));
 			}
 			else
 			{
-				SetCursor(Cities3DHandCursor());
+				SetCursor(wxCursor(wxCURSOR_HAND));
 			}
 		}
 	}

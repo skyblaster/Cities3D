@@ -119,5 +119,5 @@ END_EVENT_TABLE()
 
 void wxPlayerListCtrl::OnEnterWindow(wxMouseEvent &)
 {
-	SetCursor(Cities3DArrowCursor());
+	SetCursor(wxCursor(wxCURSOR_ARROW));
 }
