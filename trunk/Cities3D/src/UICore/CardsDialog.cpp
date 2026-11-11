@@ -21,8 +21,9 @@
 #include "ISizer.h"
 #include "CardListCtrl.h"
 #include "BaseButton.h"
-#include "BaseStaticBox.h"
+#include "BaseStaticText.h"
 #include "FittedStaticText.h"
+#include "OwnerDrawWindow.h"
 #include "Controller.h"
 #include "ImageEngine.h"
 #include "SkinManager.h"
@@ -45,15 +46,15 @@ namespace
 		ID_CARD_LIST				,
 	};
 
-	// Own-draw panel with an explicit best size. Without DoGetBestClientSize,
-	// wxGTK3 sizers often laid this out at 0x0 so paints never became visible
-	// even after ImageEngine returned a valid 162x171 PlayerCards image.
-	class wxCardImagePanel : public wxPanel
+	// PlayerCards preview. wxGTK3 reparents StaticBoxSizer children onto the
+	// GtkFrame and custom wxPanel paints there stay blank even with a real
+	// size (cardimg-5). Paint through wxOwnerDrawWindow like the rest of the
+	// UI, and keep the control out of a StaticBoxSizer.
+	class wxCardImagePanel : public wxOwnerDrawWindow
 	{
 	public:
 		wxCardImagePanel(wxWindow* parent, const wxSize& size)
-		: wxPanel(parent, wxID_ANY, wxDefaultPosition, size,
-			wxBORDER_NONE | wxFULL_REPAINT_ON_RESIZE)
+		: wxOwnerDrawWindow(parent, wxID_ANY, wxDefaultPosition, size)
 		, mBestSize(size)
 		{
 			SetBackgroundColour(SKIN.Element(shBackground));
@@ -78,7 +79,6 @@ namespace
 					draw.ClearAlpha();
 				}
 
-				// RGB-only copy so GTK cannot invent a mask/alpha hole.
 				wxImage rgb(draw.GetWidth(), draw.GetHeight(), false);
 				if( (true == rgb.IsOk()) &&
 					(NULL != rgb.GetData()) &&
@@ -100,9 +100,9 @@ namespace
 				InvalidateBestSize();
 				SetClientSize(mBestSize);
 				std::fprintf(stderr,
-					"cities3d: card panel set %dx%d bitmap=%d client=%dx%d\n",
+					"cities3d: card panel set %dx%d bitmap=%d size=%dx%d\n",
 					mBestSize.x, mBestSize.y, mBitmap.IsOk() ? 1 : 0,
-					GetClientSize().x, GetClientSize().y);
+					GetSize().x, GetSize().y);
 			}
 			else
 			{
@@ -136,11 +136,9 @@ namespace
 			return mBestSize;
 		}
 
-	private:
-		void OnPaint(wxPaintEvent&)
+		virtual void Paint(wxMemoryDC &dc)
 		{
-			wxPaintDC dc(this);
-			wxSize size = GetClientSize();
+			wxSize size = GetSize();
 			const wxColour bg = GetBackgroundColour();
 			dc.SetBrush(wxBrush(bg));
 			dc.SetPen(wxPen(bg));
@@ -149,33 +147,21 @@ namespace
 			if(false == mBitmap.IsOk())
 			{
 				std::fprintf(stderr,
-					"cities3d: card paint skip (no bitmap) client=%dx%d\n",
+					"cities3d: card paint skip (no bitmap) size=%dx%d\n",
 					size.x, size.y);
 				std::fflush(stderr);
 				return;
 			}
 
-			if( (1 > size.x) || (1 > size.y) )
+			static int sPaintLogs = 0;
+			if(3 > sPaintLogs)
 			{
-				SetClientSize(mBestSize);
-				size = GetClientSize();
+				++sPaintLogs;
 				std::fprintf(stderr,
-					"cities3d: card paint forced client=%dx%d\n",
-					size.x, size.y);
+					"cities3d: card paint size=%dx%d bitmap=%dx%d\n",
+					size.x, size.y,
+					mBitmap.GetWidth(), mBitmap.GetHeight());
 				std::fflush(stderr);
-			}
-			else
-			{
-				static int sPaintLogs = 0;
-				if(3 > sPaintLogs)
-				{
-					++sPaintLogs;
-					std::fprintf(stderr,
-						"cities3d: card paint client=%dx%d bitmap=%dx%d\n",
-						size.x, size.y,
-						mBitmap.GetWidth(), mBitmap.GetHeight());
-					std::fflush(stderr);
-				}
 			}
 
 			const int x = (size.x - mBitmap.GetWidth()) / 2;
@@ -183,20 +169,15 @@ namespace
 			dc.DrawBitmap(mBitmap, x > 0 ? x : 0, y > 0 ? y : 0, false);
 		}
 
+	private:
 		wxBitmap mBitmap;
 		wxSize mBestSize;
-
-		DECLARE_EVENT_TABLE()
 	};
-
-	BEGIN_EVENT_TABLE(wxCardImagePanel, wxPanel)
-		EVT_PAINT(wxCardImagePanel::OnPaint)
-	END_EVENT_TABLE()
 
 	wxCardListCtrl *spCardList = NULL;
 	wxBaseButton* spButton = NULL;
 	wxCardImagePanel *spCardBitmap = NULL;
-	wxBaseStaticBox *spBox = NULL;
+	wxBaseStaticText *spTitle = NULL;
 	wxFittedStaticText *spText = NULL;
 	wxSize sCardImageSize(162, 171);
 
@@ -253,32 +234,27 @@ namespace
 				std::fflush(stderr);
 			}
 
+			spTitle = new wxBaseStaticText(mpWindow, 0, swEmpty,
+				shDefaultText, shCardHeaderFont);
 			spCardBitmap = new wxCardImagePanel(mpWindow, sCardImageSize);
 			if(true == image.IsOk())
 			{
 				spCardBitmap->SetCardImage(image);
 			}
 
-			wxBoxSizer* vert2 = new wxBoxSizer(wxVERTICAL);
-			wxBoxSizer* horzBox = new wxBoxSizer(wxHORIZONTAL);
-			
-			spBox = new wxBaseStaticBox(mpWindow, 0, swEmpty, wxDefaultPosition, 
-				wxDefaultSize, shDefaultText, shCardHeaderFont);
-			wxStaticBoxSizer* boxSizer = new wxStaticBoxSizer(spBox, wxVERTICAL);
 			spText = new wxFittedStaticText(mpWindow, 0, swEmpty, shDefaultText, 
 				shInfoFont, wxSize(sCardImageSize.GetWidth(), 0),
 				wxST_NO_AUTORESIZE | wxALIGN_CENTER);
-			// FixedMinSize so GTK cannot shrink the panel to 0x0.
-			boxSizer->Add(spCardBitmap,
-				wxSizerFlags(0).Centre().Border(wxALL, 2).FixedMinSize());
-			boxSizer->Add(spText, 0, wxEXPAND | wxALL, 2);
-			horzBox->Add(boxSizer, 0, wxEXPAND | wxRIGHT | wxTOP | wxBOTTOM, 4);
 
-			vert2->Add(horzBox, 0, wxEXPAND);
+			wxBoxSizer* vert2 = new wxBoxSizer(wxVERTICAL);
+			vert2->Add(spTitle, 0, wxALIGN_LEFT | wxLEFT | wxRIGHT | wxTOP, 4);
+			vert2->Add(spCardBitmap,
+				wxSizerFlags(0).Centre().Border(wxALL, 2).FixedMinSize());
+			vert2->Add(spText, 0, wxEXPAND | wxALL, 2);
 			vert2->AddStretchSpacer();
 
 			horz->Add(vert1, 1, wxEXPAND);
-			horz->Add(vert2, 0, wxEXPAND);
+			horz->Add(vert2, 0, wxEXPAND | wxRIGHT | wxTOP | wxBOTTOM, 4);
 
 			sizer->Add(horz, 1, wxEXPAND);
 		}
@@ -373,9 +349,9 @@ void wxCardsDialog::ResetImage(const HashString& card)
 		return;
 	}
 
-	spBox->Freeze();
-	spBox->SetLabel(displayText);
-	spBox->Thaw();
+	spTitle->Freeze();
+	spTitle->SetLabel(displayText);
+	spTitle->Thaw();
 
 	// Here we have to do some chicanery.
 	wxSizer* sizer = spText->GetContainingSizer();
