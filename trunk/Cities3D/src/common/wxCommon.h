@@ -93,13 +93,8 @@ inline wxCursor Cities3DArrowCursor()
 
 inline wxCursor Cities3DHandCursor()
 {
-#if defined(__WXGTK__)
-	wxCursor themed(wxT("pointer"));
-	if(true == themed.IsOk())
-	{
-		return themed;
-	}
-#endif
+	// Do not use wxCursor(wxT("pointer")): on this wxGTK build the string
+	// ctor loads an image file, which logs "can't open file 'pointer'".
 	return wxCursor(wxCURSOR_HAND);
 }
 
