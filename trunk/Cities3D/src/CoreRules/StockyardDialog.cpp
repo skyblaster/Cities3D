@@ -581,10 +581,10 @@ void wxStockyardDialog::OnMouseMove(wxMouseEvent& event)
 
 	if(-1 != mSelection)
 	{
-		SetCursor(Cities3DHandCursor());
+		SetCursor(wxCursor(wxCURSOR_HAND));
 	}
 	else
 	{
-		SetCursor(Cities3DArrowCursor());
+		SetCursor(wxCursor(wxCURSOR_ARROW));
 	}
 }

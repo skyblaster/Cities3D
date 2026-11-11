@@ -276,7 +276,7 @@ void wxListSelection::Init(const StringArray &array, const wxString &data)
 		mpImpl->mFields[array[0]] = swEmpty;
 	}
 
-	SetCursor(Cities3DHandCursor());
+	SetCursor(wxCursor(wxCURSOR_HAND));
 }
 
 void wxListSelection::SetMinimumSize()
