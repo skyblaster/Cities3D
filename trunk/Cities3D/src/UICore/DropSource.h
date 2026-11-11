@@ -86,7 +86,9 @@ public:
 			if( (NULL != target) &&
 				(true == target->OnDragOver(pos.x, pos.y, mData)))
 			{
-				wxSetCursor(wxCursor(wxCURSOR_RIGHT_ARROW));
+				// HAND, not RIGHT_ARROW: on wxGTK the stock right arrow looks
+				// like a reversed OS pointer (hotseat player→color drag).
+				wxSetCursor(wxCursor(wxCURSOR_HAND));
 			}
 			else
 			{
@@ -134,6 +136,11 @@ public:
 		{
 			mInDrag = false;
 			mThis->ReleaseMouse();
+			// wxSetCursor during DoDrag is global; without a reset it sticks
+			// after drop on wxGTK (player list color drag left a reversed
+			// arrow for the rest of the session).
+			wxSetCursor(wxNullCursor);
+			mThis->SetCursor(wxNullCursor);
 		}
 	}
 
