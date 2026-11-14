@@ -21,6 +21,8 @@
 #include "IUndoable.h"
 #include "RuleExtensionMixin.h"
 #include "RuleSetDatabase.h"
+#include "Controller.h"
+#include "SelectionObject.h"
 #include "IRuleEngine.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
@@ -73,6 +75,11 @@ public:
 	virtual void Execute(const DataObject &object)
 	{
 		gameData<HashString>(shState) = shTurn;
+
+		// Clear canvas selection / hit-testing (LAN SelectObject keeps the
+		// DummySelectionObject until this rule actually runs).
+		Controller::get().Transmit(shEventSelectionObject,
+			SelectionObjectPtr());
 
 		// Clear any dim tiles.
 		RULE.Execute(shRuleResetTileFlags, DataObject());

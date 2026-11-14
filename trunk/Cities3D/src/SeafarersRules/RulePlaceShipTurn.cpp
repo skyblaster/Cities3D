@@ -20,6 +20,8 @@
 #include "Rule.h"
 #include "IUndoable.h"
 #include "RuleSetDatabase.h"
+#include "Controller.h"
+#include "SelectionObject.h"
 #include "IRuleEngine.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
@@ -63,6 +65,11 @@ public:
 	{
 		gameData<HashString>(shState) = shTurn;
 
+		// Clear canvas selection / hit-testing (LAN SelectObject keeps the
+		// SideSelectionObject until this rule actually runs).
+		Controller::get().Transmit(shEventSelectionObject,
+			SelectionObjectPtr());
+
 		// This trick allows road lengths to be recalculated properly after
 		// an undo.
 		RULE.Execute(shRuleLongestRoadCheck, DataObject(false));
@@ -71,7 +78,7 @@ public:
 		RULE.Execute(shRuleResetObjectFlags, DataObject());
 		RULE.Execute(shRuleResetTileFlags, DataObject());
 
-		// Run the standard placement of the road.
+		// Run the standard placement of the ship.
 		RULE.Execute(shRulePlaceShip, object);
 
 		// Adjust the resources used.

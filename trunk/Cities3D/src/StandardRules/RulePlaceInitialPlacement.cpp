@@ -23,6 +23,7 @@
 #include "RuleSetDatabase.h"
 #include "GameEngine.h"
 #include "Controller.h"
+#include "SelectionObject.h"
 #include "IRuleEngine.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
@@ -68,6 +69,11 @@ class RulePlaceInitialPlacement
 public:
 	virtual void Execute(const DataObject &object)
 	{
+		// Clear canvas selection / hit-testing (LAN SelectObject keeps the
+		// CornerSelectionObject until this rule actually runs).
+		Controller::get().Transmit(shEventSelectionObject,
+			SelectionObjectPtr());
+
         // The current player has ended a blocking action.
         RULE.Execute(shRuleEndBlockingAction, DataObject(current()));
 

@@ -25,6 +25,7 @@
 #include "KnightObject.h"
 #include "AggregatorObject.h"
 #include "Controller.h"
+#include "SelectionObject.h"
 #include "Utility.h"
 #include "AnimationPlacement.h"
 #include "IRuleEngine.h"
@@ -70,6 +71,11 @@ public:
 	virtual void Execute(const DataObject &object)
 	{
 		gameData<HashString>(shState) = shTurn;
+
+		// Clear canvas selection / hit-testing (LAN SelectObject keeps the
+		// CornerSelectionObject until this rule actually runs).
+		Controller::get().Transmit(shEventSelectionObject,
+			SelectionObjectPtr());
 
 		// This trick allows road lengths to be recalculated properly after
 		// an undo.
