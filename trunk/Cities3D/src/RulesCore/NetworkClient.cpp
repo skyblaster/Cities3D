@@ -15,6 +15,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <cstdio>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 
@@ -269,6 +270,9 @@ void NetworkClient::SendRule(const HashString &rule,
 		}
 		catch(const std::exception &e)
 		{
+			std::fprintf(stderr, "cities3d: NetworkClient SendRule failed: %s\n",
+				e.what());
+			std::fflush(stderr);
 			wxLogDebug(HashString(e.what()).wx_str());
 		}
 	}

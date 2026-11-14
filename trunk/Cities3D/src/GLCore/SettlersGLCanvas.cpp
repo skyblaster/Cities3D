@@ -16,6 +16,7 @@
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
 #include <GL/glew.h>
+#include <cstdio>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "RenderTexture.h"
@@ -418,14 +419,21 @@ void wxSettlersGLCanvas::SelectObject(wxInt32 selection)
 		// Clear out any current render state.
 		Controller::get().Transmit(shEventShowResources, DataObject(false));
 
-		//reset the selection object as it is no longer needed
 		HashString rule = mSelectionObject->rule();
-		mSelectionObject.reset();
+
+		// Stop further picks so we do not flood duplicate placements, but keep
+		// mSelectionObject until the rule actually runs. While connected,
+		// RULE.Execute is SendRule-only; clearing here permanently stuck LAN
+		// robber/build selection when the echo was delayed or the send failed.
+		// Placement rules clear selection via eventSelectionObject.
+		SetHitTest(false);
+
+		std::fprintf(stderr,
+			"cities3d: SelectObject id=%d rule=%s\n",
+			selection, rule.c_str());
+		std::fflush(stderr);
 
 		DataObject data(selection);
-
-		//no more hit tests needed
-		SetHitTest(false);
 
 		//run the rule in question
 		RULE.Execute(rule, data);
@@ -783,9 +791,16 @@ void wxSettlersGLCanvas::OnSelectionObject(const SelectionObjectPtr &object)
 {
 	DataObject input(-1), output;
 	RULE.Decide(shLogicIsThisPlayer, input, output);
+	const bool thisPlayer = output.read<bool>();
 
-	// Only add the selection object if it is the player at this computer.
-	if(true == output.read<bool>())
+	std::fprintf(stderr,
+		"cities3d: OnSelectionObject thisPlayer=%d object=%d rule=%s\n",
+		thisPlayer ? 1 : 0, object ? 1 : 0,
+		object ? object->rule().c_str() : "(clear)");
+	std::fflush(stderr);
+
+	// Only add/clear the selection object if it is the player at this computer.
+	if(true == thisPlayer)
 	{
 		// Clear out any current render state.
 		Controller::get().Transmit(shEventShowResources, DataObject(false));
@@ -803,6 +818,11 @@ void wxSettlersGLCanvas::OnSelectionObject(const SelectionObjectPtr &object)
 			SetHitTest(true);
 
 			OnGameObjects(aggregate);
+		}
+		else
+		{
+			SetHitTest(false);
+			SetDirty();
 		}
 	}
 }

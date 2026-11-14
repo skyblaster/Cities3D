@@ -15,6 +15,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <cstdio>
 #ifndef __WIN32__
 #include <time.h>
 #endif
@@ -141,6 +142,9 @@ void NetworkServer::SendRule(const HashString &rule,
 		{
 			valid = false;
 
+			std::fprintf(stderr, "cities3d: NetworkServer SendRule failed: %s\n",
+				e.what());
+			std::fflush(stderr);
 			wxLogDebug(HashString(e.what()).wx_str());
 		}
 

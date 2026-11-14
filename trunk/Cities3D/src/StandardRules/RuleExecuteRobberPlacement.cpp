@@ -21,6 +21,8 @@
 #include "RuleSetDatabase.h"
 #include "Controller.h"
 #include "IRuleEngine.h"
+#include "SelectionObject.h"
+#include <cstdio>
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -50,6 +52,16 @@ class RuleExecuteRobberPlacement : public Rule
 public:
 	virtual void Execute(const DataObject &object)
 	{
+		std::fprintf(stderr,
+			"cities3d: RuleExecuteRobberPlacement tile=%d\n",
+			object.read<wxInt32>());
+		std::fflush(stderr);
+
+		// Clear canvas selection / hit-testing (LAN SelectObject keeps the
+		// SelectionObject until this rule actually runs).
+		Controller::get().Transmit(shEventSelectionObject,
+			SelectionObjectPtr());
+
         // The current player has ended a blocking action.
         RULE.Execute(shRuleEndBlockingAction, DataObject(current()));
 
