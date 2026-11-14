@@ -21,6 +21,8 @@
 #include "IUndoable.h"
 #include "RuleSetDatabase.h"
 #include "RuleExtensionMixin.h"
+#include "Controller.h"
+#include "SelectionObject.h"
 #include "IRuleEngine.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
@@ -74,6 +76,11 @@ public:
 	virtual void Execute(const DataObject &object)
 	{
 		gameData<HashString>(shState) = shTurn;
+
+		// Clear canvas selection / hit-testing (LAN SelectObject keeps the
+		// CornerSelectionObject until this rule actually runs).
+		Controller::get().Transmit(shEventSelectionObject,
+			SelectionObjectPtr());
 
 		// This trick allows road lengths to be recalculated properly after
 		// an undo.

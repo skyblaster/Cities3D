@@ -799,12 +799,15 @@ void wxSettlersGLCanvas::OnSelectionObject(const SelectionObjectPtr &object)
 		object ? object->rule().c_str() : "(clear)");
 	std::fflush(stderr);
 
-	// Only add/clear the selection object if it is the player at this computer.
+	// Clear out any current render state.
+	Controller::get().Transmit(shEventShowResources, DataObject(false));
+
+	// Only arm hit-testing for the player at this computer. Always drop a
+	// stale SelectionObject otherwise — after the LAN SelectObject change,
+	// placement highlights are kept until cleared, and the next player's
+	// selection event must not leave the previous player's outlines on screen.
 	if(true == thisPlayer)
 	{
-		// Clear out any current render state.
-		Controller::get().Transmit(shEventShowResources, DataObject(false));
-
 		//save it off for use when something is selected
 		mSelectionObject = object;
 
@@ -824,6 +827,12 @@ void wxSettlersGLCanvas::OnSelectionObject(const SelectionObjectPtr &object)
 			SetHitTest(false);
 			SetDirty();
 		}
+	}
+	else if(mSelectionObject)
+	{
+		mSelectionObject.reset();
+		SetHitTest(false);
+		SetDirty();
 	}
 }
 
