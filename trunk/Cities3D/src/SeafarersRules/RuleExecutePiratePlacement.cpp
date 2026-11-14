@@ -21,6 +21,8 @@
 #include "RuleSetDatabase.h"
 #include "Controller.h"
 #include "IRuleEngine.h"
+#include "SelectionObject.h"
+#include <cstdio>
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -50,6 +52,14 @@ class RuleExecutePiratePlacement : public Rule
 public:
 	virtual void Execute(const DataObject &object)
 	{
+		std::fprintf(stderr,
+			"cities3d: RuleExecutePiratePlacement tile=%d\n",
+			object.read<wxInt32>());
+		std::fflush(stderr);
+
+		Controller::get().Transmit(shEventSelectionObject,
+			SelectionObjectPtr());
+
 		// Clear out all tile flags.
 		RULE.Execute(shRuleResetTileFlags, DataObject());
 

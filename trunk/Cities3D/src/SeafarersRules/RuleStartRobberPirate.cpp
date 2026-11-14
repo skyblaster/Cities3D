@@ -23,6 +23,7 @@
 #include "DummySelectionObject.h"
 #include "HexObject.h"
 #include "IRuleEngine.h"
+#include <cstdio>
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -80,6 +81,7 @@ public:
 
 		// Turn on all land and ocean tiles except the robber and pirate tiles.
 		wxInt32 tiles = numTiles();
+		wxInt32 selectable = 0;
 		for(wxInt32 i = 0; i < tiles; ++i)
 		{
 			if( (i != robberTile) &&
@@ -98,9 +100,16 @@ public:
 				{
 					tile(i)->reset();
 					tile(i)->set(IGameObject::Select);
+					++selectable;
 				}
 			}
 		}
+
+		std::fprintf(stderr,
+			"cities3d: RuleStartRobberPirate robberTile=%d pirateTile=%d "
+			"selectable=%d\n",
+			robberTile, pirateTile, selectable);
+		std::fflush(stderr);
 	}
 };
 
