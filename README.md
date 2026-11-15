@@ -54,7 +54,7 @@ flatpak build-bundle ~/.local/share/flatpak/repo \
 
 ## Install (Windows)
 
-Download `Install_Cities3D_v0.10.0.exe` from the [GitHub Releases](https://github.com/skyblaster/Cities3D/releases) page and run it. The installer is already compressed, so there is no zip.
+Download `Install_Cities3D_v0.10.0.exe` from the [GitHub Releases](https://github.com/skyblaster/Cities3D/releases) page and run it.
 
 The setup is 64-bit and requires Windows 10 or later. It installs for all users under Program Files, adds a Start menu shortcut, and includes the Visual C++ runtime DLLs the game needs. Tilesets, sounds, skins, and languages are the same choices as the 0.9.7 installer. Cities Online is not part of this build. `COPYING` and `THIRD-PARTY-LICENSES.txt` are installed next to the program.
 
