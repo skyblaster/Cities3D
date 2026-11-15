@@ -78,6 +78,8 @@ wxTradeOfferBox::wxTradeOfferBox(wxWindow* parent, const wxString& name,
 	}
 
 #ifndef __WIN32__
+	// Border under labels so "You want" / status text stay visible.
+	mBorderOverlay.reset(new wxStaticBoxBorderOverlay(this));
 	mSecondLabelOverlay.reset(new wxStaticBoxSecondLabel(this));
 #endif
 	
@@ -197,6 +199,15 @@ void wxTradeOfferBox::SetState(State state)
 	{
 		mSecondLabelOverlay->SetForegroundColour(mPlayerColor);
 		mSecondLabelOverlay->SetLabel(mRight);
+	}
+	if(mBorderOverlay)
+	{
+		const bool doubleBorder = (StateAccept == mState) ||
+			(0 != (sCurrentFlash % 2));
+		mBorderOverlay->SetCurve(sCurveTradeOffer);
+		mBorderOverlay->SetDoubleBorder(doubleBorder);
+		mBorderOverlay->SetColors(mCurrentColor, mCurrentColor);
+		mBorderOverlay->SyncToBox();
 	}
 #endif
 
@@ -323,6 +334,11 @@ void wxTradeOfferBox::OnSkin(wxInt32)
 		mSecondLabelOverlay->SetFont(mFont);
 		mSecondLabelOverlay->SetLabel(mRight);
 	}
+	if(mBorderOverlay)
+	{
+		mBorderOverlay->SetCurve(sCurveTradeOffer);
+		mBorderOverlay->SyncToBox();
+	}
 #endif
 
 	Refresh();
@@ -337,6 +353,14 @@ void wxTradeOfferBox::OnTimer()
 		TIME.AddOneShotFunction(&wxTradeOfferBox::OnTimer, this,
 			TIMER_RESOLUTION, false);
 	}
+
+#ifndef __WIN32__
+	if(mBorderOverlay)
+	{
+		mBorderOverlay->SetDoubleBorder(0 != (sCurrentFlash % 2));
+		mBorderOverlay->Refresh();
+	}
+#endif
 
 	Refresh();
 }

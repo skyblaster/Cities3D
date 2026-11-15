@@ -45,6 +45,8 @@ wxFinalTradeBox::wxFinalTradeBox(wxWindow* parent, const wxString& name,
 	Controller::get().AddReceiver(shEventSkin, &wxFinalTradeBox::OnSkin, this);
 
 #ifndef __WIN32__
+	// Border under labels so "You get" stays visible on the frame.
+	mBorderOverlay.reset(new wxStaticBoxBorderOverlay(this));
 	mSecondLabelOverlay.reset(new wxStaticBoxSecondLabel(this));
 #endif
 	
@@ -91,6 +93,16 @@ void wxFinalTradeBox::SetState(State state)
 		wxASSERT(false);
 		break;
 	}
+
+#ifndef __WIN32__
+	if(mBorderOverlay)
+	{
+		mBorderOverlay->SetCurve(sCurveFinalTrade);
+		mBorderOverlay->SetDoubleBorder(false);
+		mBorderOverlay->SetColors(mLeftColor, mRightColor);
+		mBorderOverlay->SyncToBox();
+	}
+#endif
 
 	Refresh();
 }
@@ -226,6 +238,20 @@ void wxFinalTradeBox::OnSkin(wxInt32)
 		mSecondLabelOverlay->SetForegroundColour(mRightPlayerColor);
 		mSecondLabelOverlay->SetFont(mFont);
 		mSecondLabelOverlay->SetLabel(mSecondName);
+	}
+	if(mBorderOverlay)
+	{
+		if(false == mLeftColor.IsOk())
+		{
+			mLeftColor = sNeutralColorFinalTrade;
+		}
+		if(false == mRightColor.IsOk())
+		{
+			mRightColor = sNeutralColorFinalTrade;
+		}
+		mBorderOverlay->SetCurve(sCurveFinalTrade);
+		mBorderOverlay->SetColors(mLeftColor, mRightColor);
+		mBorderOverlay->SyncToBox();
 	}
 #endif
 

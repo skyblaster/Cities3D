@@ -124,6 +124,134 @@ void wxStaticBoxSecondLabel::Reposition()
 	const int y = boxPos.y;
 	mLabel->SetSize(x, y, textSize.GetWidth(), textSize.GetHeight());
 }
+
+wxStaticBoxBorderOverlay::wxStaticBoxBorderOverlay(wxWindow* box)
+: wxWindow(box->GetParent(), wxID_ANY, wxDefaultPosition, wxDefaultSize,
+	wxBORDER_NONE)
+, mBox(box)
+, mDoubleBorder(false)
+, mCurve(4)
+{
+	wxASSERT(NULL != box);
+	wxASSERT(NULL != box->GetParent());
+
+	SetBackgroundStyle(wxBG_STYLE_PAINT);
+	mLeftColor = *wxWHITE;
+	mRightColor = *wxWHITE;
+
+	box->Bind(wxEVT_SIZE, &wxStaticBoxBorderOverlay::OnBoxSize, this);
+	Bind(wxEVT_PAINT, &wxStaticBoxBorderOverlay::OnPaint, this);
+
+	SyncToBox();
+}
+
+wxStaticBoxBorderOverlay::~wxStaticBoxBorderOverlay()
+{
+	if(mBox)
+	{
+		mBox->Unbind(wxEVT_SIZE, &wxStaticBoxBorderOverlay::OnBoxSize, this);
+		mBox = NULL;
+	}
+}
+
+void wxStaticBoxBorderOverlay::SetColors(const wxColour& left,
+	const wxColour& right)
+{
+	mLeftColor = left;
+	mRightColor = right;
+	Refresh();
+}
+
+void wxStaticBoxBorderOverlay::SetDoubleBorder(bool enabled)
+{
+	mDoubleBorder = enabled;
+	UpdateShape();
+	Refresh();
+}
+
+void wxStaticBoxBorderOverlay::SetCurve(wxInt32 curve)
+{
+	mCurve = curve;
+	Refresh();
+}
+
+void wxStaticBoxBorderOverlay::SyncToBox()
+{
+	if(NULL == mBox)
+	{
+		return;
+	}
+
+	const wxPoint pos = mBox->GetPosition();
+	const wxSize size = mBox->GetSize();
+	SetSize(pos.x, pos.y, size.GetWidth(), size.GetHeight());
+	UpdateShape();
+	// Do not Raise above title label overlays — those are created after this
+	// window so they stay readable on the border ring.
+	Refresh();
+}
+
+void wxStaticBoxBorderOverlay::OnBoxSize(wxSizeEvent& event)
+{
+	SyncToBox();
+	event.Skip();
+}
+
+void wxStaticBoxBorderOverlay::UpdateShape()
+{
+	const wxSize size = GetSize();
+	if( (4 > size.GetWidth()) ||
+		(4 > size.GetHeight()))
+	{
+		return;
+	}
+
+	// Border ring only so trade content / labels show through the hole.
+	const int inset = mDoubleBorder ? 4 : 2;
+	wxRegion region(0, 0, size.GetWidth(), size.GetHeight());
+	region.Subtract(wxRect(inset, inset,
+		size.GetWidth() - (inset * 2), size.GetHeight() - (inset * 2)));
+	SetShape(region);
+}
+
+void wxStaticBoxBorderOverlay::OnPaint(wxPaintEvent&)
+{
+	wxPaintDC dc(this);
+	const wxSize size = GetClientSize();
+	if( (0 >= size.GetWidth()) ||
+		(0 >= size.GetHeight()))
+	{
+		return;
+	}
+
+	dc.SetBrush(*wxTRANSPARENT_BRUSH);
+
+	const int halfX = size.GetWidth() / 2;
+	const int yStart = 0;
+	const int height = size.GetHeight() - yStart;
+
+	// Left half of the rounded frame.
+	dc.SetPen(wxPen(mLeftColor, mDoubleBorder ? 2 : 1));
+	dc.SetClippingRegion(0, 0, halfX, size.GetHeight());
+	dc.DrawRoundedRectangle(0, yStart, size.GetWidth(), height, mCurve);
+	if(true == mDoubleBorder)
+	{
+		dc.DrawRoundedRectangle(2, yStart + 2, size.GetWidth() - 4,
+			height - 4, mCurve);
+	}
+	dc.DestroyClippingRegion();
+
+	// Right half (may match left for a uniform Stockyard border).
+	dc.SetPen(wxPen(mRightColor, mDoubleBorder ? 2 : 1));
+	dc.SetClippingRegion(halfX, 0, size.GetWidth() - halfX, size.GetHeight());
+	dc.DrawRoundedRectangle(0, yStart, size.GetWidth(), height, mCurve);
+	if(true == mDoubleBorder)
+	{
+		dc.DrawRoundedRectangle(2, yStart + 2, size.GetWidth() - 4,
+			height - 4, mCurve);
+	}
+	dc.DestroyClippingRegion();
+}
 #endif
 
 wxBaseStaticBox::wxBaseStaticBox(wxWindow* parent, wxWindowID id, 
