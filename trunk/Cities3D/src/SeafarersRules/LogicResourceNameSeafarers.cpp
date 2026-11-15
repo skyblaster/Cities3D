@@ -58,3 +58,42 @@ public:
 IMPLEMENT_LOGIC_KEYED_MIXIN(LogicResourceNameRandom, Random, 
 							LogicResourceName, SEAFARERS);
 
+// Hidden tiles (Oceans III-VI, etc.) - popup hover must resolve a name.
+class LogicResourceNameHidden : public Logic
+{
+public:
+	virtual void Decide(const DataObject &, DataObject &output)
+	{
+		output = DataObject(stHidden);
+	}
+};
+
+IMPLEMENT_LOGIC_KEYED_MIXIN(LogicResourceNameHidden, Hidden, 
+							LogicResourceName, HIDDEN_TILES);
+
+// Chipless tiles before reveal use the Chipless type on some maps.
+class LogicResourceNameChipless : public Logic
+{
+public:
+	virtual void Decide(const DataObject &, DataObject &output)
+	{
+		output = DataObject(stChipless);
+	}
+};
+
+IMPLEMENT_LOGIC_KEYED_MIXIN(LogicResourceNameChipless, Chipless, 
+							LogicResourceName, CHIPLESS_TILES);
+
+// Unassigned ports during port placement.
+class LogicResourceNamePortRandom : public Logic
+{
+public:
+	virtual void Decide(const DataObject &, DataObject &output)
+	{
+		output = DataObject(stPortRandom);
+	}
+};
+
+IMPLEMENT_LOGIC_KEYED_MIXIN(LogicResourceNamePortRandom, PortRandom, 
+							LogicResourceName, SEAFARERS);
+

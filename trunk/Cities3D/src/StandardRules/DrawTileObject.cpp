@@ -364,14 +364,27 @@ void DrawTileObject::PopupFunction(wxString& name, wxString& owner,
 
 	HashString str = pTile->read<HashString>(shTileType);
 
-	// See if there is a bitmap for this item.
-	if(true == IMAGE.FindImage(shResources, str))
+	// Prefer Resources art; Hidden tiles live under TileType instead.
+	HashString imageSet = shResources;
+	if(false == IMAGE.FindImage(imageSet, str))
 	{
-		wxImage image = IMAGE.GetImage(shResources, str);
+		if(true == IMAGE.FindImage(shTileType, str))
+		{
+			imageSet = shTileType;
+		}
+		else
+		{
+			imageSet = shEmpty;
+		}
+	}
+
+	if(false == imageSet.empty())
+	{
+		wxImage image = IMAGE.GetImage(imageSet, str);
 
 		// Use a 85% sized image.
 
-		bitmap = wxBitmap(IMAGE.GetImage(shResources, str, wxSize(
+		bitmap = wxBitmap(IMAGE.GetImage(imageSet, str, wxSize(
 			static_cast<wxInt32>(image.GetWidth() * .85),
 			static_cast<wxInt32>(image.GetHeight() * .85))));
 
@@ -406,7 +419,14 @@ void DrawTileObject::PopupFunction(wxString& name, wxString& owner,
 	// Set the final outgoing resource name.
 	DataObject input(str), output;
 	RULE.Decide(shLogicResourceName, input, output);
-	name = output.read<wxString>();
+	if(0 < output.numItems())
+	{
+		name = output.read<wxString>();
+	}
+	else
+	{
+		name = str.wx_str();
+	}
 }
 
 void DrawTileObject::RenderOutline() const
