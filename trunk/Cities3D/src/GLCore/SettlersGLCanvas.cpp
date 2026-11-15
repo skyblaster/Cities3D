@@ -207,6 +207,33 @@ wxSettlersGLCanvas::~wxSettlersGLCanvas()
 	}
 }
 
+namespace
+{
+	// Backbuffer glReadPixels under wxGTK/GLX often yields an all-black
+	// capture (invisible on the black Players pane). Treat that as failure
+	// so callers can fall back to ImageEngine colorized icons.
+	bool ImageHasVisiblePixels(const wxImage &image)
+	{
+		if(false == image.IsOk())
+		{
+			return false;
+		}
+
+		const size_t bytes = static_cast<size_t>(image.GetWidth()) *
+			static_cast<size_t>(image.GetHeight()) * 3u;
+		const wxUint8 *p = image.GetData();
+		for(size_t i = 0; i < bytes; ++i)
+		{
+			if(0 != p[i])
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+}
+
 wxBitmap wxSettlersGLCanvas::ConvertGLtoWX(const DrawObjectPtr &object, 
 										   const size_t width, 
 										   const size_t height, 
@@ -217,6 +244,7 @@ wxBitmap wxSettlersGLCanvas::ConvertGLtoWX(const DrawObjectPtr &object,
 	wxImage image;
 
 	if(GetContext() &&
+		(Nonebuffer != mRenderToBitmapMode) &&
 		(0 < width) &&
 		(0 < height))
 	{
@@ -294,7 +322,8 @@ wxBitmap wxSettlersGLCanvas::ConvertGLtoWX(const DrawObjectPtr &object,
 		}
 	}
 	
-	if(false == image.IsOk())
+	if( (false == image.IsOk()) ||
+		(false == ImageHasVisiblePixels(image)))
 	{
 		return wxBitmap();
 	}
@@ -881,8 +910,15 @@ void wxSettlersGLCanvas::OnRenderBitmaps(wxInt32)
 	
 	wxInt32 render = CONFIG.read<wxInt32>(swConfigSectionOpenGL, swRenderBitmaps, 
 		TRUE);
+	// Prefer FBOs on wxGTK: GL_BACK readbacks are often blank there, which
+	// hides Cities/Settlements/Roads icons in the Players pane.
+#ifdef __WXGTK__
+	wxInt32 framebuffer = CONFIG.read<wxInt32>(swConfigSectionOpenGL, 
+		swFramebuffer, TRUE);
+#else
 	wxInt32 framebuffer = CONFIG.read<wxInt32>(swConfigSectionOpenGL, 
 		swFramebuffer, FALSE);
+#endif
 		wxInt32 pixelbuffer = CONFIG.read<wxInt32>(swConfigSectionOpenGL, 
 			swPixelBuffer, FALSE);
 #ifdef __WIN32__

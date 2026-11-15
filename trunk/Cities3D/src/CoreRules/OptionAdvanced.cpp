@@ -69,8 +69,13 @@ wxOptionAdvanced::wxOptionAdvanced(wxWindow* parent)
 
 	bool render = CONFIG.read<wxInt32>(swConfigSectionOpenGL, 
 		swRenderBitmaps, TRUE) || false;
+#ifdef __WXGTK__
+	bool framebuffer = CONFIG.read<wxInt32>(swConfigSectionOpenGL, swFrameBuffer, 
+		TRUE) || false;
+#else
 	bool framebuffer = CONFIG.read<wxInt32>(swConfigSectionOpenGL, swFrameBuffer, 
 		FALSE) || false;
+#endif
 	bool pixelbuffer = CONFIG.read<wxInt32>(swConfigSectionOpenGL, swPixelBuffer, 
 		FALSE) || false;
 	wxBoxSizer *innerVert2 = new wxBoxSizer(wxVERTICAL);
