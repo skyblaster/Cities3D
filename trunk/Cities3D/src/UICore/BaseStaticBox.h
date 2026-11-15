@@ -61,27 +61,32 @@ private:
 // Class: wxStaticBoxBorderOverlay
 //
 // Colored trade-state border for wxStaticBox on non-Windows. MSW paints the
-// border in PaintForeground; wxGTK cannot. This sibling window tracks the
-// box, punches a shaped hole over the content, and strokes left/right colors
-// (optionally doubled for accept flashes).
+// border in PaintForeground; wxGTK cannot. Uses thin edge panels (no
+// wxWindow::SetShape — unavailable in our vcpkg wxGTK build) so content
+// stays visible while left/right colors and accept thickness still show.
 //
-class UI_EXPORT_SPEC wxStaticBoxBorderOverlay : public wxWindow
+class UI_EXPORT_SPEC wxStaticBoxBorderOverlay
 {
 public:
 	explicit wxStaticBoxBorderOverlay(wxWindow* box);
-	virtual ~wxStaticBoxBorderOverlay();
+	~wxStaticBoxBorderOverlay();
 
 	void SetColors(const wxColour& left, const wxColour& right);
 	void SetDoubleBorder(bool enabled);
 	void SetCurve(wxInt32 curve);
 	void SyncToBox();
+	void Refresh();
 
 private:
-	void OnPaint(wxPaintEvent& event);
 	void OnBoxSize(wxSizeEvent& event);
-	void UpdateShape();
+	void OnTopPaint(wxPaintEvent& event);
+	void OnBottomPaint(wxPaintEvent& event);
 
 	wxWindow* mBox;
+	wxWindow* mTop;
+	wxWindow* mBottom;
+	wxWindow* mLeft;
+	wxWindow* mRight;
 	wxColour mLeftColor;
 	wxColour mRightColor;
 	bool mDoubleBorder;

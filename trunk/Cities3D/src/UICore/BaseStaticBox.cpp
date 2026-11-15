@@ -126,21 +126,41 @@ void wxStaticBoxSecondLabel::Reposition()
 }
 
 wxStaticBoxBorderOverlay::wxStaticBoxBorderOverlay(wxWindow* box)
-: wxWindow(box->GetParent(), wxID_ANY, wxDefaultPosition, wxDefaultSize,
-	wxBORDER_NONE)
-, mBox(box)
+: mBox(box)
+, mTop(NULL)
+, mBottom(NULL)
+, mLeft(NULL)
+, mRight(NULL)
 , mDoubleBorder(false)
 , mCurve(4)
 {
 	wxASSERT(NULL != box);
-	wxASSERT(NULL != box->GetParent());
+	wxWindow* parent = box->GetParent();
+	wxASSERT(NULL != parent);
 
-	SetBackgroundStyle(wxBG_STYLE_PAINT);
 	mLeftColor = *wxWHITE;
 	mRightColor = *wxWHITE;
 
+	mTop = new wxWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+		wxBORDER_NONE);
+	mBottom = new wxWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+		wxBORDER_NONE);
+	mLeft = new wxWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+		wxBORDER_NONE);
+	mRight = new wxWindow(parent, wxID_ANY, wxDefaultPosition, wxDefaultSize,
+		wxBORDER_NONE);
+
+	mTop->SetBackgroundStyle(wxBG_STYLE_PAINT);
+	mBottom->SetBackgroundStyle(wxBG_STYLE_PAINT);
+	mLeft->SetBackgroundStyle(wxBG_STYLE_PAINT);
+	mRight->SetBackgroundStyle(wxBG_STYLE_PAINT);
+
+	mTop->Bind(wxEVT_PAINT, &wxStaticBoxBorderOverlay::OnTopPaint, this);
+	mBottom->Bind(wxEVT_PAINT, &wxStaticBoxBorderOverlay::OnBottomPaint, this);
+	mLeft->Bind(wxEVT_PAINT, &wxStaticBoxBorderOverlay::OnTopPaint, this);
+	mRight->Bind(wxEVT_PAINT, &wxStaticBoxBorderOverlay::OnBottomPaint, this);
+
 	box->Bind(wxEVT_SIZE, &wxStaticBoxBorderOverlay::OnBoxSize, this);
-	Bind(wxEVT_PAINT, &wxStaticBoxBorderOverlay::OnPaint, this);
 
 	SyncToBox();
 }
@@ -152,6 +172,17 @@ wxStaticBoxBorderOverlay::~wxStaticBoxBorderOverlay()
 		mBox->Unbind(wxEVT_SIZE, &wxStaticBoxBorderOverlay::OnBoxSize, this);
 		mBox = NULL;
 	}
+
+	wxWindow* edges[4] = { mTop, mBottom, mLeft, mRight };
+	for(int i = 0; i < 4; ++i)
+	{
+		if( (edges[i]) &&
+			(false == edges[i]->IsBeingDeleted()))
+		{
+			edges[i]->Destroy();
+		}
+	}
+	mTop = mBottom = mLeft = mRight = NULL;
 }
 
 void wxStaticBoxBorderOverlay::SetColors(const wxColour& left,
@@ -165,8 +196,7 @@ void wxStaticBoxBorderOverlay::SetColors(const wxColour& left,
 void wxStaticBoxBorderOverlay::SetDoubleBorder(bool enabled)
 {
 	mDoubleBorder = enabled;
-	UpdateShape();
-	Refresh();
+	SyncToBox();
 }
 
 void wxStaticBoxBorderOverlay::SetCurve(wxInt32 curve)
@@ -175,19 +205,40 @@ void wxStaticBoxBorderOverlay::SetCurve(wxInt32 curve)
 	Refresh();
 }
 
+void wxStaticBoxBorderOverlay::Refresh()
+{
+	if(mTop) mTop->Refresh();
+	if(mBottom) mBottom->Refresh();
+	if(mLeft) mLeft->Refresh();
+	if(mRight) mRight->Refresh();
+}
+
 void wxStaticBoxBorderOverlay::SyncToBox()
 {
-	if(NULL == mBox)
+	if( (NULL == mBox) ||
+		(NULL == mTop))
 	{
 		return;
 	}
 
 	const wxPoint pos = mBox->GetPosition();
 	const wxSize size = mBox->GetSize();
-	SetSize(pos.x, pos.y, size.GetWidth(), size.GetHeight());
-	UpdateShape();
-	// Do not Raise above title label overlays — those are created after this
-	// window so they stay readable on the border ring.
+	const int thickness = mDoubleBorder ? 3 : 2;
+
+	if( (thickness * 2 >= size.GetWidth()) ||
+		(thickness * 2 >= size.GetHeight()))
+	{
+		return;
+	}
+
+	mTop->SetSize(pos.x, pos.y, size.GetWidth(), thickness);
+	mBottom->SetSize(pos.x, pos.y + size.GetHeight() - thickness,
+		size.GetWidth(), thickness);
+	mLeft->SetSize(pos.x, pos.y + thickness, thickness,
+		size.GetHeight() - (thickness * 2));
+	mRight->SetSize(pos.x + size.GetWidth() - thickness, pos.y + thickness,
+		thickness, size.GetHeight() - (thickness * 2));
+
 	Refresh();
 }
 
@@ -197,60 +248,60 @@ void wxStaticBoxBorderOverlay::OnBoxSize(wxSizeEvent& event)
 	event.Skip();
 }
 
-void wxStaticBoxBorderOverlay::UpdateShape()
+void wxStaticBoxBorderOverlay::OnTopPaint(wxPaintEvent& event)
 {
-	const wxSize size = GetSize();
-	if( (4 > size.GetWidth()) ||
-		(4 > size.GetHeight()))
+	wxWindow* win = wxDynamicCast(event.GetEventObject(), wxWindow);
+	if(NULL == win)
 	{
 		return;
 	}
 
-	// Border ring only so trade content / labels show through the hole.
-	const int inset = mDoubleBorder ? 4 : 2;
-	wxRegion region(0, 0, size.GetWidth(), size.GetHeight());
-	region.Subtract(wxRect(inset, inset,
-		size.GetWidth() - (inset * 2), size.GetHeight() - (inset * 2)));
-	SetShape(region);
-}
+	wxPaintDC dc(win);
+	const wxSize size = win->GetClientSize();
 
-void wxStaticBoxBorderOverlay::OnPaint(wxPaintEvent&)
-{
-	wxPaintDC dc(this);
-	const wxSize size = GetClientSize();
-	if( (0 >= size.GetWidth()) ||
-		(0 >= size.GetHeight()))
+	// Top edge and left edge share this handler: left is solid left color;
+	// top is split left/right like FinalTradeBox.
+	if(win == mLeft)
 	{
+		dc.SetPen(*wxTRANSPARENT_PEN);
+		dc.SetBrush(wxBrush(mLeftColor));
+		dc.DrawRectangle(0, 0, size.GetWidth(), size.GetHeight());
 		return;
 	}
-
-	dc.SetBrush(*wxTRANSPARENT_BRUSH);
 
 	const int halfX = size.GetWidth() / 2;
-	const int yStart = 0;
-	const int height = size.GetHeight() - yStart;
+	dc.SetPen(*wxTRANSPARENT_PEN);
+	dc.SetBrush(wxBrush(mLeftColor));
+	dc.DrawRectangle(0, 0, halfX, size.GetHeight());
+	dc.SetBrush(wxBrush(mRightColor));
+	dc.DrawRectangle(halfX, 0, size.GetWidth() - halfX, size.GetHeight());
+}
 
-	// Left half of the rounded frame.
-	dc.SetPen(wxPen(mLeftColor, mDoubleBorder ? 2 : 1));
-	dc.SetClippingRegion(0, 0, halfX, size.GetHeight());
-	dc.DrawRoundedRectangle(0, yStart, size.GetWidth(), height, mCurve);
-	if(true == mDoubleBorder)
+void wxStaticBoxBorderOverlay::OnBottomPaint(wxPaintEvent& event)
+{
+	wxWindow* win = wxDynamicCast(event.GetEventObject(), wxWindow);
+	if(NULL == win)
 	{
-		dc.DrawRoundedRectangle(2, yStart + 2, size.GetWidth() - 4,
-			height - 4, mCurve);
+		return;
 	}
-	dc.DestroyClippingRegion();
 
-	// Right half (may match left for a uniform Stockyard border).
-	dc.SetPen(wxPen(mRightColor, mDoubleBorder ? 2 : 1));
-	dc.SetClippingRegion(halfX, 0, size.GetWidth() - halfX, size.GetHeight());
-	dc.DrawRoundedRectangle(0, yStart, size.GetWidth(), height, mCurve);
-	if(true == mDoubleBorder)
+	wxPaintDC dc(win);
+	const wxSize size = win->GetClientSize();
+
+	if(win == mRight)
 	{
-		dc.DrawRoundedRectangle(2, yStart + 2, size.GetWidth() - 4,
-			height - 4, mCurve);
+		dc.SetPen(*wxTRANSPARENT_PEN);
+		dc.SetBrush(wxBrush(mRightColor));
+		dc.DrawRectangle(0, 0, size.GetWidth(), size.GetHeight());
+		return;
 	}
-	dc.DestroyClippingRegion();
+
+	const int halfX = size.GetWidth() / 2;
+	dc.SetPen(*wxTRANSPARENT_PEN);
+	dc.SetBrush(wxBrush(mLeftColor));
+	dc.DrawRectangle(0, 0, halfX, size.GetHeight());
+	dc.SetBrush(wxBrush(mRightColor));
+	dc.DrawRectangle(halfX, 0, size.GetWidth() - halfX, size.GetHeight());
 }
 #endif
 
