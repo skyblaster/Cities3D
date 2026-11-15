@@ -57,7 +57,11 @@ public:
 		bool found = DecideHash(res, input, output);
 		if(false == found)
 		{
-			wxASSERT(false);
+			// Unknown tile/resource types (e.g. a missing keyed mixin) must
+			// still leave a string so callers like DrawTileObject popups do
+			// not read an empty DataObject and abort under libstdc++ asserts.
+			wxASSERT_MSG(false, wxT("Missing LogicResourceName mixin."));
+			output = DataObject(res.wx_str());
 		}
 	}
 };

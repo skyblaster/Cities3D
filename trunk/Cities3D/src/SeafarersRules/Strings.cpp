@@ -256,8 +256,10 @@ namespace
 	//
     const wxString stBuildAShip = _("Build a ship");
     const wxString stChangeTheStartingStockShips = _("Change the starting stock amount of ships.");
+    const wxString stChipless = _("Chipless");
     const wxString stChiplessTiles = _("Chipless tiles");
     const wxString stExtraPoint = _("Extra Point");
+    const wxString stHidden = _("Hidden");
     const wxString stHiddenTiles = _("Hidden tiles");
     const wxString stMoveAShip = _("Move a ship");
     const wxString stNoInitialRoadsOnCoast = _("No initial roads along the coast");
@@ -265,6 +267,7 @@ namespace
     const wxString stOneVP = _("1 VP for colonies");
     const wxString stPirate = _("Pirate");
     const wxString stPlayersPlacePorts = _("Players place ports");
+    const wxString stPortRandom = _("Random port");
     const wxString stRandom = _("Random");
     const wxString stSeafarers = _("Seafarers");
     const wxString stShip = _("Ship");
