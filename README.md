@@ -69,7 +69,17 @@ cd ~/Cities3D   # or your checkout path
 ./flatpak/build.sh
 ```
 
-On a laptop like an Intel Core i5-1245U (10 cores / 12 threads), `build.sh` passes `--jobs=$(nproc)` into `flatpak-builder` and exports `CITIES3D_BUILD_JOBS` so **vcpkg** (wxWidgets during cmake configure) and **ninja** use the same width. Inside the module it also caps jobs by `MemAvailable` (~1.8 GiB per RelWithDebInfo bulkbuild) so parallel compiles do not thrash. Override with `./flatpak/build.sh --jobs 8` or `JOBS=8 ./flatpak/build.sh`. Look for `cities3d: build jobs=…` early in the cities3d module log. `--ccache` is on by default (disable with `--no-ccache`).
+Default profile is **devel** (`RelWithDebInfo`, symbols kept for `flatpak --devel` / gdb). For a GitHub or Flathub-sized bundle use **`--release`** (`CMAKE_BUILD_TYPE=Release` + strip installed ELF):
+
+```sh
+./flatpak/build.sh --release --full-rebuild
+flatpak build-bundle ~/.local/share/flatpak/repo \
+  Cities3D.flatpak ca.skyblaster.Cities3D
+```
+
+Use `--full-rebuild` when switching between `--devel` and `--release` so the module cache does not reuse the other profile. Look for `cities3d: profile=release` / `cities3d: stripped N ELF files` in the log.
+
+On a laptop like an Intel Core i5-1245U (10 cores / 12 threads), `build.sh` passes `--jobs=$(nproc)` into `flatpak-builder` and exports `CITIES3D_BUILD_JOBS` so **vcpkg** (wxWidgets during cmake configure) and **ninja** use the same width. Inside the module it also caps jobs by `MemAvailable` (~1.8 GiB per RelWithDebInfo bulkbuild, ~1.2 GiB for Release) so parallel compiles do not thrash. Override with `./flatpak/build.sh --jobs 8` or `JOBS=8 ./flatpak/build.sh`. Look for `cities3d: build jobs=…` early in the cities3d module log. `--ccache` is on by default (disable with `--no-ccache`).
 
 `flatpak-builder` needs `--force-clean` whenever `build-flatpak/` already exists (otherwise you get `App dir 'build-flatpak' is not empty`). That flag only clears the staging app dir. The **module cache** lives in `.flatpak-builder/` and still produces `Cache hit for glu` / unchanged modules on later runs.
 
@@ -90,6 +100,7 @@ Or run `flatpak-builder` yourself:
 
 ```sh
 printf '%s\n' "$(nproc)" > flatpak/cities3d-build-jobs
+printf '%s\n' devel > flatpak/cities3d-build-profile   # or: release
 flatpak-builder --user --install --force-clean \
   --disable-rofiles-fuse \
   --install-deps-from=flathub \
@@ -111,7 +122,7 @@ If the build dies immediately with `bwrap: Can't bind mount /etc/resolv.conf`, s
 
 1. Builds Mesa **GLU** into `/app` (the Freedesktop SDK has OpenGL but not `glu.pc` / `libGLU`, which vcpkg’s GLEW port requires).
 2. Downloads vcpkg at the commit pinned in `trunk/vcpkg.json` (`builtin-baseline`) and the matching `vcpkg-glibc` release binary during the source-fetch phase (so the module does not depend on a live GitHub release download inside the sandbox).
-3. Uses that prefetched tool (or bootstraps with retries if it is missing), then configures `trunk/` with Ninja + the vcpkg toolchain (`RelWithDebInfo`, unstripped) using the `x64-linux-wxshared` overlay triplet (shared `libwx` with `wxUSE_GLCANVAS_EGL=OFF` so the canvas stays on GLX and matches vcpkg GLEW; other ports static). Static wx duplicated into each `.so` crashes on the first `FilePath` call. wx’s default EGL canvas makes `glewInit` report “No OpenGL extensions…” even when the board still draws.
+3. Uses that prefetched tool (or bootstraps with retries if it is missing), then configures `trunk/` with Ninja + the vcpkg toolchain (`RelWithDebInfo` unstripped by default, or `Release` + strip when `./flatpak/build.sh --release`) using the `x64-linux-wxshared` overlay triplet (shared `libwx` with `wxUSE_GLCANVAS_EGL=OFF` so the canvas stays on GLX and matches vcpkg GLEW; other ports static). Static wx duplicated into each `.so` crashes on the first `FilePath` call. wx’s default EGL canvas makes `glewInit` report “No OpenGL extensions…” even when the board still draws.
 4. Builds Cities3D and the rule plugins; installs binaries, `libwx_*.so*`, and game data (including `data/maps.db`) under `/app/share/cities3d`.
 5. Installs the launcher, desktop file, metainfo, and icons (`cities3d-metadata` module).
 
@@ -166,14 +177,18 @@ The launcher uses a writable `$XDG_DATA_HOME/Cities3D` cwd (matches `wxStandardP
 
 ## Export a bundle (optional)
 
+After a `--release` (or devel) install:
+
 ```sh
 flatpak build-bundle ~/.local/share/flatpak/repo \
   Cities3D.flatpak ca.skyblaster.Cities3D
 ```
 
-Install that `.flatpak` on another machine with:
+Install that `.flatpak` on another machine with Flathub configured (pulls `org.freedesktop.Platform` if needed):
 
 ```sh
+flatpak remote-add --if-not-exists --user flathub \
+  https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install --user Cities3D.flatpak
 ```
 

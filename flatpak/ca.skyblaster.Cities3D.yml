@@ -56,7 +56,8 @@ modules:
   - name: cities3d
     buildsystem: simple
     build-options:
-      # Keep symbols so flatpak --devel gdb / coredumpctl can name frames.
+      # Leave Flatpak's post-module strip off so --devel keeps symbols for
+      # flatpak --devel gdb / coredumpctl. --release strips in build-commands.
       strip: false
       no-debuginfo: true
       # Allow DNS/HTTPS inside the build sandbox (vcpkg bootstrap + port downloads).
@@ -71,14 +72,35 @@ modules:
     build-commands:
       - |
         set -euo pipefail
+        # Profile from build.sh (--release / --devel). Default devel.
+        PROFILE="devel"
+        if [ -f flatpak/cities3d-build-profile ]; then
+          PROFILE="$(tr -d '[:space:]' < flatpak/cities3d-build-profile || true)"
+        fi
+        case "${PROFILE}" in
+          release)
+            CMAKE_BUILD_TYPE=Release
+            # ~1.2 GiB per Release bulkbuild TU (less than RelWithDebInfo).
+            MEM_PER_JOB_KB=1200000
+            ;;
+          devel|"")
+            PROFILE=devel
+            CMAKE_BUILD_TYPE=RelWithDebInfo
+            MEM_PER_JOB_KB=1800000
+            ;;
+          *)
+            echo "ERROR: unknown cities3d-build-profile '${PROFILE}' (use devel|release)" >&2
+            exit 1
+            ;;
+        esac
+        echo "cities3d: profile=${PROFILE} CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
         # Parallelism for vcpkg (during cmake configure) and ninja.
         # Prefer flatpak/cities3d-build-jobs from build.sh (no --env needed).
-        # Otherwise nproc, capped by MemAvailable (~1.8 GiB per RelWithDebInfo
-        # bulkbuild) so parallel compiles do not thrash.
+        # Otherwise nproc, capped by MemAvailable so parallel compiles do not thrash.
         cpus="$(nproc)"
         mem_kb="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)"
         if [ "${mem_kb}" -gt 0 ]; then
-          mem_jobs=$((mem_kb / 1800000))
+          mem_jobs=$((mem_kb / MEM_PER_JOB_KB))
           if [ "${mem_jobs}" -lt 1 ]; then
             mem_jobs=1
           fi
@@ -147,7 +169,7 @@ modules:
         # Never reuse a host/cached CMake tree that may still be on static x64-linux.
         rm -rf trunk/build/flatpak
         cmake -S trunk -B trunk/build/flatpak -G Ninja \
-          -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+          -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
           -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
           -DVCPKG_TARGET_TRIPLET="${TRIPLET}" \
           -DVCPKG_OVERLAY_TRIPLETS="${OVERLAY_TRIPLETS}" \
@@ -258,6 +280,23 @@ modules:
             cp -a "${DIST}/${dir}" "${FLATPAK_DEST}/share/cities3d/"
           fi
         done
+        # Release profile: strip ELF under share/cities3d (bin, cores, wx, plugins).
+        PROFILE="devel"
+        if [ -f flatpak/cities3d-build-profile ]; then
+          PROFILE="$(tr -d '[:space:]' < flatpak/cities3d-build-profile || true)"
+        fi
+        if [ "${PROFILE}" = "release" ]; then
+          echo "cities3d: stripping release ELF under ${FLATPAK_DEST}/share/cities3d"
+          stripped=0
+          # Existing cities3d commands already use bash (shopt/compgen).
+          while IFS= read -r -d '' f; do
+            if file -b "${f}" 2>/dev/null | grep -q '^ELF'; then
+              strip --strip-unneeded "${f}"
+              stripped=$((stripped + 1))
+            fi
+          done < <(find "${FLATPAK_DEST}/share/cities3d" -type f \( -name 'Cities3D' -o -name '*.so' -o -name '*.so.*' \) -print0)
+          echo "cities3d: stripped ${stripped} ELF files"
+        fi
     sources:
       # Pin to the builtin-baseline in trunk/vcpkg.json so port versions match.
       - type: git
