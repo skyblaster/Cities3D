@@ -11,6 +11,12 @@ flatpak remote-add --if-not-exists --user flathub \
   https://dl.flathub.org/repo/flathub.flatpakrepo
 
 flatpak install --user /path/to/Cities3D.flatpak
+mkdir -p ~/.Cities3D/data
+```
+
+Launch Flatseal and add `~/.Cities3D` to the `Other files` section for data persistence, then run:
+
+```
 flatpak run ca.skyblaster.Cities3D
 ```
 
