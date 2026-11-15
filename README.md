@@ -52,6 +52,18 @@ flatpak build-bundle ~/.local/share/flatpak/repo \
   Cities3D.flatpak ca.skyblaster.Cities3D
 ```
 
-## Windows
+## Install (Windows)
 
-Windows developers keep using the existing CMake presets in `trunk/` with Visual Studio / Ninja and `VCPKG_ROOT` (presets `default` and `release`). That path is unchanged by the Flatpak work.
+Download `Install_Cities3D_v0.10.0.exe` from the [GitHub Releases](https://github.com/skyblaster/Cities3D/releases) page and run it.
+
+The setup is 64-bit and requires Windows 10 or later. It installs for all users under Program Files, adds a Start menu shortcut, and includes the Visual C++ runtime DLLs the game needs. Tilesets, sounds, skins, and languages are the same choices as the 0.9.7 installer. Cities Online is not part of this build. `COPYING` and `THIRD-PARTY-LICENSES.txt` are installed next to the program.
+
+## Build the Windows installer
+
+Install [NSIS 3](https://nsis.sourceforge.io/), then build the Release preset from `trunk/` (`cmake --build --preset release`, with `VCPKG_ROOT` set). From the repository root:
+
+```powershell
+.\trunk\Cities3D\installer\build-windows-installer.ps1
+```
+
+That writes `trunk/Cities3D/installer/build/Install_Cities3D_v0.10.0.exe` and copies the same file into your Downloads folder. The script installs a temporary copy, checks the file layout, and removes it.
