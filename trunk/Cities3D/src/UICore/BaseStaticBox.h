@@ -26,6 +26,7 @@
 //---------------------------- TYPEDEFS         -----------------------------//
 class wxStaticText;
 class wxSizeEvent;
+class wxPaintEvent;
 
 //---------------------------- CLASSES          -----------------------------//
 
@@ -54,6 +55,37 @@ private:
 
 	wxWindow* mBox;
 	wxStaticText* mLabel;
+};
+
+//---------------------------------------------------------------------------//
+// Class: wxStaticBoxBorderOverlay
+//
+// Colored trade-state border for wxStaticBox on non-Windows. MSW paints the
+// border in PaintForeground; wxGTK cannot. This sibling window tracks the
+// box, punches a shaped hole over the content, and strokes left/right colors
+// (optionally doubled for accept flashes).
+//
+class UI_EXPORT_SPEC wxStaticBoxBorderOverlay : public wxWindow
+{
+public:
+	explicit wxStaticBoxBorderOverlay(wxWindow* box);
+	virtual ~wxStaticBoxBorderOverlay();
+
+	void SetColors(const wxColour& left, const wxColour& right);
+	void SetDoubleBorder(bool enabled);
+	void SetCurve(wxInt32 curve);
+	void SyncToBox();
+
+private:
+	void OnPaint(wxPaintEvent& event);
+	void OnBoxSize(wxSizeEvent& event);
+	void UpdateShape();
+
+	wxWindow* mBox;
+	wxColour mLeftColor;
+	wxColour mRightColor;
+	bool mDoubleBorder;
+	wxInt32 mCurve;
 };
 #endif
 

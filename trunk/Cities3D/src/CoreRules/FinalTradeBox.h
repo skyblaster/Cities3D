@@ -106,6 +106,7 @@ private:
 
 #ifndef __WIN32__
 	boost::scoped_ptr<wxStaticBoxSecondLabel> mSecondLabelOverlay;
+	boost::scoped_ptr<wxStaticBoxBorderOverlay> mBorderOverlay;
 #endif
 };
 
