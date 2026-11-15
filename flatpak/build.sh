@@ -8,6 +8,10 @@
 # True from-scratch rebuild (also delete the module cache):
 #   ./flatpak/build.sh --full-rebuild
 #
+# Release Flatpak (CMAKE Release + strip installed ELF):
+#   ./flatpak/build.sh --release
+#   ./flatpak/build.sh --release --full-rebuild   # recommended when switching
+#
 # Parallelism (i5-1245U = 12 threads; override if needed):
 #   ./flatpak/build.sh --jobs 12
 #   JOBS=8 ./flatpak/build.sh
@@ -19,10 +23,15 @@ cd "${ROOT}"
 FULL_REBUILD=0
 JOBS="${JOBS:-}"
 USE_CCACHE=1
+# devel = RelWithDebInfo, keep symbols (default).
+# release = Release, strip installed binaries/libs for a smaller .flatpak.
+PROFILE="${CITIES3D_FLATPAK_PROFILE:-devel}"
 args=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --full-rebuild) FULL_REBUILD=1 ;;
+    --release) PROFILE=release ;;
+    --devel) PROFILE=devel ;;
     --jobs)
       shift
       JOBS="${1:-}"
@@ -36,22 +45,33 @@ while [[ $# -gt 0 ]]; do
       ;;
     --no-ccache) USE_CCACHE=0 ;;
     -h|--help)
-      echo "Usage: $0 [--full-rebuild] [--jobs N] [--no-ccache]"
+      echo "Usage: $0 [--full-rebuild] [--release|--devel] [--jobs N] [--no-ccache]"
       echo "  (default)  --force-clean app dir; reuse .flatpak-builder module cache"
       echo "  --full-rebuild  also delete .flatpak-builder/ before building"
+      echo "  --release       CMAKE Release + strip (smaller Flatpak for GitHub/Flathub)"
+      echo "  --devel         CMAKE RelWithDebInfo, keep symbols (default)"
       echo "  --jobs N        parallel jobs for flatpak-builder / cmake / vcpkg"
       echo "                  (default: nproc; or set JOBS=N)"
       echo "  --no-ccache     disable flatpak-builder ccache"
+      echo "  CITIES3D_FLATPAK_PROFILE=release|devel overrides the default profile"
       exit 0
       ;;
     *)
       echo "Unknown option: $1" >&2
-      echo "Usage: $0 [--full-rebuild] [--jobs N] [--no-ccache]" >&2
+      echo "Usage: $0 [--full-rebuild] [--release|--devel] [--jobs N] [--no-ccache]" >&2
       exit 1
       ;;
   esac
   shift
 done
+
+case "${PROFILE}" in
+  devel|release) ;;
+  *)
+    echo "ERROR: profile must be devel or release (got: ${PROFILE})" >&2
+    exit 1
+    ;;
+esac
 
 if ! command -v flatpak-builder >/dev/null 2>&1; then
   echo "flatpak-builder not found. Enter the cities3d-flatpak Distrobox and install it:" >&2
@@ -82,6 +102,7 @@ fi
 cpus="$(nproc)"
 mem_kb="$(awk '/MemAvailable:/ {print $2}' /proc/meminfo 2>/dev/null || echo 0)"
 echo "cities3d: host nproc=${cpus} MemAvailable_kB=${mem_kb} → flatpak-builder --jobs=${JOBS}"
+echo "cities3d: flatpak profile=${PROFILE}"
 
 if [[ "${FULL_REBUILD}" == "1" ]]; then
   echo "Full rebuild: removing .flatpak-builder/ and build-flatpak/."
@@ -99,9 +120,11 @@ if [[ "${USE_CCACHE}" == "1" ]]; then
 fi
 
 # Older flatpak-builder has no --env=. The cities3d module copies the repo
-# (type: dir), so drop the job count into a file the build script can read.
+# (type: dir), so drop knobs into files the build script can read.
 printf '%s\n' "${JOBS}" > "${ROOT}/flatpak/cities3d-build-jobs"
+printf '%s\n' "${PROFILE}" > "${ROOT}/flatpak/cities3d-build-profile"
 echo "cities3d: wrote flatpak/cities3d-build-jobs=${JOBS}"
+echo "cities3d: wrote flatpak/cities3d-build-profile=${PROFILE}"
 
 # --force-clean clears build-flatpak/ (required when that dir already exists).
 # Module artifacts stay cached under .flatpak-builder/ unless --full-rebuild.
