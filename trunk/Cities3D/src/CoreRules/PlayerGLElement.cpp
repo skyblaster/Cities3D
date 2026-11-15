@@ -72,7 +72,10 @@ wxBitmap PlayerGLElement::GetBitmap(const wxSize &size)
 		bitmap = mCanvas->ConvertGLtoWX(mDrawObject, size.GetWidth(), 
 			size.GetHeight(), vector);
 	}
-	else
+
+	// Match BuildUI: if the GL capture is missing/blank (common on Linux
+	// backbuffer readbacks), fall back to the colorized ImageSet icons.
+	if(false == bitmap.IsOk())
 	{
 		bitmap = wxBitmap(
 			IMAGE.Colorize(mImage, mMask, mPlayerColor, size));
