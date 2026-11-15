@@ -16,9 +16,11 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <boost/scoped_ptr.hpp>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "ColorInfoData.h"
+#include "BaseStaticBox.h"
 
 //---------------------------- DEFINES          -----------------------------//
 
@@ -101,6 +103,10 @@ private:
 
 	wxColour mLeftColor;
 	wxColour mRightColor;
+
+#ifndef __WIN32__
+	boost::scoped_ptr<wxStaticBoxSecondLabel> mSecondLabelOverlay;
+#endif
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//

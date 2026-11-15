@@ -43,6 +43,10 @@ wxFinalTradeBox::wxFinalTradeBox(wxWindow* parent, const wxString& name,
 , mState(StateNeutral)
 {
 	Controller::get().AddReceiver(shEventSkin, &wxFinalTradeBox::OnSkin, this);
+
+#ifndef __WIN32__
+	mSecondLabelOverlay.reset(new wxStaticBoxSecondLabel(this));
+#endif
 	
 	SetFirstName(name, color);
 	
@@ -104,6 +108,11 @@ void wxFinalTradeBox::SetFirstName(const wxString& name, ColorType color)
 		mLeftPlayerColor = ColorInfoData::UIColor(color);
 	}
 
+#ifndef __WIN32__
+	SetLabel(mName);
+	SetForegroundColour(mLeftPlayerColor);
+#endif
+
 	Refresh();
 }
 
@@ -119,6 +128,14 @@ void wxFinalTradeBox::SetSecondName(const wxString& name, ColorType color)
 	{
 		mRightPlayerColor = ColorInfoData::UIColor(color);
 	}
+
+#ifndef __WIN32__
+	if(mSecondLabelOverlay)
+	{
+		mSecondLabelOverlay->SetForegroundColour(mRightPlayerColor);
+		mSecondLabelOverlay->SetLabel(mSecondName);
+	}
+#endif
 
 	Refresh();
 }
@@ -199,6 +216,18 @@ void wxFinalTradeBox::OnSkin(wxInt32)
 	sNeutralColorFinalTrade = SKIN.Element(shGameUIOutline);
 	sAcceptColor = SKIN.Element(shPlayerUIPositive);
 	sRejectColor = SKIN.Element(shPlayerUINegative);
+
+#ifndef __WIN32__
+	SetFont(mFont);
+	SetForegroundColour(mLeftPlayerColor);
+	if(mSecondLabelOverlay)
+	{
+		mSecondLabelOverlay->SetBackgroundColour(SKIN.Element(shBackground));
+		mSecondLabelOverlay->SetForegroundColour(mRightPlayerColor);
+		mSecondLabelOverlay->SetFont(mFont);
+		mSecondLabelOverlay->SetLabel(mSecondName);
+	}
+#endif
 
 	Refresh();
 }

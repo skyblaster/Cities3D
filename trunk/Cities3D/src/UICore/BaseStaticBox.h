@@ -16,6 +16,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <boost/scoped_ptr.hpp>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "UIExport.h"
@@ -23,8 +24,38 @@
 //---------------------------- DEFINES          -----------------------------//
 
 //---------------------------- TYPEDEFS         -----------------------------//
+class wxStaticText;
+class wxSizeEvent;
 
 //---------------------------- CLASSES          -----------------------------//
+
+#ifndef __WIN32__
+//---------------------------------------------------------------------------//
+// Class: wxStaticBoxSecondLabel
+//
+// Right-aligned second title for a wxStaticBox on platforms that lack the
+// MSW PaintForeground hook (wxGTK). Parent is the box's parent so the text
+// sits on the frame edge instead of inside the content area.
+//
+class UI_EXPORT_SPEC wxStaticBoxSecondLabel
+{
+public:
+	explicit wxStaticBoxSecondLabel(wxWindow* box);
+	~wxStaticBoxSecondLabel();
+
+	void SetLabel(const wxString& label);
+	void SetForegroundColour(const wxColour& colour);
+	void SetBackgroundColour(const wxColour& colour);
+	void SetFont(const wxFont& font);
+
+private:
+	void OnBoxSize(wxSizeEvent& event);
+	void Reposition();
+
+	wxWindow* mBox;
+	wxStaticText* mLabel;
+};
+#endif
 
 //---------------------------------------------------------------------------//
 // Class: wxBaseStaticBox
@@ -101,11 +132,7 @@ public:
 	//
 	// Sets the second, right-side label for the box.  (Optional)
 	//
-	void SetSecondLabel(const wxString& label)
-	{
-		mSecondLabel = label;
-		Refresh();
-	}
+	void SetSecondLabel(const wxString& label);
 
 #ifdef __WIN32__
 protected:
@@ -154,6 +181,10 @@ private:
 	// The second label for the box, if any.
 	//
 	wxString mSecondLabel;
+
+#ifndef __WIN32__
+	boost::scoped_ptr<wxStaticBoxSecondLabel> mSecondLabelOverlay;
+#endif
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//

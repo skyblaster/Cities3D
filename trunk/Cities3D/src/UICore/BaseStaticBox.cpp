@@ -34,6 +34,98 @@ namespace
 }
 
 //---------------------------- PUBLIC           -----------------------------//
+#ifndef __WIN32__
+wxStaticBoxSecondLabel::wxStaticBoxSecondLabel(wxWindow* box)
+: mBox(box)
+, mLabel(NULL)
+{
+	wxASSERT(NULL != box);
+	wxASSERT(NULL != box->GetParent());
+
+	mLabel = new wxStaticText(box->GetParent(), wxID_ANY, wxEmptyString);
+	mLabel->Hide();
+
+	box->Bind(wxEVT_SIZE, &wxStaticBoxSecondLabel::OnBoxSize, this);
+}
+
+wxStaticBoxSecondLabel::~wxStaticBoxSecondLabel()
+{
+	if(mBox)
+	{
+		mBox->Unbind(wxEVT_SIZE, &wxStaticBoxSecondLabel::OnBoxSize, this);
+		mBox = NULL;
+	}
+
+	if( (mLabel) &&
+		(false == mLabel->IsBeingDeleted()))
+	{
+		mLabel->Destroy();
+		mLabel = NULL;
+	}
+}
+
+void wxStaticBoxSecondLabel::SetLabel(const wxString& label)
+{
+	wxASSERT(NULL != mLabel);
+
+	mLabel->SetLabel(label);
+	if(true == label.IsEmpty())
+	{
+		mLabel->Hide();
+	}
+	else
+	{
+		mLabel->Show();
+		Reposition();
+		mLabel->Raise();
+	}
+}
+
+void wxStaticBoxSecondLabel::SetForegroundColour(const wxColour& colour)
+{
+	wxASSERT(NULL != mLabel);
+	mLabel->SetForegroundColour(colour);
+}
+
+void wxStaticBoxSecondLabel::SetBackgroundColour(const wxColour& colour)
+{
+	wxASSERT(NULL != mLabel);
+	mLabel->SetBackgroundColour(colour);
+}
+
+void wxStaticBoxSecondLabel::SetFont(const wxFont& font)
+{
+	wxASSERT(NULL != mLabel);
+	mLabel->SetFont(font);
+	Reposition();
+}
+
+void wxStaticBoxSecondLabel::OnBoxSize(wxSizeEvent& event)
+{
+	Reposition();
+	event.Skip();
+}
+
+void wxStaticBoxSecondLabel::Reposition()
+{
+	if( (NULL == mLabel) ||
+		(NULL == mBox) ||
+		(true == mLabel->GetLabel().IsEmpty()))
+	{
+		return;
+	}
+
+	const wxSize textSize = mLabel->GetBestSize();
+	const wxSize boxSize = mBox->GetSize();
+	const wxPoint boxPos = mBox->GetPosition();
+
+	// Match MSW PaintForeground: rc.right - textWidth - 8.
+	const int x = boxPos.x + boxSize.GetWidth() - textSize.GetWidth() - 8;
+	const int y = boxPos.y;
+	mLabel->SetSize(x, y, textSize.GetWidth(), textSize.GetHeight());
+}
+#endif
+
 wxBaseStaticBox::wxBaseStaticBox(wxWindow* parent, wxWindowID id, 
 								 const wxString& label, const wxPoint& pos, 
 								 const wxSize& size, const HashString &color,
@@ -43,6 +135,9 @@ wxBaseStaticBox::wxBaseStaticBox(wxWindow* parent, wxWindowID id,
 , mFont(font)
 {
 	Controller::get().AddReceiver(shEventSkin, &wxBaseStaticBox::OnSkin, this);
+#ifndef __WIN32__
+	mSecondLabelOverlay.reset(new wxStaticBoxSecondLabel(this));
+#endif
 	OnSkin();
 }
 
@@ -50,6 +145,18 @@ wxBaseStaticBox::~wxBaseStaticBox()
 {
 	Controller::get().RemoveReceiver(shEventSkin, &wxBaseStaticBox::OnSkin, 
 			this);
+}
+
+void wxBaseStaticBox::SetSecondLabel(const wxString& label)
+{
+	mSecondLabel = label;
+#ifndef __WIN32__
+	if(mSecondLabelOverlay)
+	{
+		mSecondLabelOverlay->SetLabel(label);
+	}
+#endif
+	Refresh();
 }
 
 //---------------------------- PROTECTED        -----------------------------//
@@ -113,7 +220,15 @@ void wxBaseStaticBox::OnSkin(wxInt32)
 	sCurve = SKIN.Size(shFrameCurve);
 	sOutline_BaseStaticBox = SKIN.Element(shGameUIOutline);
 
+#ifndef __WIN32__
+	if(mSecondLabelOverlay)
+	{
+		mSecondLabelOverlay->SetBackgroundColour(SKIN.Element(shBackground));
+		mSecondLabelOverlay->SetForegroundColour(SKIN.Element(mColor));
+		mSecondLabelOverlay->SetFont(SKIN.Font(mFont));
+		mSecondLabelOverlay->SetLabel(mSecondLabel);
+	}
+#endif
+
 	Refresh();
 }
-
-
