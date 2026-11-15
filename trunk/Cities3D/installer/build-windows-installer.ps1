@@ -240,23 +240,16 @@ Invoke-Makensis -Label "release installer" -Defines @(
     "/DNOTICES=$(Join-Path $build 'THIRD-PARTY-LICENSES.txt')"
 )
 
+# The setup is already solid-LZMA compressed, so a zip does not get smaller.
 $downloads = Join-Path $env:USERPROFILE "Downloads"
-$folder = Join-Path $downloads "Install_Cities3D_v$version"
-$zip = Join-Path $downloads "Install_Cities3D_v$version.zip"
-if (Test-Path $folder) { Remove-Item -Recurse -Force $folder }
-New-Item -ItemType Directory -Force -Path $folder | Out-Null
-Copy-Item $setup (Join-Path $folder $setupName)
-if (Test-Path $zip) { Remove-Item -Force $zip }
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-# The setup is already LZMA-compressed, so store it. A second deflate pass
-# only makes the zip larger than the 0.9.7 download.
-[IO.Compression.ZipFile]::CreateFromDirectory(
-    $folder,
-    $zip,
-    [IO.Compression.CompressionLevel]::NoCompression,
-    $true)
+$published = Join-Path $downloads $setupName
+Copy-Item $setup $published -Force
+foreach ($stale in @(
+    (Join-Path $downloads "Install_Cities3D_v$version.zip"),
+    (Join-Path $downloads "Install_Cities3D_v$version")
+)) {
+    if (Test-Path $stale) { Remove-Item -Recurse -Force $stale }
+}
 
-$setupItem = Get-Item $setup
-$zipItem = Get-Item $zip
+$setupItem = Get-Item $published
 "Setup {0:N2} MB  {1}" -f ($setupItem.Length / 1MB), $setupItem.FullName
-"Zip   {0:N2} MB  {1}" -f ($zipItem.Length / 1MB), $zipItem.FullName

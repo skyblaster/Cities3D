@@ -54,7 +54,7 @@ flatpak build-bundle ~/.local/share/flatpak/repo \
 
 ## Install (Windows)
 
-Download `Install_Cities3D_v0.10.0.zip` from the [GitHub Releases](https://github.com/skyblaster/Cities3D/releases) page, unzip it, and run `Install_Cities3D_v0.10.0.exe`.
+Download `Install_Cities3D_v0.10.0.exe` from the [GitHub Releases](https://github.com/skyblaster/Cities3D/releases) page and run it. The installer is already compressed, so there is no zip.
 
 The setup is 64-bit and requires Windows 10 or later. It installs for all users under Program Files, adds a Start menu shortcut, and includes the Visual C++ runtime DLLs the game needs. Tilesets, sounds, skins, and languages are the same choices as the 0.9.7 installer. Cities Online is not part of this build. `COPYING` and `THIRD-PARTY-LICENSES.txt` are installed next to the program.
 
@@ -66,4 +66,4 @@ Install [NSIS 3](https://nsis.sourceforge.io/), then build the Release preset fr
 .\trunk\Cities3D\installer\build-windows-installer.ps1
 ```
 
-That writes `trunk/Cities3D/installer/build/Install_Cities3D_v0.10.0.exe` and copies `Install_Cities3D_v0.10.0.zip` into your Downloads folder. The script installs a temporary copy, checks the file layout, and removes it before it zips the setup.
+That writes `trunk/Cities3D/installer/build/Install_Cities3D_v0.10.0.exe` and copies the same file into your Downloads folder. The script installs a temporary copy, checks the file layout, and removes it.
