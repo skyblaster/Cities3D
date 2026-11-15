@@ -184,6 +184,21 @@ void wxTradeOfferBox::SetState(State state)
 
 	mCurrentColor = color;
 
+#ifndef __WIN32__
+	// MSW overrides PaintForeground to draw mText. wxGTK's wxStaticBox has
+	// no such hook, so the constructor label (the player name) stuck forever
+	// and trade status like "You pass" never appeared. Drive the GTK label
+	// from the same strings Windows paints.
+	wxString label = mText;
+	if(false == mRight.IsEmpty())
+	{
+		label += wxT("  ");
+		label += mRight;
+	}
+	SetLabel(label);
+	SetForegroundColour(mCurrentColor);
+#endif
+
 	Refresh();
 }
 
@@ -296,6 +311,14 @@ void wxTradeOfferBox::OnSkin(wxInt32)
 	
 	sCurveTradeOffer = SKIN.Size(shFrameCurve);
 	sNeutralColorTradeOffer = SKIN.Element(shGameUIOutline);
+
+#ifndef __WIN32__
+	SetFont(mFont);
+	if(mCurrentColor.IsOk())
+	{
+		SetForegroundColour(mCurrentColor);
+	}
+#endif
 
 	Refresh();
 }
