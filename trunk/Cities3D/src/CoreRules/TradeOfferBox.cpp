@@ -76,6 +76,10 @@ wxTradeOfferBox::wxTradeOfferBox(wxWindow* parent, const wxString& name,
 	{
 		mPlayerColor = ColorInfoData::UIColor(color);
 	}
+
+#ifndef __WIN32__
+	mSecondLabelOverlay.reset(new wxStaticBoxSecondLabel(this));
+#endif
 	
 	// Grab the other information.
 	OnSkin();
@@ -185,18 +189,15 @@ void wxTradeOfferBox::SetState(State state)
 	mCurrentColor = color;
 
 #ifndef __WIN32__
-	// MSW overrides PaintForeground to draw mText. wxGTK's wxStaticBox has
-	// no such hook, so the constructor label (the player name) stuck forever
-	// and trade status like "You pass" never appeared. Drive the GTK label
-	// from the same strings Windows paints.
-	wxString label = mText;
-	if(false == mRight.IsEmpty())
+	// MSW paints mText (left) and mRight (right-aligned). wxGTK has no
+	// PaintForeground hook, so drive SetLabel + a second-label overlay.
+	SetLabel(mText);
+	SetForegroundColour(mPlayerColor);
+	if(mSecondLabelOverlay)
 	{
-		label += wxT("  ");
-		label += mRight;
+		mSecondLabelOverlay->SetForegroundColour(mPlayerColor);
+		mSecondLabelOverlay->SetLabel(mRight);
 	}
-	SetLabel(label);
-	SetForegroundColour(mCurrentColor);
 #endif
 
 	Refresh();
@@ -314,9 +315,13 @@ void wxTradeOfferBox::OnSkin(wxInt32)
 
 #ifndef __WIN32__
 	SetFont(mFont);
-	if(mCurrentColor.IsOk())
+	SetForegroundColour(mPlayerColor);
+	if(mSecondLabelOverlay)
 	{
-		SetForegroundColour(mCurrentColor);
+		mSecondLabelOverlay->SetBackgroundColour(SKIN.Element(shBackground));
+		mSecondLabelOverlay->SetForegroundColour(mPlayerColor);
+		mSecondLabelOverlay->SetFont(mFont);
+		mSecondLabelOverlay->SetLabel(mRight);
 	}
 #endif
 
