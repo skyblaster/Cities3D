@@ -161,6 +161,15 @@ wxNetworkGamePage::~wxNetworkGamePage()
 		&wxNetworkGamePage::OnPreGame, this);
 	Controller::get().RemoveReceiver(shEventResetReady,
 		&wxNetworkGamePage::OnResetReady, this);
+
+	// Avoid dangling file-scope statics after Stop Server tears this page down.
+	spPlayerListCtrl = NULL;
+	spSpectatorList = NULL;
+	spActionsButton = NULL;
+	spNotReadyButton = NULL;
+	spChatWindow = NULL;
+	spMapTextCtrl = NULL;
+	spVariantsButton = NULL;
 }
 
 //---------------------------- PROTECTED        -----------------------------//

@@ -92,12 +92,18 @@ NetworkServer::~NetworkServer()
 	if(NULL != mServerGameThread)
 	{
 		mServerGameThread->Delete();
+		mServerGameThread = NULL;
 	}
 
 	if(NULL != mServerThread)
 	{
 		mServerThread->Delete();
+		mServerThread = NULL;
 	}
+
+	// Drop any listen/accept rules posted just before the threads exited so
+	// they are not delivered to this handler while it is being destroyed.
+	DeletePendingEvents();
 
 	Controller::get().RemoveReceiver(shEventCloseGameWindow,
 		&NetworkServer::OnCloseGameWindow, this);
@@ -177,6 +183,8 @@ void NetworkServer::OnCloseGameWindow(wxInt32)
 		mServerGameThread->Delete();
 		mServerGameThread = NULL;
 	}
+
+	DeletePendingEvents();
 }
 
 void NetworkServer::OnRule(wxRuleEvent &event)

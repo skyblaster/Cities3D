@@ -53,6 +53,14 @@ public:
 		const Player &player = object.read<Player>();
 
 		SpectatorArray spectators = NET.Players().GetSpectators();
+		for(size_t i = 0; i < spectators.size(); ++i)
+		{
+			if(player == spectators[i].first)
+			{
+				return;
+			}
+		}
+
 		spectators.push_back(std::make_pair(player, false));
 		NET.Players().SetSpectators(spectators);
 	}

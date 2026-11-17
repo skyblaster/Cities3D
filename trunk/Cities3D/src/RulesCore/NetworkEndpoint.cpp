@@ -16,8 +16,10 @@
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
 #include <wx/socket.h>
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include <vector>
 
 #ifdef __WXMSW__
 #include <ws2tcpip.h>
@@ -57,16 +59,49 @@ namespace
 		return NetworkEndpoint::NormalizeHost(host);
 	}
 
+	bool IsIpv6LinkLocal(const addrinfo* ai)
+	{
+		if(NULL == ai || AF_INET6 != ai->ai_family || NULL == ai->ai_addr)
+		{
+			return false;
+		}
+
+		const sockaddr_in6* sin6 =
+			reinterpret_cast<const sockaddr_in6*>(ai->ai_addr);
+		// fe80::/10
+		return (0xfe == sin6->sin6_addr.s6_addr[0]) &&
+			(0x80 == (sin6->sin6_addr.s6_addr[1] & 0xc0));
+	}
+
+	// Lower rank is tried first: global/ULA IPv6, then IPv4, then link-local.
+	int AddressRank(const addrinfo* ai)
+	{
+		if(NULL == ai)
+		{
+			return 100;
+		}
+		if(AF_INET6 == ai->ai_family)
+		{
+			return IsIpv6LinkLocal(ai) ? 2 : 0;
+		}
+		if(AF_INET == ai->ai_family)
+		{
+			return 1;
+		}
+		return 100;
+	}
+
 	bool FillWxAddress(const addrinfo* ai, unsigned short port,
 		wxIPV4address& out4
 #if wxUSE_IPV6
 		, wxIPV6address& out6, bool& is6
 #endif
-		)
+		, wxString& numericOut)
 	{
 #if wxUSE_IPV6
 		is6 = false;
 #endif
+		numericOut.clear();
 		if(NULL == ai || NULL == ai->ai_addr)
 		{
 			return false;
@@ -79,7 +114,14 @@ namespace
 			return false;
 		}
 
-		const wxString numeric(host, wxConvUTF8);
+		wxString numeric(host, wxConvUTF8);
+		// Strip "%iface" scope id for wx Hostname().
+		const int pct = numeric.Find(wxT('%'));
+		if(wxNOT_FOUND != pct)
+		{
+			numeric = numeric.Left(pct);
+		}
+		numericOut = numeric;
 
 		if(AF_INET == ai->ai_family)
 		{
@@ -228,16 +270,29 @@ bool NetworkEndpoint::Connect(wxSocketClient& client, const Address& addr)
 		return false;
 	}
 
-	bool connected = false;
+	std::vector<addrinfo*> ordered;
 	for(addrinfo* ai = res; NULL != ai; ai = ai->ai_next)
 	{
+		ordered.push_back(ai);
+	}
+	std::stable_sort(ordered.begin(), ordered.end(),
+		[](const addrinfo* a, const addrinfo* b)
+		{
+			return AddressRank(a) < AddressRank(b);
+		});
+
+	bool connected = false;
+	for(size_t i = 0; i < ordered.size(); ++i)
+	{
+		addrinfo* ai = ordered[i];
 		wxIPV4address v4;
+		wxString numeric;
 #if wxUSE_IPV6
 		wxIPV6address v6;
 		bool is6 = false;
-		if(false == FillWxAddress(ai, addr.port, v4, v6, is6))
+		if(false == FillWxAddress(ai, addr.port, v4, v6, is6, numeric))
 #else
-		if(false == FillWxAddress(ai, addr.port, v4))
+		if(false == FillWxAddress(ai, addr.port, v4, numeric))
 #endif
 		{
 			continue;
@@ -252,8 +307,10 @@ bool NetworkEndpoint::Connect(wxSocketClient& client, const Address& addr)
 		if(true == is6)
 		{
 			std::fprintf(stderr,
-				"cities3d: connecting via IPv6 to %s\n",
-				addr.DisplayEndpoint().mb_str().data());
+				"cities3d: connecting via IPv6 to [%s]:%u (from %s)\n",
+				numeric.mb_str().data(),
+				static_cast<unsigned int>(addr.port),
+				addr.host.mb_str().data());
 			std::fflush(stderr);
 			client.Connect(v6, false);
 		}
@@ -261,8 +318,10 @@ bool NetworkEndpoint::Connect(wxSocketClient& client, const Address& addr)
 #endif
 		{
 			std::fprintf(stderr,
-				"cities3d: connecting via IPv4 to %s\n",
-				addr.DisplayEndpoint().mb_str().data());
+				"cities3d: connecting via IPv4 to %s:%u (from %s)\n",
+				numeric.mb_str().data(),
+				static_cast<unsigned int>(addr.port),
+				addr.host.mb_str().data());
 			std::fflush(stderr);
 			client.Connect(v4, false);
 		}
@@ -300,6 +359,7 @@ bool NetworkEndpoint::CreateListeners(wxUint16 port, int flags,
 		}
 		else
 		{
+			server6->Close();
 			server6->Destroy();
 		}
 	}
@@ -322,6 +382,7 @@ bool NetworkEndpoint::CreateListeners(wxUint16 port, int flags,
 		}
 		else
 		{
+			server4->Close();
 			server4->Destroy();
 		}
 	}

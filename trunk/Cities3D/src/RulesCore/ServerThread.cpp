@@ -15,6 +15,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <cstdio>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "ServerThread.h"
@@ -69,12 +70,24 @@ void *wxServerThread::Entry()
 
 		for(size_t i = 0; i < mServers.size(); ++i)
 		{
+			if(NULL == mServers[i])
+			{
+				continue;
+			}
+
 			wxCities3DSocket *socket = new wxCities3DSocket;
 
 			if(false == mServers[i]->AcceptWith(*socket, false))
 			{
 				delete socket;
-				socket = NULL;
+				continue;
+			}
+
+			// Reject half-open accepts (seen with some IPv6 stacks).
+			if( (false == socket->IsOk()) ||
+				(false == socket->IsConnected()))
+			{
+				socket->Destroy();
 				continue;
 			}
 
@@ -85,6 +98,8 @@ void *wxServerThread::Entry()
 			if(false == TestDestroy())
 			{
 				wxLogDebug(wxT("Server connection accepted."));
+				std::fprintf(stderr, "cities3d: server accepted a client\n");
+				std::fflush(stderr);
 
 				wxRuleEvent event(shNetworkRuleServerConnection, 
 					DataObject(mHandler, socket), true);
@@ -97,7 +112,7 @@ void *wxServerThread::Entry()
 			}
 			else
 			{
-				delete socket;
+				socket->Destroy();
 			}
 		}
 
@@ -118,6 +133,9 @@ void wxServerThread::OnExit()
 	{
 		if(NULL != mServers[i])
 		{
+			// Close first so the port is released before a quick restart binds
+			// again; Destroy() alone can defer teardown.
+			mServers[i]->Close();
 			mServers[i]->Destroy();
 			mServers[i] = NULL;
 		}

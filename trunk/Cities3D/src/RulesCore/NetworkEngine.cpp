@@ -60,8 +60,11 @@ void NetworkEngine::Stop()
 	mNetworkClient.reset();
 
 	mNetworkPlayers.Reset();
-	
+
+	// Tear down Game Setup UI before any subsequent Start* inserts a new page,
+	// and refresh spectator widgets so they do not keep stale rows.
 	Controller::get().Transmit(shEventGameConnect, DataObject(false));
+	Controller::get().Transmit(shEventSpectator, 0);
 }
 
 bool NetworkEngine::IsConnected() const
