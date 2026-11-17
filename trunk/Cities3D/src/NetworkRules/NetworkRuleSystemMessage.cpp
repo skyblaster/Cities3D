@@ -58,7 +58,11 @@ public:
 	virtual void Execute(const DataObject &object)
 	{
 		wxString str = object.read<wxString>();
-		const wxDateTime &time = object.read<wxDateTime>(1);
+		wxDateTime time = wxDateTime::Now();
+		if(1 < object.numItems())
+		{
+			time = object.read<wxDateTime>(1);
+		}
 
 		wxString timestamp = swBracketLeft + time.FormatISOTime() + swBracketRightSpace;
 		HTML::Font(timestamp, shSystemMessageTimestamp, shSystemMessageTimestamp);

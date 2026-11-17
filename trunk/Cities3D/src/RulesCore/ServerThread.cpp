@@ -133,13 +133,14 @@ void *wxServerThread::Entry()
 						"cities3d: server accepted a client\n");
 					std::fflush(stderr);
 
-					wxRuleEvent event(shNetworkRuleServerConnection, 
-						DataObject(mHandler, socket), true);
-					mHandler->AddPendingEvent(event);
-
 					if(false == TestDestroy())
 					{
-						mGameThread->AddSocket(socket);
+						// Handshake owns the socket until it finishes.
+						// AddSocket only after NetworkRuleServerConnectionReady
+						// so the game thread cannot Close it mid-negotiation.
+						wxRuleEvent event(shNetworkRuleServerConnection, 
+							DataObject(mHandler, socket), true);
+						mHandler->AddPendingEvent(event);
 					}
 					else
 					{

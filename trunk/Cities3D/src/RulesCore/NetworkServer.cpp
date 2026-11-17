@@ -22,6 +22,7 @@
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "NetworkServer.h"
+#include "Cities3DSocket.h"
 #include "DataObject.h"
 #include "GameEngine.h"
 #include "NetworkUtility.h"
@@ -210,6 +211,33 @@ void NetworkServer::OnRule(wxRuleEvent &event)
 {
 	const HashString &rule = event.Rule();
 	const DataObject &data = event.Data();
+
+	// Socket lifecycle helpers — always run on this UI-thread handler.
+	if(shNetworkRuleServerConnectionReady == rule)
+	{
+		wxCities3DSocket *socket = data.read<wxCities3DSocket *>();
+		if( (NULL != socket) &&
+			(NULL != mServerGameThread))
+		{
+			std::fprintf(stderr,
+				"cities3d: handing socket to game thread\n");
+			std::fflush(stderr);
+			mServerGameThread->AddSocket(socket);
+		}
+		return;
+	}
+	if(shNetworkRuleDestroySocket == rule)
+	{
+		wxCities3DSocket *socket = data.read<wxCities3DSocket *>();
+		if(NULL != socket)
+		{
+			std::fprintf(stderr,
+				"cities3d: Destroy socket on UI thread\n");
+			std::fflush(stderr);
+			socket->Destroy();
+		}
+		return;
+	}
 
 	if(true == event.Asynch())
 	{
