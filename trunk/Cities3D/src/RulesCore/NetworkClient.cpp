@@ -110,10 +110,12 @@ bool NetworkClient::Connect(const NetworkEndpoint::Address &addr)
 		Controller::get().Transmit(shEventNetworkConnectionEvent, str);
 
 		success = false;
-		goto error;
 	}
-
-	// Prepare an input stream for the future.
+	else
+	{
+	// Prepare an input stream for the future. The streams stay inside
+	// this block so the failure path above does not jump over their
+	// constructors. A goto that skips initialization is ill-formed C++.
 	wxSocketInputStream sock(*mpSocketClient);
 	wxDataInputStream input(sock);
 
@@ -188,6 +190,7 @@ bool NetworkClient::Connect(const NetworkEndpoint::Address &addr)
 	// Update the UI.  This has to be here because the UI for spectators isn't
 	// in place until after the game connect event.
 	Controller::get().Transmit(shEventSpectator, 0);
+	}
 
 	// Possibly the only acceptable use of a goto is the occasional catch-all
 	// error handling.
