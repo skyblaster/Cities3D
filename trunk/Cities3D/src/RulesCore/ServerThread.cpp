@@ -44,18 +44,22 @@ wxServerThread::wxServerThread(const size_t port, wxEvtHandler * const handler,
 
 void wxServerThread::ShutdownFromMain()
 {
-	wxMutexLocker lock(mLock);
-
-	for(size_t i = 0; i < mServers.size(); ++i)
+	std::vector<wxSocketServer *> closing;
 	{
-		if(NULL != mServers[i])
+		wxMutexLocker lock(mLock);
+		closing.swap(mServers);
+	}
+
+	// Destroy outside mLock so the accept loop is never stuck holding the
+	// mutex while the UI thread waits here.
+	for(size_t i = 0; i < closing.size(); ++i)
+	{
+		if(NULL != closing[i])
 		{
-			mServers[i]->Close();
-			mServers[i]->Destroy();
-			mServers[i] = NULL;
+			closing[i]->Close();
+			closing[i]->Destroy();
 		}
 	}
-	mServers.clear();
 }
 
 //---------------------------- PROTECTED        -----------------------------//
@@ -89,70 +93,75 @@ void *wxServerThread::Entry()
 	while(false == TestDestroy())
 	{
 		bool accepted = false;
-		std::vector<wxSocketServer *> listeners;
+		bool haveListeners = false;
 
+		// Accept under mLock so ShutdownFromMain cannot Destroy a server
+		// mid-AcceptWith (use-after-free / hang on wxGTK).
 		{
 			wxMutexLocker lock(mLock);
-			listeners = mServers;
-		}
+			haveListeners = (false == mServers.empty());
 
-		if(true == listeners.empty())
-		{
-			// ShutdownFromMain already closed listeners; exit promptly.
-			break;
-		}
-
-		for(size_t i = 0; i < listeners.size(); ++i)
-		{
-			if(NULL == listeners[i])
+			for(size_t i = 0; i < mServers.size(); ++i)
 			{
-				continue;
-			}
+				if(NULL == mServers[i])
+				{
+					continue;
+				}
 
-			wxCities3DSocket *socket = new wxCities3DSocket;
+				wxCities3DSocket *socket = new wxCities3DSocket;
 
-			if(false == listeners[i]->AcceptWith(*socket, false))
-			{
-				delete socket;
-				continue;
-			}
+				if(false == mServers[i]->AcceptWith(*socket, false))
+				{
+					delete socket;
+					continue;
+				}
 
-			// Reject half-open accepts (seen with some IPv6 stacks).
-			if( (false == socket->IsOk()) ||
-				(false == socket->IsConnected()))
-			{
-				socket->Destroy();
-				continue;
-			}
+				if( (false == socket->IsOk()) ||
+					(false == socket->IsConnected()))
+				{
+					socket->Close();
+					delete socket;
+					continue;
+				}
 
-			accepted = true;
-
-			// Since we can be killed at any conceivable time, test before every
-			// new action.
-			if(false == TestDestroy())
-			{
-				wxLogDebug(wxT("Server connection accepted."));
-				std::fprintf(stderr, "cities3d: server accepted a client\n");
-				std::fflush(stderr);
-
-				wxRuleEvent event(shNetworkRuleServerConnection, 
-					DataObject(mHandler, socket), true);
-				mHandler->AddPendingEvent(event);
+				accepted = true;
 
 				if(false == TestDestroy())
 				{
-					mGameThread->AddSocket(socket);
+					wxLogDebug(wxT("Server connection accepted."));
+					std::fprintf(stderr,
+						"cities3d: server accepted a client\n");
+					std::fflush(stderr);
+
+					wxRuleEvent event(shNetworkRuleServerConnection, 
+						DataObject(mHandler, socket), true);
+					mHandler->AddPendingEvent(event);
+
+					if(false == TestDestroy())
+					{
+						mGameThread->AddSocket(socket);
+					}
+					else
+					{
+						socket->Close();
+						delete socket;
+					}
+				}
+				else
+				{
+					socket->Close();
+					delete socket;
 				}
 			}
-			else
-			{
-				socket->Destroy();
-			}
+		}
+
+		if(false == haveListeners)
+		{
+			break;
 		}
 
 		if(false == accepted)
 		{
-			// Short sleep so Delete() becomes responsive quickly on Stop.
 			Sleep(100);
 		}
 	}

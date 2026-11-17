@@ -15,6 +15,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <cstdio>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "NetworkConnectPage.h"
@@ -179,7 +180,11 @@ namespace
 			}
 			else
 			{
-				RULE.Execute(shNetworkRuleQuit, 
+				// AsynchExecute runs locally and does not NET.SendRule.
+				// Execute() would queue a SendRule that needs the game-thread
+				// mutex — the same mutex Stop Server needs — and can freeze
+				// the UI before NetworkServer even starts tearing down.
+				RULE.AsynchExecute(shNetworkRuleQuit, 
                     DataObject(NET.Players().GetThisPlayer()));
 			}
 		}
@@ -202,7 +207,8 @@ namespace
 		}
 		else
 		{
-			RULE.Execute(shNetworkRuleQuit, 
+			// Local-only; NET.Stop() tears the socket down for the peer.
+			RULE.AsynchExecute(shNetworkRuleQuit, 
                 DataObject(NET.Players().GetThisPlayer()));
 		}
 
@@ -447,6 +453,9 @@ void wxNetworkConnectPage::OnActionButton(wxCommandEvent &)
 	{
 		if(NET.IsConnected())
 		{
+			std::fprintf(stderr, "cities3d: Stop Server clicked\n");
+			std::fflush(stderr);
+
 			if(false == HostShutdownCheck())
 			{
 				return;

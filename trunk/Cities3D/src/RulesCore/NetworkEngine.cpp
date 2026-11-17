@@ -56,6 +56,9 @@ void NetworkEngine::StartClient(const NetworkEndpoint::Address &addr,
 
 void NetworkEngine::Stop()
 {
+	std::fprintf(stderr, "cities3d: NetworkEngine::Stop begin\n");
+	std::fflush(stderr);
+
 	mNetworkServer.reset();
 	mNetworkClient.reset();
 
@@ -65,6 +68,9 @@ void NetworkEngine::Stop()
 	// and refresh spectator widgets so they do not keep stale rows.
 	Controller::get().Transmit(shEventGameConnect, DataObject(false));
 	Controller::get().Transmit(shEventSpectator, 0);
+
+	std::fprintf(stderr, "cities3d: NetworkEngine::Stop done\n");
+	std::fflush(stderr);
 }
 
 bool NetworkEngine::IsConnected() const

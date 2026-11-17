@@ -188,7 +188,9 @@ private:
 		if( (true == quit) &&
 			(true == isConnected))
 		{
-			RULE.Execute(shNetworkRuleQuit, 
+			// Avoid NET.SendRule under Execute — that can deadlock Stop/Delete
+			// on wxGTK when the game thread holds its socket mutex.
+			RULE.AsynchExecute(shNetworkRuleQuit, 
 				DataObject(NET.Players().GetThisPlayer()));
 		}
 
