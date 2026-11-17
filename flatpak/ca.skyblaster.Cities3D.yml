@@ -61,8 +61,11 @@ modules:
       strip: false
       no-debuginfo: true
       # Allow DNS/HTTPS inside the build sandbox (vcpkg bootstrap + port downloads).
+      # xdg-cache holds the persistent CMake/Ninja/vcpkg tree so rebuilds stay
+      # incremental across flatpak-builder module runs (see build-commands).
       build-args:
         - --share=network
+        - --filesystem=xdg-cache
       env:
         # Shared wx + system GTK/GLib — see triplets/ and overlays/flatpak-system-gtk/.
         VCPKG_DEFAULT_TRIPLET: x64-linux-wxshared
@@ -166,21 +169,45 @@ modules:
         export VCPKG_DEFAULT_TRIPLET="${TRIPLET}"
         export VCPKG_OVERLAY_TRIPLETS="${OVERLAY_TRIPLETS}"
         export VCPKG_OVERLAY_PORTS="${OVERLAY_PORTS}"
-        # Never reuse a host/cached CMake tree that may still be on static x64-linux.
-        rm -rf trunk/build/flatpak
-        cmake -S trunk -B trunk/build/flatpak -G Ninja \
+        # Persist the Ninja/vcpkg tree in XDG cache. The Flatpak module sandbox is
+        # ephemeral, so building under trunk/build/flatpak forced a full recompile
+        # on every source change. Key the cache by triplet + build type.
+        CACHE_ROOT="${XDG_CACHE_HOME:-${HOME}/.cache}/cities3d-flatpak-ninja"
+        BUILD_DIR="${CACHE_ROOT}/${TRIPLET}-${CMAKE_BUILD_TYPE}"
+        SRC_ABS="$(pwd)/trunk"
+        mkdir -p "${CACHE_ROOT}"
+        if [ -f "${BUILD_DIR}/CMakeCache.txt" ]; then
+          cached_src="$(sed -n 's/^CMAKE_HOME_DIRECTORY:INTERNAL=//p' "${BUILD_DIR}/CMakeCache.txt" | head -n1 || true)"
+          cached_type="$(sed -n 's/^CMAKE_BUILD_TYPE:STRING=//p' "${BUILD_DIR}/CMakeCache.txt" | head -n1 || true)"
+          cached_triplet="$(sed -n 's/^VCPKG_TARGET_TRIPLET:UNINITIALIZED=//p' "${BUILD_DIR}/CMakeCache.txt" | head -n1 || true)"
+          if [ -z "${cached_triplet}" ]; then
+            cached_triplet="$(sed -n 's/^VCPKG_TARGET_TRIPLET:STRING=//p' "${BUILD_DIR}/CMakeCache.txt" | head -n1 || true)"
+          fi
+          if [ "${cached_src}" != "${SRC_ABS}" ] ||
+             [ "${cached_type}" != "${CMAKE_BUILD_TYPE}" ] ||
+             [ "${cached_triplet}" != "${TRIPLET}" ]; then
+            echo "cities3d: ninja cache mismatch (src/type/triplet); wiping ${BUILD_DIR}"
+            rm -rf "${BUILD_DIR}"
+          else
+            echo "cities3d: reusing ninja cache ${BUILD_DIR}"
+          fi
+        else
+          echo "cities3d: fresh ninja cache ${BUILD_DIR}"
+        fi
+        mkdir -p "${BUILD_DIR}"
+        cmake -S trunk -B "${BUILD_DIR}" -G Ninja \
           -DCMAKE_BUILD_TYPE="${CMAKE_BUILD_TYPE}" \
           -DCMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" \
           -DVCPKG_TARGET_TRIPLET="${TRIPLET}" \
           -DVCPKG_OVERLAY_TRIPLETS="${OVERLAY_TRIPLETS}" \
           -DVCPKG_OVERLAY_PORTS="${OVERLAY_PORTS}" \
           -DOpenGL_GL_PREFERENCE=LEGACY
-        cmake --build trunk/build/flatpak -j "${JOBS}"
+        cmake --build "${BUILD_DIR}" -j "${JOBS}"
         DIST="trunk/Cities3D/distribute"
-        WX_LIB_DIR="trunk/build/flatpak/vcpkg_installed/${TRIPLET}/lib"
+        WX_LIB_DIR="${BUILD_DIR}/vcpkg_installed/${TRIPLET}/lib"
         if [ ! -d "${WX_LIB_DIR}" ]; then
           echo "ERROR: vcpkg installed dir missing for ${TRIPLET}: ${WX_LIB_DIR}" >&2
-          ls -la trunk/build/flatpak/vcpkg_installed >&2 || true
+          ls -la "${BUILD_DIR}/vcpkg_installed" >&2 || true
           exit 1
         fi
         if ! compgen -G "${WX_LIB_DIR}/libwx_*.so*" > /dev/null; then
@@ -236,7 +263,16 @@ modules:
         set -euo pipefail
         DIST="trunk/Cities3D/distribute"
         TRIPLET=x64-linux-wxshared
-        WX_LIB_DIR="trunk/build/flatpak/vcpkg_installed/${TRIPLET}/lib"
+        PROFILE="devel"
+        if [ -f flatpak/cities3d-build-profile ]; then
+          PROFILE="$(tr -d '[:space:]' < flatpak/cities3d-build-profile || true)"
+        fi
+        case "${PROFILE}" in
+          release) CMAKE_BUILD_TYPE=Release ;;
+          *) CMAKE_BUILD_TYPE=RelWithDebInfo ;;
+        esac
+        BUILD_DIR="${XDG_CACHE_HOME:-${HOME}/.cache}/cities3d-flatpak-ninja/${TRIPLET}-${CMAKE_BUILD_TYPE}"
+        WX_LIB_DIR="${BUILD_DIR}/vcpkg_installed/${TRIPLET}/lib"
         # Binary + core shared libraries next to plugins/tex/skins.
         install -m755 "${DIST}/Cities3D" "${FLATPAK_DEST}/share/cities3d/Cities3D"
         for lib in DatabaseCore ModelCore RulesCore GLCore UICore; do
@@ -281,10 +317,6 @@ modules:
           fi
         done
         # Release profile: strip ELF under share/cities3d (bin, cores, wx, plugins).
-        PROFILE="devel"
-        if [ -f flatpak/cities3d-build-profile ]; then
-          PROFILE="$(tr -d '[:space:]' < flatpak/cities3d-build-profile || true)"
-        fi
         if [ "${PROFILE}" = "release" ]; then
           echo "cities3d: stripping release ELF under ${FLATPAK_DEST}/share/cities3d"
           stripped=0
@@ -319,6 +351,7 @@ modules:
           - build-flatpak
           - .flatpak-builder
           - .git
+          - trunk/build
 
   # Desktop integration only — keep this module tiny so packaging tweaks do not
   # invalidate the cities3d compile cache.
