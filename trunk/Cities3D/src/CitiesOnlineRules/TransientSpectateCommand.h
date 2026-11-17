@@ -19,6 +19,7 @@
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "ITransientCommand.h"
+#include "NetworkEndpoint.h"
 #include "Player.h"
 
 //---------------------------- DEFINES          -----------------------------//
@@ -45,7 +46,8 @@
 class TransientSpectateCommand : public ITransientCommand
 {
 public:
-	TransientSpectateCommand(const Player& player, const wxIPV4address& address)
+	TransientSpectateCommand(const Player& player, 
+		const NetworkEndpoint::Address& address)
 		: mPlayer(player)
 		, mAddress(address)
 	{
@@ -57,7 +59,7 @@ public:
 
 private:
 	Player mPlayer;
-	wxIPV4address mAddress;
+	NetworkEndpoint::Address mAddress;
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//

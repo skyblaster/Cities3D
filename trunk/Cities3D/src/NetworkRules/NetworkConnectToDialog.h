@@ -16,10 +16,10 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
-#include <wx/socket.h>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "BaseModalDialog.h"
+#include "NetworkEndpoint.h"
 
 //---------------------------- DEFINES          -----------------------------//
 
@@ -75,7 +75,7 @@ public:
 	//     A reference to the address information entered
 	//     by the user.
 	//
-	const wxIPV4address &GetAddress() const
+	const NetworkEndpoint::Address &GetAddress() const
 	{
 		return mAddress;
 	}
@@ -103,9 +103,9 @@ private:
 	//-----------------------------------------------------------------------//
 	// Object: mAddress
 	//
-	// The IP address and port selected by the user.
+	// The host and port selected by the user (IPv4 or IPv6).
 	//
-	wxIPV4address mAddress;
+	NetworkEndpoint::Address mAddress;
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//

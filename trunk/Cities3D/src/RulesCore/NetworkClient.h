@@ -20,12 +20,12 @@
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "INetworkClient.h"
 #include "INetworkEngine.h"
+#include "NetworkEndpoint.h"
 #include "Access.h"
 
 //---------------------------- DEFINES          -----------------------------//
 
 //---------------------------- TYPEDEFS         -----------------------------//
-class wxIPV4address;
 class wxDataInputStream;
 class wxRuleEvent;
 
@@ -52,10 +52,10 @@ class NetworkClient
 , public Access
 {
 public:
-	NetworkClient(const wxIPV4address &addr, const Player &player);
+	NetworkClient(const NetworkEndpoint::Address &addr, const Player &player);
 	~NetworkClient();
 
-	virtual bool Connect(const wxIPV4address &addr);
+	virtual bool Connect(const NetworkEndpoint::Address &addr);
 	virtual bool IsConnected() const;
 
 	virtual void SendRule(const HashString &rule, 

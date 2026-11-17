@@ -43,7 +43,8 @@ typedef std::vector<Player> PlayerArray;
 //---------------------------- STATICS          -----------------------------//
 
 //---------------------------- PUBLIC           -----------------------------//
-NetworkServer::NetworkServer(const wxIPV4address &addr, const Player &player)
+NetworkServer::NetworkServer(const NetworkEndpoint::Address &addr,
+	const Player &player)
 : mServerThread(NULL)
 , mServerGameThread(NULL)
 {
@@ -67,7 +68,7 @@ NetworkServer::NetworkServer(const wxIPV4address &addr, const Player &player)
 	else
 	{
 		// Start up the server thread.
-		mServerThread = new wxServerThread(addr.Service(), this, 
+		mServerThread = new wxServerThread(addr.port, this, 
 			mServerGameThread);
 		if(wxTHREAD_NO_ERROR != mServerThread->Create())
 		{

@@ -19,6 +19,7 @@
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "BaseModalDialog.h"
+#include "NetworkEndpoint.h"
 
 //---------------------------- DEFINES          -----------------------------//
 
@@ -62,7 +63,7 @@ public:
 	//     address - The ip address we are attempting to connect to.
 	//
 	wxNetworkConnectionAttemptDialog(wxWindow *parent, 
-		const wxIPV4address& address, INetworkClient* client);
+		const NetworkEndpoint::Address& address, INetworkClient* client);
 
 	//-----------------------------------------------------------------------//
 	// Group: Destructor
@@ -118,9 +119,9 @@ private:
 	//-----------------------------------------------------------------------//
 	// Object: mAddress
 	//
-	// The ip address to connect to.
+	// The host/port to connect to.
 	//
-	wxIPV4address mAddress;
+	NetworkEndpoint::Address mAddress;
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//

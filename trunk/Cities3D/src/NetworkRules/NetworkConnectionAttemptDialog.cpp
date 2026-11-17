@@ -24,6 +24,7 @@
 #include "Controller.h"
 #include "GameEngine.h"
 #include "INetworkClient.h"
+#include "NetworkEndpoint.h"
 #include "TimerManager.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
@@ -46,7 +47,7 @@ namespace
 	{
 	public:
 		Sizer_NetworkConnectionAttempt(wxWindow *window, 
-			const wxIPV4address& address) 
+			const NetworkEndpoint::Address& address) 
 			: ISizer(window)
 			, mAddress(address)
 		{}
@@ -61,7 +62,7 @@ namespace
 
 			wxString str = wxString::Format(
 				stAttemptingToConnectTo.c_str(),
-				mAddress.IPAddress().c_str(), mAddress.Service());
+				mAddress.DisplayHost().c_str(), mAddress.port);
 
 			wxBaseStaticText *text = new wxFittedStaticText(mpWindow, wxID_ANY, 
 				str, shDefaultText, shDefaultFont, wxSize(250, 22), 
@@ -89,7 +90,7 @@ namespace
 		}
 
 	private:
-		wxIPV4address mAddress;
+		NetworkEndpoint::Address mAddress;
 	};
 }
 
@@ -99,7 +100,8 @@ namespace
 #pragma warning(disable:4355)
 #endif
 wxNetworkConnectionAttemptDialog::wxNetworkConnectionAttemptDialog(
-	wxWindow *parent, const wxIPV4address& address, INetworkClient* client)
+	wxWindow *parent, const NetworkEndpoint::Address& address, 
+	INetworkClient* client)
 : wxBaseModalDialog(parent, ISizerPtr(new Sizer_NetworkConnectionAttempt(
 	this, address)), stConnectingToAGame, swConnectingToAGame)
 , mpNetworkClient(client)

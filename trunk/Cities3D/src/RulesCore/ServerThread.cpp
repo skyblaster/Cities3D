@@ -21,6 +21,7 @@
 #include "Cities3DSocket.h"
 #include "ServerGameThread.h"
 #include "RuleEvent.h"
+#include "NetworkEndpoint.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -45,23 +46,16 @@ wxServerThread::wxServerThread(const size_t port, wxEvtHandler * const handler,
 //---------------------------- PRIVATE          -----------------------------//
 void *wxServerThread::Entry()
 {
-	// Create the server on the given port.
-	wxIPV4address addr;
-	addr.Service(mPort);
-
-	mServer = new wxSocketServer(addr, wxSOCKET_REUSEADDR_FLAG);
-
-	// Ensure we got started up.
-	if(false == mServer->Ok())
+	if(false == NetworkEndpoint::CreateListeners(
+		static_cast<wxUint16>(mPort), wxSOCKET_REUSEADDR_FLAG, mServers))
 	{
-		wxLogError(wxT("Unable to start a server at %s:%d."), 
-			addr.Hostname().c_str(), addr.Service());
-
+		wxLogError(wxT("Unable to start a server on port %d."), 
+			static_cast<int>(mPort));
 		return NULL;
 	}
 
-	wxLogDebug(wxT("Server listening at %s:%d"), 
-		addr.Hostname().c_str(), addr.Service());
+	wxLogDebug(wxT("Server listening on port %d (%d socket(s))"), 
+		static_cast<int>(mPort), static_cast<int>(mServers.size()));
 
 	// We're listening, so pass along a rule getting things going to the 
 	// event handler.
@@ -71,37 +65,46 @@ void *wxServerThread::Entry()
 	// Now, loop, waiting for connections to happen.
 	while(false == TestDestroy())
 	{
-		wxCities3DSocket *socket = new wxCities3DSocket;
+		bool accepted = false;
 
-		// See if there's any connections to accept.
-		if(false == mServer->AcceptWith(*socket, false))
+		for(size_t i = 0; i < mServers.size(); ++i)
 		{
-			// If not, clean up, sleep one second and continue.
-			delete socket;
-			socket = NULL;
+			wxCities3DSocket *socket = new wxCities3DSocket;
 
-			Sleep(1000);
-			continue;
-		}
+			if(false == mServers[i]->AcceptWith(*socket, false))
+			{
+				delete socket;
+				socket = NULL;
+				continue;
+			}
 
-		// Since we can be killed at any conceivable time, test before every
-		// new action.
-		if(false == TestDestroy())
-		{
-			// We got a connection.
-			wxLogDebug(wxT("Server connection accepted."));
+			accepted = true;
 
-			//Start up the connection thread that verifies everything.
-			wxRuleEvent event(shNetworkRuleServerConnection, 
-				DataObject(mHandler, socket), true);
-			mHandler->AddPendingEvent(event);
-
-			// Add to the current game sockets.
+			// Since we can be killed at any conceivable time, test before every
+			// new action.
 			if(false == TestDestroy())
 			{
-				mGameThread->AddSocket(socket);
+				wxLogDebug(wxT("Server connection accepted."));
+
+				wxRuleEvent event(shNetworkRuleServerConnection, 
+					DataObject(mHandler, socket), true);
+				mHandler->AddPendingEvent(event);
+
+				if(false == TestDestroy())
+				{
+					mGameThread->AddSocket(socket);
+				}
 			}
-		}		
+			else
+			{
+				delete socket;
+			}
+		}
+
+		if(false == accepted)
+		{
+			Sleep(1000);
+		}
 	}
 
 	return NULL;
@@ -111,9 +114,13 @@ void wxServerThread::OnExit()
 {
 	wxLogDebug(wxT("Server thread exiting."));
 
-	if(NULL != mServer)
+	for(size_t i = 0; i < mServers.size(); ++i)
 	{
-		mServer->Destroy();
-		mServer = NULL;
+		if(NULL != mServers[i])
+		{
+			mServers[i]->Destroy();
+			mServers[i] = NULL;
+		}
 	}
+	mServers.clear();
 }

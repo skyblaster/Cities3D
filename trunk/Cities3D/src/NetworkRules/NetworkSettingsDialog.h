@@ -19,6 +19,7 @@
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "BaseModalDialog.h"
+#include "NetworkEndpoint.h"
 
 //---------------------------- DEFINES          -----------------------------//
 
@@ -71,10 +72,9 @@ public:
 	// Returns the hostname and port information entered by the user.
 	//
 	// Returns:
-	//     A const reference to a wxIPV4address containing the hostname and 
-	//     port information.
+	//     A const reference to the hostname and port (IPv4 or IPv6).
 	//
-	const wxIPV4address &GetAddress() const {return mAddress;}
+	const NetworkEndpoint::Address &GetAddress() const {return mAddress;}
 
 	//-----------------------------------------------------------------------//
 	// Section: Private
@@ -97,7 +97,7 @@ private:
 	//
 	// The user's hostname and port.
 	//
-	wxIPV4address mAddress;
+	NetworkEndpoint::Address mAddress;
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//

@@ -16,6 +16,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <vector>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 
@@ -97,11 +98,11 @@ private:
 	//
 
 	//-----------------------------------------------------------------------//
-	// Pointer: mServer
+	// Object: mServers
 	//
-	// The socket server.
+	// Listening sockets (IPv4 and/or IPv6).
 	//
-	wxSocketServer *mServer;
+	std::vector<wxSocketServer *> mServers;
 
 	//-----------------------------------------------------------------------//
 	// Int: mPort
@@ -126,4 +127,3 @@ private:
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//
-

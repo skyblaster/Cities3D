@@ -33,7 +33,7 @@
 //---------------------------- STATICS          -----------------------------//
 
 //---------------------------- PUBLIC           -----------------------------//
-void NetworkEngine::StartServer(const wxIPV4address &addr, 
+void NetworkEngine::StartServer(const NetworkEndpoint::Address &addr, 
 								const Player &player)
 {
 	Stop();
@@ -41,7 +41,7 @@ void NetworkEngine::StartServer(const wxIPV4address &addr,
 	mNetworkServer = NetworkServerPtr(new NetworkServer(addr, player));
 }
 
-void NetworkEngine::StartClient(const wxIPV4address &addr, 
+void NetworkEngine::StartClient(const NetworkEndpoint::Address &addr, 
 								const Player &player)
 {
 	Stop();

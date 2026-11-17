@@ -20,12 +20,12 @@
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "INetworkServer.h"
+#include "NetworkEndpoint.h"
 #include "Access.h"
 
 //---------------------------- DEFINES          -----------------------------//
 
 //---------------------------- TYPEDEFS         -----------------------------//
-class wxIPV4address;
 class wxServerThread;
 class wxServerGameThread;
 class wxRuleEvent;
@@ -53,7 +53,7 @@ class NetworkServer
 , public Access
 {
 public:
-	NetworkServer(const wxIPV4address &addr, const Player &player);
+	NetworkServer(const NetworkEndpoint::Address &addr, const Player &player);
 	~NetworkServer();
 
 	virtual bool IsConnected() const;

@@ -28,6 +28,7 @@
 #include "GameEngine.h"
 #include "IRuleEngine.h"
 #include "INetworkEngine.h"
+#include "NetworkEndpoint.h"
 #include "IPluginEngine.h"
 #include "IOptionEngine.h"
 #include "DataObject.h"
@@ -310,10 +311,11 @@ public:
 
 			const Player& hostPlayer = players[0];
 
-			// Start the network engine.
-			wxIPV4address addr;
-			addr.Hostname(host);
-			addr.Service(port);
+			// Start the network engine (listen dual-stack on the given port).
+			long portNum = 0;
+			port.ToLong(&portNum);
+			NetworkEndpoint::Address addr;
+			addr.SetAny(static_cast<wxUint16>(portNum));
 			NET.StartServer(addr, hostPlayer);
 
 			RULE.Execute(shRuleStartHostCommandGame, DataObject(hostPlayer));

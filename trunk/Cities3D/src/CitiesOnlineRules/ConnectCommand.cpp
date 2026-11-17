@@ -22,6 +22,7 @@
 #include "CommandProcesser.h"
 #include "Player.h"
 #include "TransientConnectCommand.h"
+#include "NetworkEndpoint.h"
 #include "Controller.h"
 #include "GameEngine.h"
 #include "IPluginEngine.h"
@@ -91,9 +92,10 @@ public:
 		{
 			Player thisPlayer(playerName, playerId);
 
-			wxIPV4address addr;
-			addr.Hostname(host);
-			addr.Service(port);
+			long portNum = 0;
+			port.ToLong(&portNum);
+			NetworkEndpoint::Address addr(host,
+				static_cast<wxUint16>(portNum));
 
 			// Make sure the network engine is loaded.
 			PLUGIN.LoadRuleset(swNetworkRules, swNetwork);
