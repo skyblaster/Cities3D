@@ -21,6 +21,7 @@
 #include "Logic.cpp"
 #include "LogicHashMixin.cpp"
 #include "NetworkClient.cpp"
+#include "NetworkEndpoint.cpp"
 #include "NetworkEngine.cpp"
 #include "NetworkPlayers.cpp"
 #include "NetworkServer.cpp"

@@ -33,7 +33,7 @@
 //---------------------------- STATICS          -----------------------------//
 
 //---------------------------- PUBLIC           -----------------------------//
-void NetworkEngine::StartServer(const wxIPV4address &addr, 
+void NetworkEngine::StartServer(const NetworkEndpoint::Address &addr, 
 								const Player &player)
 {
 	Stop();
@@ -41,7 +41,7 @@ void NetworkEngine::StartServer(const wxIPV4address &addr,
 	mNetworkServer = NetworkServerPtr(new NetworkServer(addr, player));
 }
 
-void NetworkEngine::StartClient(const wxIPV4address &addr, 
+void NetworkEngine::StartClient(const NetworkEndpoint::Address &addr, 
 								const Player &player)
 {
 	Stop();
@@ -56,12 +56,21 @@ void NetworkEngine::StartClient(const wxIPV4address &addr,
 
 void NetworkEngine::Stop()
 {
+	std::fprintf(stderr, "cities3d: NetworkEngine::Stop begin\n");
+	std::fflush(stderr);
+
 	mNetworkServer.reset();
 	mNetworkClient.reset();
 
 	mNetworkPlayers.Reset();
-	
+
+	// Tear down Game Setup UI before any subsequent Start* inserts a new page,
+	// and refresh spectator widgets so they do not keep stale rows.
 	Controller::get().Transmit(shEventGameConnect, DataObject(false));
+	Controller::get().Transmit(shEventSpectator, 0);
+
+	std::fprintf(stderr, "cities3d: NetworkEngine::Stop done\n");
+	std::fflush(stderr);
 }
 
 bool NetworkEngine::IsConnected() const

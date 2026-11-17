@@ -15,12 +15,14 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <cstdio>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "ServerThread.h"
 #include "Cities3DSocket.h"
 #include "ServerGameThread.h"
 #include "RuleEvent.h"
+#include "NetworkEndpoint.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
 #ifdef _DEBUG
@@ -40,28 +42,47 @@ wxServerThread::wxServerThread(const size_t port, wxEvtHandler * const handler,
 	wxASSERT(NULL != thread);
 }
 
+void wxServerThread::ShutdownFromMain()
+{
+	std::vector<wxSocketServer *> closing;
+	{
+		wxMutexLocker lock(mLock);
+		closing.swap(mServers);
+	}
+
+	// Destroy outside mLock so the accept loop is never stuck holding the
+	// mutex while the UI thread waits here.
+	for(size_t i = 0; i < closing.size(); ++i)
+	{
+		if(NULL != closing[i])
+		{
+			closing[i]->Close();
+			closing[i]->Destroy();
+		}
+	}
+}
+
 //---------------------------- PROTECTED        -----------------------------//
 
 //---------------------------- PRIVATE          -----------------------------//
 void *wxServerThread::Entry()
 {
-	// Create the server on the given port.
-	wxIPV4address addr;
-	addr.Service(mPort);
-
-	mServer = new wxSocketServer(addr, wxSOCKET_REUSEADDR_FLAG);
-
-	// Ensure we got started up.
-	if(false == mServer->Ok())
+	std::vector<wxSocketServer *> servers;
+	if(false == NetworkEndpoint::CreateListeners(
+		static_cast<wxUint16>(mPort), wxSOCKET_REUSEADDR_FLAG, servers))
 	{
-		wxLogError(wxT("Unable to start a server at %s:%d."), 
-			addr.Hostname().c_str(), addr.Service());
-
+		wxLogError(wxT("Unable to start a server on port %d."), 
+			static_cast<int>(mPort));
 		return NULL;
 	}
 
-	wxLogDebug(wxT("Server listening at %s:%d"), 
-		addr.Hostname().c_str(), addr.Service());
+	{
+		wxMutexLocker lock(mLock);
+		mServers.swap(servers);
+	}
+
+	wxLogDebug(wxT("Server listening on port %d (%d socket(s))"), 
+		static_cast<int>(mPort), static_cast<int>(mServers.size()));
 
 	// We're listening, so pass along a rule getting things going to the 
 	// event handler.
@@ -71,37 +92,79 @@ void *wxServerThread::Entry()
 	// Now, loop, waiting for connections to happen.
 	while(false == TestDestroy())
 	{
-		wxCities3DSocket *socket = new wxCities3DSocket;
+		bool accepted = false;
+		bool haveListeners = false;
 
-		// See if there's any connections to accept.
-		if(false == mServer->AcceptWith(*socket, false))
+		// Accept under mLock so ShutdownFromMain cannot Destroy a server
+		// mid-AcceptWith (use-after-free / hang on wxGTK).
 		{
-			// If not, clean up, sleep one second and continue.
-			delete socket;
-			socket = NULL;
+			wxMutexLocker lock(mLock);
+			haveListeners = (false == mServers.empty());
 
-			Sleep(1000);
-			continue;
+			for(size_t i = 0; i < mServers.size(); ++i)
+			{
+				if(NULL == mServers[i])
+				{
+					continue;
+				}
+
+				wxCities3DSocket *socket = new wxCities3DSocket;
+
+				if(false == mServers[i]->AcceptWith(*socket, false))
+				{
+					delete socket;
+					continue;
+				}
+
+				if( (false == socket->IsOk()) ||
+					(false == socket->IsConnected()))
+				{
+					socket->Close();
+					delete socket;
+					continue;
+				}
+
+				accepted = true;
+
+				if(false == TestDestroy())
+				{
+					wxLogDebug(wxT("Server connection accepted."));
+					std::fprintf(stderr,
+						"cities3d: server accepted a client\n");
+					std::fflush(stderr);
+
+					if(false == TestDestroy())
+					{
+						// Handshake owns the socket until it finishes.
+						// AddSocket only after NetworkRuleServerConnectionReady
+						// so the game thread cannot Close it mid-negotiation.
+						wxRuleEvent event(shNetworkRuleServerConnection, 
+							DataObject(mHandler, socket), true);
+						mHandler->AddPendingEvent(event);
+					}
+					else
+					{
+						socket->Close();
+						delete socket;
+					}
+				}
+				else
+				{
+					socket->Close();
+					delete socket;
+				}
+			}
 		}
 
-		// Since we can be killed at any conceivable time, test before every
-		// new action.
-		if(false == TestDestroy())
+		if(false == haveListeners)
 		{
-			// We got a connection.
-			wxLogDebug(wxT("Server connection accepted."));
+			break;
+		}
 
-			//Start up the connection thread that verifies everything.
-			wxRuleEvent event(shNetworkRuleServerConnection, 
-				DataObject(mHandler, socket), true);
-			mHandler->AddPendingEvent(event);
-
-			// Add to the current game sockets.
-			if(false == TestDestroy())
-			{
-				mGameThread->AddSocket(socket);
-			}
-		}		
+		if(false == accepted)
+		{
+			Sleep(100);
+		}
 	}
 
 	return NULL;
@@ -111,9 +174,17 @@ void wxServerThread::OnExit()
 {
 	wxLogDebug(wxT("Server thread exiting."));
 
-	if(NULL != mServer)
+	// Prefer ShutdownFromMain (main thread) for Close/Destroy. If we get here
+	// without that, only Close — never Destroy from a worker while Delete()
+	// blocks the UI thread.
+	wxMutexLocker lock(mLock);
+	for(size_t i = 0; i < mServers.size(); ++i)
 	{
-		mServer->Destroy();
-		mServer = NULL;
+		if(NULL != mServers[i])
+		{
+			mServers[i]->Close();
+			mServers[i] = NULL;
+		}
 	}
+	mServers.clear();
 }

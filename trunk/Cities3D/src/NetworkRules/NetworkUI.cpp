@@ -31,6 +31,7 @@
 #include "BaseMessageBox.h"
 #include "INetworkEngine.h"
 #include "INetworkClient.h"
+#include "NetworkEndpoint.h"
 #include "IUIEngine.h"
 #include "IRuleEngine.h"
 #include "IPluginEngine.h"
@@ -141,7 +142,8 @@ private:
 	{
 		wxASSERT(2 <= object.numItems());
 
-		const wxIPV4address& address = object.read<wxIPV4address>();
+		const NetworkEndpoint::Address& address = 
+			object.read<NetworkEndpoint::Address>();
 		INetworkClient* client = object.read<INetworkClient*>(1);
 
 		wxNetworkConnectionAttemptDialog dialog(GetMainFrame(), address, 
@@ -186,7 +188,9 @@ private:
 		if( (true == quit) &&
 			(true == isConnected))
 		{
-			RULE.Execute(shNetworkRuleQuit, 
+			// Avoid NET.SendRule under Execute — that can deadlock Stop/Delete
+			// on wxGTK when the game thread holds its socket mutex.
+			RULE.AsynchExecute(shNetworkRuleQuit, 
 				DataObject(NET.Players().GetThisPlayer()));
 		}
 

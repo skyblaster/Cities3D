@@ -24,6 +24,7 @@
 #include "ConfigDatabase.h"
 #include "SkinManager.h"
 #include "INetworkEngine.h"
+#include "NetworkEndpoint.h"
 #include "Controller.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
@@ -146,11 +147,17 @@ void wxNetworkConnectToDialog::Ok()
 		return;
 	}
 
+	if(false == mAddress.SetHost(str))
+	{
+		Controller::get().Transmit(shEventMessageBox, 
+            stYouMustEnterAnIPAddress);
+		return;
+	}
+
+	mAddress.SetPort(static_cast<wxUint16>(num));
+
 	CONFIG.write(swConfigSectionNetwork, swLastConnect, str);
 	CONFIG.write(swConfigSectionNetwork, swLastPort, static_cast<wxInt32>(num));
-
-	mAddress.Hostname(str);
-	mAddress.Service(num);
 
 	wxBaseModalDialog::Ok();
 }

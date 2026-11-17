@@ -50,8 +50,10 @@ enum NetworkMessageType
 class NetworkEngine : public INetworkEngine
 {
 public:
-	virtual void StartServer(const wxIPV4address &addr, const Player &player);
-	virtual void StartClient(const wxIPV4address &addr, const Player &player);
+	virtual void StartServer(const NetworkEndpoint::Address &addr,
+		const Player &player);
+	virtual void StartClient(const NetworkEndpoint::Address &addr,
+		const Player &player);
 
 	virtual void Stop();
 

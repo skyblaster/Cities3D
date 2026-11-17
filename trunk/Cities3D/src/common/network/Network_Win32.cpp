@@ -18,7 +18,9 @@
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
 #include <Iphlpapi.h>
+#include <ws2tcpip.h>
 #include <boost/scoped_ptr.hpp>
+#include <cstring>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "network/Network.h"
@@ -132,26 +134,55 @@ attempt:
 
 void Network::GetIPAddresses(StringArray& i_addresses)
 {
-	// Get the ip address of this machine.
-	char hostname[1024];
-	if(0 == gethostname(hostname, 1024))
+	// Resolve this host for both IPv4 and IPv6 (AF_UNSPEC).
+	char hostname[1024] = {0};
+	if(0 != gethostname(hostname, sizeof(hostname)))
 	{
-		hostent* host = gethostbyname(hostname);
-		if(NULL != host)
+		return;
+	}
+
+	addrinfo hints;
+	std::memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+
+	addrinfo* res = NULL;
+	if(0 != getaddrinfo(hostname, NULL, &hints, &res) || NULL == res)
+	{
+		return;
+	}
+
+	for(addrinfo* ai = res; NULL != ai; ai = ai->ai_next)
+	{
+		char host[NI_MAXHOST] = {0};
+		if(0 != getnameinfo(ai->ai_addr, static_cast<socklen_t>(ai->ai_addrlen),
+			host, sizeof(host), NULL, 0, NI_NUMERICHOST))
 		{
-			char** addr_list = host->h_addr_list;
-			while(NULL != *addr_list)
+			continue;
+		}
+
+		wxString ip(host, wxConvUTF8);
+		if( (ip == wxT("127.0.0.1")) || (ip == wxT("::1")) )
+		{
+			continue;
+		}
+
+		bool exists = false;
+		for(size_t i = 0; i < i_addresses.size(); ++i)
+		{
+			if(i_addresses[i] == ip)
 			{
-				in_addr* addr = reinterpret_cast<in_addr*>(*addr_list);
-				char* localIP = inet_ntoa(*addr);
-
-				i_addresses.push_back(wxString(localIP, wxConvLibc, 
-					strlen(localIP)));
-
-				++addr_list;
+				exists = true;
+				break;
 			}
 		}
+		if(false == exists)
+		{
+			i_addresses.push_back(ip);
+		}
 	}
+
+	freeaddrinfo(res);
 }
 
 //---------------------------- PROTECTED        -----------------------------//

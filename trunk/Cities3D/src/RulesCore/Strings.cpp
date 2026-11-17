@@ -95,6 +95,8 @@ namespace
     const HashString shNetworkRuleQuit = "NetworkRuleQuit";
     const HashString shNetworkRuleRestartGame = "NetworkRuleRestartGame";
     const HashString shNetworkRuleServerConnection = "NetworkRuleServerConnection";
+    const HashString shNetworkRuleServerConnectionReady = "NetworkRuleServerConnectionReady";
+    const HashString shNetworkRuleDestroySocket = "NetworkRuleDestroySocket";
     const HashString shNetworkRuleServerDesyncCheck = "NetworkRuleServerDesyncCheck";
     const HashString shNetworkRuleServerStart = "NetworkRuleServerStart";
     const HashString shNetworkRuleStartCountdown = "NetworkRuleStartCountdown";

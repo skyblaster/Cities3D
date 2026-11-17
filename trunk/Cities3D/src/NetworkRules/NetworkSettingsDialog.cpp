@@ -24,6 +24,7 @@
 #include "ConfigDatabase.h"
 #include "SkinManager.h"
 #include "INetworkEngine.h"
+#include "NetworkEndpoint.h"
 #include "Controller.h"
 
 //---------------------------- TYPEDEFS         -----------------------------//
@@ -95,16 +96,11 @@ wxNetworkSettingsDialog::wxNetworkSettingsDialog(wxWindow *parent)
 
 	if(true == str.IsEmpty())
 	{
-		// Try and find a default name.
-		mAddress.AnyAddress();
-		if(swZeroIP == mAddress.IPAddress())
+		// Prefer the machine host name; fall back to any-address.
+		str = wxGetFullHostName();
+		if(true == str.IsEmpty())
 		{
-			// dont try to resolve a NULL hostname
-			str = mAddress.IPAddress();
-		}
-		else
-		{
-			str = mAddress.Hostname();
+			str = swZeroIP;
 		}
 	}
 
@@ -121,9 +117,9 @@ void wxNetworkSettingsDialog::Ok()
 {
 	wxString str = spHostname->GetValue().Strip(wxString::both);
 	
-	// Attempt to set it in the outgoing address.
+	// Attempt to set it in the outgoing address (AF_UNSPEC validation).
 	if( (true == str.IsEmpty()) ||
-		(false == mAddress.Hostname(str)))
+		(false == mAddress.SetHost(str)))
 	{
 		Controller::get().Transmit(shEventMessageBox,
 			stYouMustEnterAValidHostname);
@@ -146,7 +142,7 @@ void wxNetworkSettingsDialog::Ok()
 	str.ToLong(&port);
 	
 	// Set it in the outgoing address.
-	mAddress.Service(port);
+	mAddress.SetPort(static_cast<wxUint16>(port));
 
 	CONFIG.write<wxInt32>(swConfigSectionNetwork, swHostPort, port);
 	CONFIG.write(swConfigSectionNetwork, swHostAddress, hostname);

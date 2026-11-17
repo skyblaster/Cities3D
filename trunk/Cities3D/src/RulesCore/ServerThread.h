@@ -16,6 +16,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <vector>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 
@@ -68,6 +69,19 @@ public:
 		wxServerGameThread *thread);
 
 	//-----------------------------------------------------------------------//
+	// Group: Functions
+	//
+
+	//-----------------------------------------------------------------------//
+	// Function: ShutdownFromMain
+	//
+	// Closes and destroys listening sockets on the main thread before
+	// <Delete>. Avoids a wxGTK deadlock where the worker's OnExit Destroy()
+	// waits on the main loop while Delete() waits on the worker.
+	//
+	void ShutdownFromMain();
+
+	//-----------------------------------------------------------------------//
 	// Section: Private
 	//
 private:
@@ -97,11 +111,18 @@ private:
 	//
 
 	//-----------------------------------------------------------------------//
-	// Pointer: mServer
+	// Object: mLock
 	//
-	// The socket server.
+	// Guards listening sockets against ShutdownFromMain.
 	//
-	wxSocketServer *mServer;
+	wxMutex mLock;
+
+	//-----------------------------------------------------------------------//
+	// Object: mServers
+	//
+	// Listening sockets (IPv4 and/or IPv6).
+	//
+	std::vector<wxSocketServer *> mServers;
 
 	//-----------------------------------------------------------------------//
 	// Int: mPort
@@ -126,4 +147,3 @@ private:
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//
-

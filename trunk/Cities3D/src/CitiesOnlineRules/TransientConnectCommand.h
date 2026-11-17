@@ -19,6 +19,7 @@
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "ITransientCommand.h"
+#include "NetworkEndpoint.h"
 #include "Player.h"
 
 //---------------------------- DEFINES          -----------------------------//
@@ -45,8 +46,8 @@
 class TransientConnectCommand : public ITransientCommand
 {
 public:
-	TransientConnectCommand(const Player& player, const wxIPV4address& address,
-		long gameID)
+	TransientConnectCommand(const Player& player, 
+		const NetworkEndpoint::Address& address, long gameID)
 		: mPlayer(player)
 		, mAddress(address)
 		, mGameID(gameID)
@@ -59,7 +60,7 @@ public:
 
 private:
 	Player mPlayer;
-	wxIPV4address mAddress;
+	NetworkEndpoint::Address mAddress;
 	long mGameID;
 };
 
