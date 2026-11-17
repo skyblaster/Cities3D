@@ -42,17 +42,39 @@ wxServerThread::wxServerThread(const size_t port, wxEvtHandler * const handler,
 	wxASSERT(NULL != thread);
 }
 
+void wxServerThread::ShutdownFromMain()
+{
+	wxMutexLocker lock(mLock);
+
+	for(size_t i = 0; i < mServers.size(); ++i)
+	{
+		if(NULL != mServers[i])
+		{
+			mServers[i]->Close();
+			mServers[i]->Destroy();
+			mServers[i] = NULL;
+		}
+	}
+	mServers.clear();
+}
+
 //---------------------------- PROTECTED        -----------------------------//
 
 //---------------------------- PRIVATE          -----------------------------//
 void *wxServerThread::Entry()
 {
+	std::vector<wxSocketServer *> servers;
 	if(false == NetworkEndpoint::CreateListeners(
-		static_cast<wxUint16>(mPort), wxSOCKET_REUSEADDR_FLAG, mServers))
+		static_cast<wxUint16>(mPort), wxSOCKET_REUSEADDR_FLAG, servers))
 	{
 		wxLogError(wxT("Unable to start a server on port %d."), 
 			static_cast<int>(mPort));
 		return NULL;
+	}
+
+	{
+		wxMutexLocker lock(mLock);
+		mServers.swap(servers);
 	}
 
 	wxLogDebug(wxT("Server listening on port %d (%d socket(s))"), 
@@ -67,17 +89,29 @@ void *wxServerThread::Entry()
 	while(false == TestDestroy())
 	{
 		bool accepted = false;
+		std::vector<wxSocketServer *> listeners;
 
-		for(size_t i = 0; i < mServers.size(); ++i)
 		{
-			if(NULL == mServers[i])
+			wxMutexLocker lock(mLock);
+			listeners = mServers;
+		}
+
+		if(true == listeners.empty())
+		{
+			// ShutdownFromMain already closed listeners; exit promptly.
+			break;
+		}
+
+		for(size_t i = 0; i < listeners.size(); ++i)
+		{
+			if(NULL == listeners[i])
 			{
 				continue;
 			}
 
 			wxCities3DSocket *socket = new wxCities3DSocket;
 
-			if(false == mServers[i]->AcceptWith(*socket, false))
+			if(false == listeners[i]->AcceptWith(*socket, false))
 			{
 				delete socket;
 				continue;
@@ -118,7 +152,8 @@ void *wxServerThread::Entry()
 
 		if(false == accepted)
 		{
-			Sleep(1000);
+			// Short sleep so Delete() becomes responsive quickly on Stop.
+			Sleep(100);
 		}
 	}
 
@@ -129,14 +164,15 @@ void wxServerThread::OnExit()
 {
 	wxLogDebug(wxT("Server thread exiting."));
 
+	// Prefer ShutdownFromMain (main thread) for Close/Destroy. If we get here
+	// without that, only Close — never Destroy from a worker while Delete()
+	// blocks the UI thread.
+	wxMutexLocker lock(mLock);
 	for(size_t i = 0; i < mServers.size(); ++i)
 	{
 		if(NULL != mServers[i])
 		{
-			// Close first so the port is released before a quick restart binds
-			// again; Destroy() alone can defer teardown.
 			mServers[i]->Close();
-			mServers[i]->Destroy();
 			mServers[i] = NULL;
 		}
 	}

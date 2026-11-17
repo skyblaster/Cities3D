@@ -89,16 +89,30 @@ NetworkServer::NetworkServer(const NetworkEndpoint::Address &addr,
 
 NetworkServer::~NetworkServer()
 {
+	std::fprintf(stderr, "cities3d: NetworkServer shutting down\n");
+	std::fflush(stderr);
+
+	// Close sockets on the UI thread first. Delete() waits for workers; if a
+	// worker Destroy()s sockets, wxGTK can deadlock with the blocked UI loop.
+	if(NULL != mServerThread)
+	{
+		mServerThread->ShutdownFromMain();
+	}
 	if(NULL != mServerGameThread)
 	{
-		mServerGameThread->Delete();
-		mServerGameThread = NULL;
+		mServerGameThread->ShutdownFromMain();
 	}
 
 	if(NULL != mServerThread)
 	{
 		mServerThread->Delete();
 		mServerThread = NULL;
+	}
+
+	if(NULL != mServerGameThread)
+	{
+		mServerGameThread->Delete();
+		mServerGameThread = NULL;
 	}
 
 	// Drop any listen/accept rules posted just before the threads exited so
@@ -109,6 +123,9 @@ NetworkServer::~NetworkServer()
 		&NetworkServer::OnCloseGameWindow, this);
 	Controller::get().RemoveReceiver(shEventClose,
 		&NetworkServer::OnCloseGameWindow, this);
+
+	std::fprintf(stderr, "cities3d: NetworkServer shut down\n");
+	std::fflush(stderr);
 }
 
 bool NetworkServer::IsConnected() const
@@ -175,11 +192,13 @@ void NetworkServer::OnCloseGameWindow(wxInt32)
 	// Shut down the server threads before we get a final game close.
 	if(NULL != mServerThread)
 	{
+		mServerThread->ShutdownFromMain();
 		mServerThread->Delete();
 		mServerThread = NULL;
 	}
 	if(NULL != mServerGameThread)
 	{
+		mServerGameThread->ShutdownFromMain();
 		mServerGameThread->Delete();
 		mServerGameThread = NULL;
 	}

@@ -65,6 +65,23 @@ void wxServerGameThread::AddSocket(wxCities3DSocket * const socket)
 	mSocketMap[socket] = SocketStream();
 }
 
+void wxServerGameThread::ShutdownFromMain()
+{
+	wxMutexLocker lock(mLock);
+
+	SocketMap::iterator it, itEnd = mSocketMap.end();
+	for(it = mSocketMap.begin(); it != itEnd; ++it)
+	{
+		wxCities3DSocket * const socket = it->first;
+		if(NULL != socket)
+		{
+			socket->Close();
+			socket->Destroy();
+		}
+	}
+	mSocketMap.clear();
+}
+
 bool wxServerGameThread::HasSockets() const
 {
 	wxMutexLocker lock(mLock);
@@ -480,10 +497,16 @@ void wxServerGameThread::HandleIO()
 
 void wxServerGameThread::OnExit()
 {
-	// Shut down all of the listening sockets.
+	// Prefer ShutdownFromMain for Close/Destroy. If sockets remain, only Close
+	// here — Destroy from a worker deadlocks Delete() on the UI thread.
+	wxMutexLocker lock(mLock);
 	SocketMap::iterator it, itEnd = mSocketMap.end();
 	for(it = mSocketMap.begin(); it != itEnd; ++it)
 	{
-		it->first->Destroy();
+		if(NULL != it->first)
+		{
+			it->first->Close();
+		}
 	}
+	mSocketMap.clear();
 }

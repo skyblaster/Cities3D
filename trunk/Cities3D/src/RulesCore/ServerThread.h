@@ -69,6 +69,19 @@ public:
 		wxServerGameThread *thread);
 
 	//-----------------------------------------------------------------------//
+	// Group: Functions
+	//
+
+	//-----------------------------------------------------------------------//
+	// Function: ShutdownFromMain
+	//
+	// Closes and destroys listening sockets on the main thread before
+	// <Delete>. Avoids a wxGTK deadlock where the worker's OnExit Destroy()
+	// waits on the main loop while Delete() waits on the worker.
+	//
+	void ShutdownFromMain();
+
+	//-----------------------------------------------------------------------//
 	// Section: Private
 	//
 private:
@@ -96,6 +109,13 @@ private:
 	//-----------------------------------------------------------------------//
 	// Group: Variables
 	//
+
+	//-----------------------------------------------------------------------//
+	// Object: mLock
+	//
+	// Guards listening sockets against ShutdownFromMain.
+	//
+	wxMutex mLock;
 
 	//-----------------------------------------------------------------------//
 	// Object: mServers
