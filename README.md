@@ -45,6 +45,8 @@ From the repository root:
 
 Optional: `--jobs N`, `--no-ccache`. Use `--full-rebuild` when switching between `--devel` and `--release`.
 
+The manifest sets `appstream-compose: false` so a missing Distrobox `appstreamcli compose` cannot segfault `flatpak-builder` after a successful Cities3D compile. Desktop/metainfo/icons still install; flip that flag to `true` only when compose works and you need generated `app-info`.
+
 Run the installed app:
 
 ```sh

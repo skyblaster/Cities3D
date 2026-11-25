@@ -129,6 +129,16 @@ echo "cities3d: wrote flatpak/cities3d-build-profile=${PROFILE}"
 # --force-clean clears build-flatpak/ (required when that dir already exists).
 # Module artifacts stay cached under .flatpak-builder/ unless --full-rebuild.
 # Distrobox / rootless Podman usually cannot run rofiles-fuse.
+#
+# Manifest sets appstream-compose: false — see ca.skyblaster.Cities3D.yml.
+# Without that, a missing/broken `appstreamcli compose` ends the successful
+# cities3d compile with: G_IS_SUBPROCESS ... Segmentation fault.
+if ! command -v appstreamcli >/dev/null 2>&1; then
+  echo "cities3d: note: appstreamcli not on PATH (compose already disabled in yml)"
+elif ! appstreamcli compose --help >/dev/null 2>&1; then
+  echo "cities3d: note: appstreamcli has no compose support (compose already disabled in yml)"
+fi
+
 exec flatpak-builder "${args[@]}" \
   build-flatpak \
   flatpak/ca.skyblaster.Cities3D.yml
