@@ -1,4 +1,4 @@
-# Build Install_Cities3D_v0.10.0.exe from the Release tree in distribute/.
+# Build Install_Cities3D_v0.11.0.exe from the Release tree in distribute/.
 # Requires NSIS 3 and a finished "cmake --build --preset release".
 $ErrorActionPreference = "Stop"
 
@@ -7,7 +7,7 @@ $repoRoot = Resolve-Path (Join-Path $installerDir "..\..\..")
 $dist = Join-Path $repoRoot "trunk\Cities3D\distribute"
 $build = Join-Path $installerDir "build"
 $nsi = Join-Path $installerDir "Cities3D.nsi"
-$version = "0.10.0"
+$version = "0.11.0"
 $setupName = "Install_Cities3D_v$version.exe"
 
 $makensis = @(

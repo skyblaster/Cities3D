@@ -1,4 +1,4 @@
-; Cities3D 0.10.0 setup.
+; Cities3D 0.11.0 setup.
 ; Same component layout as Install_CitiesOnline_v0.9.7, without Cities Online.
 ;
 ; Build with trunk/Cities3D/installer/build-windows-installer.ps1
@@ -9,7 +9,7 @@ Unicode True
 ManifestDPIAware True
 ManifestSupportedOS all
 
-!define VERSION "0.10.0"
+!define VERSION "0.11.0"
 !define PRODUCT "Cities3D"
 
 !ifndef OUTFILE
@@ -54,7 +54,7 @@ Caption "${PRODUCT} ${VERSION} Setup"
 !endif
 InstallDirRegKey ${REGROOT} "Software\${PRODUCT}" "Install_Dir"
 
-VIProductVersion "0.10.0.0"
+VIProductVersion "0.11.0.0"
 VIAddVersionKey "ProductName" "${PRODUCT}"
 VIAddVersionKey "ProductVersion" "${VERSION}"
 VIAddVersionKey "CompanyName" "${PRODUCT}"
