@@ -5,7 +5,7 @@
 # rewritten. That does NOT wipe the module cache in .flatpak-builder/, so glu
 # and an unchanged cities3d module still show "Cache hit".
 #
-# True from-scratch rebuild (also delete the module cache):
+# True from-scratch rebuild (module cache + persistent Ninja/vcpkg tree):
 #   ./flatpak/build.sh --full-rebuild
 #
 # Release Flatpak (CMAKE Release + strip installed ELF):
@@ -15,6 +15,10 @@
 # Parallelism (i5-1245U = 12 threads; override if needed):
 #   ./flatpak/build.sh --jobs 12
 #   JOBS=8 ./flatpak/build.sh
+#
+# Incremental compiles: CMake/Ninja/vcpkg_installed live under
+#   ${XDG_CACHE_HOME:-~/.cache}/cities3d-flatpak-ninja/
+# so source-only edits do not start from an empty build tree.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -26,6 +30,7 @@ USE_CCACHE=1
 # devel = RelWithDebInfo, keep symbols (default).
 # release = Release, strip installed binaries/libs for a smaller .flatpak.
 PROFILE="${CITIES3D_FLATPAK_PROFILE:-devel}"
+NINJA_CACHE="${XDG_CACHE_HOME:-${HOME}/.cache}/cities3d-flatpak-ninja"
 args=()
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -46,8 +51,8 @@ while [[ $# -gt 0 ]]; do
     --no-ccache) USE_CCACHE=0 ;;
     -h|--help)
       echo "Usage: $0 [--full-rebuild] [--release|--devel] [--jobs N] [--no-ccache]"
-      echo "  (default)  --force-clean app dir; reuse .flatpak-builder module cache"
-      echo "  --full-rebuild  also delete .flatpak-builder/ before building"
+      echo "  (default)  --force-clean app dir; reuse .flatpak-builder + ninja cache"
+      echo "  --full-rebuild  delete .flatpak-builder/ and ${NINJA_CACHE}"
       echo "  --release       CMAKE Release + strip (smaller Flatpak for GitHub/Flathub)"
       echo "  --devel         CMAKE RelWithDebInfo, keep symbols (default)"
       echo "  --jobs N        parallel jobs for flatpak-builder / cmake / vcpkg"
@@ -105,8 +110,9 @@ echo "cities3d: host nproc=${cpus} MemAvailable_kB=${mem_kb} → flatpak-builder
 echo "cities3d: flatpak profile=${PROFILE}"
 
 if [[ "${FULL_REBUILD}" == "1" ]]; then
-  echo "Full rebuild: removing .flatpak-builder/ and build-flatpak/."
-  rm -rf .flatpak-builder build-flatpak
+  echo "Full rebuild: removing .flatpak-builder/, build-flatpak/, and ninja cache."
+  echo "cities3d: ninja cache=${NINJA_CACHE}"
+  rm -rf .flatpak-builder build-flatpak "${NINJA_CACHE}"
 fi
 
 args=(
