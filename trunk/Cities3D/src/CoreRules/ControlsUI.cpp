@@ -15,6 +15,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <cstdio>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "ControlsUI.h"
@@ -163,24 +164,27 @@ void wxControlsUI::OnButton(wxCommandEvent &event)
 {
 	HashString rule;
     DataObject object;
+	// Trade / Bank / Cards only open local UI. Sending them through
+	// NET.SendRule waits on a server echo; if that echo is dropped or the
+	// UI thread deadlocks with the game thread, the buttons look enabled
+	// (blue) but clicks appear to do nothing.
+	bool localUI = false;
 
 	switch(event.GetId())
 	{
 	case (ID_UNDO_BUTTON + 0):
 		rule = shRuleUndo;
 		break;
-	//play card button
 	case (ID_UNDO_BUTTON + 1):
 		rule = shRuleTradeOthers;
+		localUI = true;
 		break;
-	//bank button
 	case (ID_UNDO_BUTTON + 2):
 		rule = shRuleTradeBank;
+		localUI = true;
 		break;
-	//trade button
 	case (ID_UNDO_BUTTON + 3):
         {
-            // Also check to see if it's even our turn.
 	        DataObject input(-1), output;
 	        RULE.Decide(shLogicIsThisPlayer, input, output);
 
@@ -188,9 +192,9 @@ void wxControlsUI::OnButton(wxCommandEvent &event)
             object = DataObject(playerIndex);
 
 		    rule = shRuleShowCards;
+			localUI = true;
         }
 		break;
-	//roll dice button
 	case (ID_UNDO_BUTTON + 4):
         OnPreRollCard(false);
 	    rule = shRuleRollDice;
@@ -206,7 +210,18 @@ void wxControlsUI::OnButton(wxCommandEvent &event)
 		break;
 	}
 
-	RULE.Execute(rule, object);
+	std::fprintf(stderr, "cities3d: ControlsUI click rule=%s local=%d\n",
+		rule.c_str(), localUI ? 1 : 0);
+	std::fflush(stderr);
+
+	if(true == localUI)
+	{
+		RULE.AsynchExecute(rule, object);
+	}
+	else
+	{
+		RULE.Execute(rule, object);
+	}
 }
 
 void wxControlsUI::OnUpdate(const DataObject &object)

@@ -65,6 +65,28 @@ void wxServerGameThread::AddSocket(wxCities3DSocket * const socket)
 	mSocketMap[socket] = SocketStream();
 }
 
+void wxServerGameThread::ShutdownFromMain()
+{
+	// Close under the lock, Destroy outside it. Destroy may re-enter the UI
+	// loop; holding mLock across that races with the worker Entry() loop.
+	SocketMap closing;
+	{
+		wxMutexLocker lock(mLock);
+		closing.swap(mSocketMap);
+	}
+
+	SocketMap::iterator it, itEnd = closing.end();
+	for(it = closing.begin(); it != itEnd; ++it)
+	{
+		wxCities3DSocket * const socket = it->first;
+		if(NULL != socket)
+		{
+			socket->Close();
+			socket->Destroy();
+		}
+	}
+}
+
 bool wxServerGameThread::HasSockets() const
 {
 	wxMutexLocker lock(mLock);
@@ -75,9 +97,8 @@ bool wxServerGameThread::HasSockets() const
 void wxServerGameThread::SendRule(const boost::shared_array<wxUint8> &data, 
 	const size_t size)
 {
-	wxMutexLocker lock(mLock);
-
-	// Read the rule out of memory first.
+	// Parse and decide WITHOUT mLock so Stop Server / ShutdownFromMain are
+	// never blocked behind RULE.Decide while this thread also wants the UI.
 	HashString rule;
 	DataObject object;
 		
@@ -88,52 +109,49 @@ void wxServerGameThread::SendRule(const boost::shared_array<wxUint8> &data,
 	catch(const std::exception &e)
 	{
 		wxLogDebug(HashString(e.what()).wx_str());
+		return;
 	}
 
 	wxLogDebug(wxT("%d - Server game thread received rule %s."), sCycle, 
 		rule.cwx_str());
 
-	// See if this rule should be executed.
 	DataObject input(rule), output;
 	RULE.Decide(shNetworkLogicAllowRule, input, output);
 
-	if(true == output.read<bool>())
+	if(false == output.read<bool>())
 	{
-		// Execute the rule on the server.
-		wxRuleEvent event(rule, object, true);
-		mHandler->AddPendingEvent(event);
+		wxLogDebug(wxT("%d - Server game thread rejected rule %s."), sCycle, 
+			rule.cwx_str());
+		return;
+	}
 
-		// Create our own copy of the data so we don't share it across threads.
-		boost::shared_array<wxUint8> thisData(new wxUint8[size]);
-		memcpy(thisData.get(), data.get(), size);
+	wxRuleEvent event(rule, object, true);
+	mHandler->AddPendingEvent(event);
 
-		// Add the outgoing data to everyone's buffer.
-		WriteSocketBuffer buffer;
-		buffer.data = thisData;
-		buffer.size = size;
-		buffer.sent = 0;
+	boost::shared_array<wxUint8> thisData(new wxUint8[size]);
+	memcpy(thisData.get(), data.get(), size);
 
+	WriteSocketBuffer buffer;
+	buffer.data = thisData;
+	buffer.size = size;
+	buffer.sent = 0;
+
+	{
+		wxMutexLocker lock(mLock);
 		SocketMap::iterator it, itEnd = mSocketMap.end();
 		for(it = mSocketMap.begin(); it != itEnd; ++it)
 		{
 			it->second.first.push_back(buffer);
 		}
+	}
 
 #ifdef SEND_DESYNC_CHECKS
-		if(shRuleMarkerEndTurn == rule)
-		{
-			// If we're checking for desyncs, fire off that rule.
-			wxRuleEvent event(shNetworkRuleServerDesyncCheck, DataObject(), true);
-			mHandler->AddPendingEvent(event);
-		}
-#endif	// SEND_DESYNC_CHECKS
-
-	}
-	else
+	if(shRuleMarkerEndTurn == rule)
 	{
-		wxLogDebug(wxT("%d - Server game thread rejected rule %s."), sCycle, 
-			rule.cwx_str());
+		wxRuleEvent event(shNetworkRuleServerDesyncCheck, DataObject(), true);
+		mHandler->AddPendingEvent(event);
 	}
+#endif	// SEND_DESYNC_CHECKS
 }
 
 //---------------------------- PROTECTED        -----------------------------//
@@ -213,7 +231,10 @@ bool wxServerGameThread::HandleDisconnects()
 
 			disconnect = true;
 
-			socket->Destroy();
+			// Close only — never Destroy() from this worker while mLock is
+			// held. Destroy() needs the UI loop; Stop Server also needs mLock,
+			// which deadlocks wxGTK (UI freezes with no "shutting down" log).
+			socket->Close();
 
 			// Only handle one disconnect per slice.
 			break;
@@ -480,10 +501,16 @@ void wxServerGameThread::HandleIO()
 
 void wxServerGameThread::OnExit()
 {
-	// Shut down all of the listening sockets.
+	// Prefer ShutdownFromMain for Close/Destroy. If sockets remain, only Close
+	// here — Destroy from a worker deadlocks Delete() on the UI thread.
+	wxMutexLocker lock(mLock);
 	SocketMap::iterator it, itEnd = mSocketMap.end();
 	for(it = mSocketMap.begin(); it != itEnd; ++it)
 	{
-		it->first->Destroy();
+		if(NULL != it->first)
+		{
+			it->first->Close();
+		}
 	}
+	mSocketMap.clear();
 }

@@ -19,6 +19,7 @@
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "RulesExport.h"
+#include "NetworkEndpoint.h"
 
 //---------------------------- DEFINES          -----------------------------//
 
@@ -41,7 +42,7 @@ class DataObject;
 class RULES_EXPORT_SPEC INetworkClient
 {
 public:
-	virtual bool Connect(const wxIPV4address &addr)=0;
+	virtual bool Connect(const NetworkEndpoint::Address &addr)=0;
 
 	virtual bool IsConnected() const=0;
 

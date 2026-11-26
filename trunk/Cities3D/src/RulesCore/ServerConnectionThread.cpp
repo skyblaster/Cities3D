@@ -15,6 +15,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <cstdio>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "ServerConnectionThread.h"
@@ -63,6 +64,9 @@ void *wxServerConnectionThread::Entry()
 {
 	bool valid = true;
 
+	std::fprintf(stderr, "cities3d: connection handshake begin\n");
+	std::fflush(stderr);
+
 	// It's ok to block this thread waiting for data.
 	mSocket->SetFlags(wxSOCKET_WAITALL);
 
@@ -76,7 +80,7 @@ void *wxServerConnectionThread::Entry()
             static const wxString stReceivedAHostCheck = _("Received a host check from the site.");
     
 			wxRuleEvent event(shNetworkRuleSystemMessage, 
-				DataObject(stReceivedAHostCheck, wxDateTime::Now()));
+				DataObject(stReceivedAHostCheck, wxDateTime::Now()), true);
 			mHandler->AddPendingEvent(event);
 
 			valid = false;
@@ -94,6 +98,9 @@ void *wxServerConnectionThread::Entry()
 	{
 		valid = false;
 
+		std::fprintf(stderr, "cities3d: connection handshake failed: %s\n",
+			e.what());
+		std::fflush(stderr);
 		wxLogDebug(HashString(e.what()).wx_str());
 	}
 
@@ -102,11 +109,30 @@ error:
 	{
 		// This socket is complete and ready for data.
 		mSocket->mIsComplete = true;
+
+		std::fprintf(stderr, "cities3d: connection handshake ok\n");
+		std::fflush(stderr);
+
+		// Hand the socket to the game thread on the UI thread (via OnRule).
+		wxRuleEvent ready(shNetworkRuleServerConnectionReady,
+			DataObject(mSocket), true);
+		mHandler->AddPendingEvent(ready);
 	}
 	else
 	{
-		mSocket->Destroy();
-		mSocket = NULL;
+		// Never Destroy() from this worker — that deadlocks/crashes wxGTK.
+		// Close here and ask the UI thread to Destroy.
+		if(NULL != mSocket)
+		{
+			mSocket->Close();
+			wxRuleEvent drop(shNetworkRuleDestroySocket,
+				DataObject(mSocket), true);
+			mHandler->AddPendingEvent(drop);
+			mSocket = NULL;
+		}
+
+		std::fprintf(stderr, "cities3d: connection handshake dropped\n");
+		std::fflush(stderr);
 	}
 
 	return NULL;

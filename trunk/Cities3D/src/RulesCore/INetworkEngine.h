@@ -20,6 +20,7 @@
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "RulesExport.h"
+#include "NetworkEndpoint.h"
 
 //---------------------------- DEFINES          -----------------------------//
 
@@ -56,9 +57,9 @@ typedef boost::shared_ptr<INetworkClient> NetworkClientPtr;
 class RULES_EXPORT_SPEC INetworkEngine
 {
 public:
-	virtual void StartServer(const wxIPV4address &addr, 
+	virtual void StartServer(const NetworkEndpoint::Address &addr, 
 		const Player &player)=0;
-	virtual void StartClient(const wxIPV4address &addr, 
+	virtual void StartClient(const NetworkEndpoint::Address &addr, 
 		const Player &player)=0;
 
 	virtual void Stop()=0;

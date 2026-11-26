@@ -22,6 +22,7 @@
 
 #include "NetworkClient.h"
 #include "NetworkEngine.h"
+#include "NetworkEndpoint.h"
 #include "Game.h"
 #include "GameEngine.h"
 #include "DataObject.h"
@@ -60,7 +61,8 @@ namespace
 }
 
 //---------------------------- PUBLIC           -----------------------------//
-NetworkClient::NetworkClient(const wxIPV4address &addr, const Player &player)
+NetworkClient::NetworkClient(const NetworkEndpoint::Address &addr,
+	const Player &player)
 : mpSocketClient(NULL)
 {
 	// Store off this player so we know who is at this machine.
@@ -85,53 +87,40 @@ NetworkClient::~NetworkClient()
 	}
 }
 
-bool NetworkClient::Connect(const wxIPV4address &addr)
+bool NetworkClient::Connect(const NetworkEndpoint::Address &addr)
 {
 	bool success = true;
 	wxUint32 magic, number, compare;
 
     static const wxString stConnected = _("Connected!");
 
-	//for some insane reason, wx has no const methods on wxIPV4address, so it
-	//is necessary to cast away the constness of the passed-in address; it is 
-	//more important to maintain a const-correct interface than to make one 
-	//const_cast cast
-	wxIPV4address real_addr = const_cast<wxIPV4address &>(addr);
-
 	if(NULL == mpSocketClient)
 	{
 		mpSocketClient = new wxSocketClient;
 	}
 
-	//now, try and connect
-	mpSocketClient->Connect(real_addr, false);
-	mpSocketClient->WaitOnConnect(10);
-
-	// Prepare an input stream for the future.
-	wxSocketInputStream sock(*mpSocketClient);
-	wxDataInputStream input(sock);
-
-	if(false == mpSocketClient->IsConnected())
+	// Resolve AF_UNSPEC and try IPv6 / IPv4 results until one connects.
+	if(false == NetworkEndpoint::Connect(*mpSocketClient, addr))
 	{
-		wxString name = real_addr.Hostname();
-		if(true == name.IsEmpty())
-		{
-			name = real_addr.IPAddress();
-		}
-
-        static const wxString stCouldNotEstablishAConnection = _("Could not establish a connection to %s:%d.");
-		wxString str = wxString::Format(stCouldNotEstablishAConnection.c_str(), 
-			name.c_str(), real_addr.Service());
+		static const wxString stCouldNotEstablishAConnection =
+			_("Could not establish a connection to %s:%d.");
+		wxString str = wxString::Format(stCouldNotEstablishAConnection.c_str(),
+			addr.DisplayHost().c_str(), addr.port);
 
 		Controller::get().Transmit(shEventNetworkConnectionEvent, str);
 
 		success = false;
-		goto error;
 	}
+	else
+	{
+	// Prepare an input stream for the future. The streams stay inside
+	// this block so the failure path above does not jump over their
+	// constructors. A goto that skips initialization is ill-formed C++.
+	wxSocketInputStream sock(*mpSocketClient);
+	wxDataInputStream input(sock);
 
 	wxLogDebug(wxString::Format(
-		wxT("Connection established to %s:%d"), real_addr.Hostname().c_str(), 
-		real_addr.Service()));
+		wxT("Connection established to %s"), addr.DisplayEndpoint().c_str()));
 
 	// Handshake required by the Cities3D server.
 	magic = wxUINT32_SWAP_ON_LE('CC3D');
@@ -201,6 +190,7 @@ bool NetworkClient::Connect(const wxIPV4address &addr)
 	// Update the UI.  This has to be here because the UI for spectators isn't
 	// in place until after the game connect event.
 	Controller::get().Transmit(shEventSpectator, 0);
+	}
 
 	// Possibly the only acceptable use of a goto is the occasional catch-all
 	// error handling.

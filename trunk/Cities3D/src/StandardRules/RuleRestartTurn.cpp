@@ -67,6 +67,9 @@ public:
 	{
 		if(shTurn == gameData<HashString>(shState))
 		{
+			// Leave PreRoll mode (roll-dice button / card-only strip).
+			Controller::get().Transmit(shEventPreRollCard, false);
+
 			// Set MessageUI text.
 			RULE.Execute(shRuleUpdateMessageUI, DataObject(stItIsYourTurn, 
                 stWaitingFinishTurn));

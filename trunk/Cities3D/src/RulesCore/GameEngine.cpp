@@ -29,6 +29,7 @@
 #include "DrawObjectEngine.h"
 #include "SoundEngine.h"
 #include "NetworkEngine.h"
+#include "NetworkEndpoint.h"
 #include "StatEngine.h"
 #include "AnyEngine.h"
 #include "KeyMapEngine.h"
@@ -308,9 +309,8 @@ void GameEngine::LoadGame(wxInt32 index)
 			HashString ip = mpImpl->mpGame->read<HashString>(shHostIP);
 			wxInt32 port = mpImpl->mpGame->read<wxInt32>(shHostPort);
 
-			wxIPV4address addr;
-			addr.Hostname(ip.wx_str());
-			addr.Service(port);
+			NetworkEndpoint::Address addr(ip.wx_str(),
+				static_cast<wxUint16>(port));
 			mpImpl->mNetworkEngine.StartServer(addr, player);
 
 			mpImpl->mRuleEngine.Execute(shNetworkRuleRestartGame, 

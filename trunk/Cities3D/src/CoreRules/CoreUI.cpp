@@ -162,16 +162,30 @@ private:
 		DataObject input(-1), output;
 		RULE.Decide(shLogicIsThisPlayer, input, output);
 
-		if( (NULL == mBankTradeDialog) &&
-			(true == output.read<bool>())
-			)
+		if(false == output.read<bool>())
+		{
+			return;
+		}
+
+		if(NULL == mBankTradeDialog)
 		{
 			mBankTradeDialog = new wxBankTradeDialog(GetGLCanvas(), game);
 			mBankTradeDialog->Show();
+			mBankTradeDialog->Raise();
 		}
 		else
 		{
-			OnShutdownModelessUI();
+			// Toggle: second Bank click closes; otherwise raise an existing
+			// window that may have been left behind another frame.
+			if(true == mBankTradeDialog->IsShown())
+			{
+				OnShutdownModelessUI();
+			}
+			else
+			{
+				mBankTradeDialog->Show();
+				mBankTradeDialog->Raise();
+			}
 		}
 	}
 
@@ -224,11 +238,31 @@ private:
 			}
 
 			mOthersTradeDialog->Show();
+			mOthersTradeDialog->Raise();
+			if(NULL != mStockyardDialog)
+			{
+				mStockyardDialog->Show();
+				mStockyardDialog->Raise();
+			}
 		}
 		else if((NULL != mOthersTradeDialog) &&
-				(-1 == index))
+				(-1 == index) &&
+				(true == thisPlayer))
 		{
+			// Toggle close only for the acting player. Spectators keep the
+			// window; a second ControlsUI click from the actor dismisses it.
 			OnShutdownModelessUI();
+		}
+		else if((NULL != mOthersTradeDialog) &&
+				(true == thisPlayer))
+		{
+			mOthersTradeDialog->Show();
+			mOthersTradeDialog->Raise();
+			if(NULL != mStockyardDialog)
+			{
+				mStockyardDialog->Show();
+				mStockyardDialog->Raise();
+			}
 		}
 	}
 

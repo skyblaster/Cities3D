@@ -16,9 +16,9 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
-#include <wx/socket.h>
 
 //---------------------------- USER INCLUDES    -----------------------------//
+#include "NetworkEndpoint.h"
 
 //---------------------------- DEFINES          -----------------------------//
 
@@ -195,9 +195,9 @@ private:
 	//-----------------------------------------------------------------------//
 	// Object: mAddress
 	//
-	// The IP address and port the player is connecting to.
+	// The host and port the player is connecting to (IPv4 or IPv6).
 	//
-	wxIPV4address mAddress;
+	NetworkEndpoint::Address mAddress;
 };
 
 //---------------------------- PROTOTYPES       -----------------------------//

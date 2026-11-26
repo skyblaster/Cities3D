@@ -90,6 +90,16 @@ void wxNetworkPane::OnGameConnect(const DataObject& object)
 			add = (shNew == game->read<HashString>(shState));
 		}
 
+		// Stop/start must not stack another Game Setup page. The page uses
+		// file-scope static widget pointers; a second insert leaves the old
+		// page alive and crashes on the next spectator/player update.
+		if( (true == add) &&
+			(2 <= GetPageCount()) &&
+			(GetPageText(1) == stGameSetup))
+		{
+			add = false;
+		}
+
 		if(true == add)
 		{
 			wxNetworkGamePage* page = new wxNetworkGamePage(this);
@@ -99,7 +109,12 @@ void wxNetworkPane::OnGameConnect(const DataObject& object)
 	}
 	else
 	{
-		DeletePage(1);
+		// Drop every leftover Game Setup page (safe if none remain).
+		while( (2 <= GetPageCount()) &&
+			(GetPageText(1) == stGameSetup))
+		{
+			DeletePage(1);
+		}
 	}
 }
 

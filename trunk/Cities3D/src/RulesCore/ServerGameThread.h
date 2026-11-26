@@ -107,6 +107,14 @@ public:
 		const size_t size);
 
 	//-----------------------------------------------------------------------//
+	// Function: ShutdownFromMain
+	//
+	// Closes and destroys connected client sockets on the main thread before
+	// <Delete>, avoiding a wxGTK deadlock with worker-thread Destroy().
+	//
+	void ShutdownFromMain();
+
+	//-----------------------------------------------------------------------//
 	// Section: Private
 	//
 private:

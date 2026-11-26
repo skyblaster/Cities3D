@@ -15,6 +15,7 @@
 #include "style.h"	//READ THIS BEFORE MAKING ANY CHANGES TO THIS FILE!!!
 
 //---------------------------- SYSTEM INCLUDES  -----------------------------//
+#include <cstdio>
 
 //---------------------------- USER INCLUDES    -----------------------------//
 #include "NetworkConnectPage.h"
@@ -33,6 +34,7 @@
 #include "GameEngine.h"
 #include "Controller.h"
 #include "INetworkEngine.h"
+#include "NetworkEndpoint.h"
 #include "NetworkPlayers.h"
 #include "NetworkConnectToDialog.h"
 #include "NetworkSettingsDialog.h"
@@ -77,7 +79,7 @@ namespace
 		ID_PLAYER_DELETE		,
 	};
 
-	void EnableActions(const wxIPV4address &address)
+	void EnableActions(const NetworkEndpoint::Address &address)
 	{
 		spIPAddress->Freeze();
 
@@ -88,7 +90,7 @@ namespace
 				spActionButton->SetLabel(stStopServer);
 				spIPAddress->SetLabel(
 					wxString::Format(swIPFormat.c_str(), 
-					address.IPAddress().c_str(), address.Service(),
+					address.DisplayHost().c_str(), address.port,
 					stStarted.c_str()));
 				spIPAddress->SetForegroundColour(
 					SKIN.Element(shNetworkTextOn));
@@ -100,7 +102,7 @@ namespace
 				spActionButton->SetLabel(stStartServer);
 				spIPAddress->SetLabel(
 					wxString::Format(swIPFormat.c_str(), 
-					address.IPAddress().c_str(), address.Service(), 
+					address.DisplayHost().c_str(), address.port, 
 					stStopped.c_str()));
 				spIPAddress->SetForegroundColour(
 					SKIN.Element(shNetworkTextOff));
@@ -116,7 +118,7 @@ namespace
 				spActionButton->SetLabel(stDisconnect);
 				spIPAddress->SetLabel(
 					wxString::Format(swIPFormat.c_str(), 
-					address.IPAddress().c_str(), address.Service(),
+					address.DisplayHost().c_str(), address.port,
 					stConnected.c_str()));
 				spIPAddress->SetForegroundColour(
 					SKIN.Element(shNetworkTextOn));
@@ -178,7 +180,11 @@ namespace
 			}
 			else
 			{
-				RULE.Execute(shNetworkRuleQuit, 
+				// AsynchExecute runs locally and does not NET.SendRule.
+				// Execute() would queue a SendRule that needs the game-thread
+				// mutex — the same mutex Stop Server needs — and can freeze
+				// the UI before NetworkServer even starts tearing down.
+				RULE.AsynchExecute(shNetworkRuleQuit, 
                     DataObject(NET.Players().GetThisPlayer()));
 			}
 		}
@@ -201,7 +207,8 @@ namespace
 		}
 		else
 		{
-			RULE.Execute(shNetworkRuleQuit, 
+			// Local-only; NET.Stop() tears the socket down for the peer.
+			RULE.AsynchExecute(shNetworkRuleQuit, 
                 DataObject(NET.Players().GetThisPlayer()));
 		}
 
@@ -217,8 +224,7 @@ wxNetworkConnectPage::wxNetworkConnectPage(wxWindow* parent)
 
 	sInGame = false;
 
-	mAddress.AnyAddress();
-	mAddress.Service(7176);
+	mAddress.SetAny(7176);
 
 	wxBoxSizer *pSizer = new wxBoxSizer(wxVERTICAL);
 	wxBoxSizer *pTopBox = new wxBoxSizer(wxHORIZONTAL);
@@ -244,8 +250,8 @@ wxNetworkConnectPage::wxNetworkConnectPage(wxWindow* parent)
 	if(true == sHost)
 	{
 		RULE.Execute(shNetworkRuleStoreIP, 
-			DataObject(mAddress.IPAddress(), 
-				static_cast<wxInt32>(mAddress.Service())));
+			DataObject(mAddress.DisplayHost(), 
+				static_cast<wxInt32>(mAddress.port)));
 
 		spHostRadio->SetValue(true);
 	}
@@ -396,17 +402,11 @@ void wxNetworkConnectPage::OnHostRadio(wxCommandEvent &)
 
 		CONFIG.write<wxInt32>(swConfigSectionNetwork, swHost, TRUE);
 
-		if(false == mAddress.AnyAddress())
-		{
-			wxLogError(wxT("Unable to determine local IP address."));
-			return;
-		}
-
-		mAddress.Service(7176);			
+		mAddress.SetAny(7176);
 
 		RULE.Execute(shNetworkRuleStoreIP, 
-				DataObject(mAddress.IPAddress(), 
-					static_cast<wxInt32>(mAddress.Service())));
+				DataObject(mAddress.DisplayHost(), 
+					static_cast<wxInt32>(mAddress.port)));
 
 		EnableActions(mAddress);
 
@@ -453,6 +453,9 @@ void wxNetworkConnectPage::OnActionButton(wxCommandEvent &)
 	{
 		if(NET.IsConnected())
 		{
+			std::fprintf(stderr, "cities3d: Stop Server clicked\n");
+			std::fflush(stderr);
+
 			if(false == HostShutdownCheck())
 			{
 				return;
@@ -488,7 +491,7 @@ void wxNetworkConnectPage::OnActionButton(wxCommandEvent &)
 				spIPAddress->Freeze();
 				spIPAddress->SetLabel(
 					wxString::Format(swIPFormat.c_str(), 
-					mAddress.IPAddress().c_str(), mAddress.Service(), 
+					mAddress.DisplayHost().c_str(), mAddress.port, 
 					stConnecting.c_str()));
 				spIPAddress->SetForegroundColour(
 					SKIN.Element(shNetworkTextWait));
@@ -516,8 +519,8 @@ void wxNetworkConnectPage::OnSettingsButton(wxCommandEvent &)
 		mAddress = dialog.GetAddress();
 
 		RULE.Execute(shNetworkRuleStoreIP, 
-			DataObject(mAddress.IPAddress(), 
-				static_cast<wxInt32>(mAddress.Service())));
+			DataObject(mAddress.DisplayHost(), 
+				static_cast<wxInt32>(mAddress.port)));
 
 		EnableActions(mAddress);
 	}

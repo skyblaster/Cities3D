@@ -96,14 +96,16 @@ private:
 			const GamePtr& game = object.read<GamePtr>();
 			bool show = object.read<bool>(1);
 
-			if( (NULL == mCardsDialog) &&
-				(true == show))
+			if(true == show)
 			{
-				mCardsDialog = new wxDevCardsDialog(GetGLCanvas(), game);
+				if(NULL == mCardsDialog)
+				{
+					mCardsDialog = new wxDevCardsDialog(GetGLCanvas(), game);
+				}
 				mCardsDialog->Show();
+				mCardsDialog->Raise();
 			}
-			else if((NULL != mCardsDialog) &&
-					(false == show))
+			else if(NULL != mCardsDialog)
 			{
 				mCardsDialog->Destroy();
 				mCardsDialog = NULL;

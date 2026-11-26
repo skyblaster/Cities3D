@@ -16,6 +16,13 @@ runtime-version: "26.08"
 sdk: org.freedesktop.Sdk
 command: Cities3D
 
+# Skip appstreamcli compose. Distrobox hosts often lack compose support (or
+# flatpak-builder segfaults after G_IS_SUBPROCESS when spawn fails). Metainfo,
+# .desktop, and hicolor icons are still installed by cities3d-metadata; the
+# app launches without the generated app-info catalog. Set true only when
+# `appstreamcli compose --help` works and you need Flathub-style app-info.
+appstream-compose: false
+
 finish-args:
   - --share=ipc
   - --share=network
