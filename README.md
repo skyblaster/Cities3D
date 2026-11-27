@@ -71,7 +71,9 @@ The setup is 64-bit and requires Windows 10 or later. It installs for all users 
 Install [NSIS 3](https://nsis.sourceforge.io/), then build the Release preset from `trunk/` (`cmake --build --preset release`, with `VCPKG_ROOT` set). From the repository root:
 
 ```powershell
-.\trunk\Cities3D\installer\build-windows-installer.ps1
+cd trunk
+cmd /c 'call "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxiliary\Build\vcvars64.bat" && cmake --build --preset release -j 8'
+.\Cities3D\installer\build-windows-installer.ps1
 ```
 
 That writes `trunk/Cities3D/installer/build/Install_Cities3D_v0.10.0.exe` and copies the same file into your Downloads folder. The script installs a temporary copy, checks the file layout, and removes it.
