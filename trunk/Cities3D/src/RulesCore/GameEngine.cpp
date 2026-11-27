@@ -55,7 +55,7 @@ namespace
 {
 	// The Game Version.
 	const wxInt32 C3D_VERSION_MAJOR		= 0;
-	const wxInt32 C3D_VERSION_MINOR		= 10;
+	const wxInt32 C3D_VERSION_MINOR		= 11;
 	const wxInt32 C3D_VERSION_PATCH		= 0;
 }
 
